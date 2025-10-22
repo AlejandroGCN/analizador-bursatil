@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import pandas as pd
 
-from ..core.base_series import validate_datetime_index, mean_std_from_series, _FrameLikeMixin
+from data_extractor.core.base.base_series import validate_datetime_index, mean_std_from_series, _FrameLikeMixin
 
 
 @dataclass

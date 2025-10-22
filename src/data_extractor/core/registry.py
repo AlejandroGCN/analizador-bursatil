@@ -1,5 +1,5 @@
 
-from .base_provider import BaseProvider
+from data_extractor.core.base.base_provider import BaseProvider
 from ..providers.yahoo_provider import YahooProvider
 from ..providers.alpha_vantage_provider import AlphaVantageProvider
 from ..providers.binance_provider import BinanceProvider

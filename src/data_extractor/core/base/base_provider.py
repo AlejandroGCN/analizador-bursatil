@@ -6,13 +6,13 @@ import logging
 import pandas as pd
 
 # Importa tus clases de series normalizadas
-from ..series import (
+from data_extractor.series import (
     PriceSeries,
     PerformanceSeries,
     VolumeActivitySeries,
     VolatilitySeries,
 )
-from .normalizer import normalizer_tipology  # Orquestador de normalización
+from data_extractor.core.normalizer import normalizer_tipology  # Orquestador de normalización
 
 logger = logging.getLogger(__name__)
 

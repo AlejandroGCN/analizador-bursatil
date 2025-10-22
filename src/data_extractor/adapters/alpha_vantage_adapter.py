@@ -4,7 +4,7 @@ from typing import Optional, Any, Dict
 import requests
 import pandas as pd
 
-from ..core.base_adapter import BaseAdapter
+from data_extractor.core.base.base_adapter import BaseAdapter
 from ..core.errors import (
     SymbolNotFound,
     ExtractionError,

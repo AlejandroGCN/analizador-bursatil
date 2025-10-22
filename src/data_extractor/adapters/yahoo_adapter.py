@@ -5,7 +5,7 @@ import pandas as pd
 from importlib import util as importlib_util
 from typing import Optional, Any
 
-from ..core.base_adapter import BaseAdapter
+from data_extractor.core.base.base_adapter import BaseAdapter
 from ..core.errors import SymbolNotFound, ExtractionError
 
 logger = logging.getLogger(__name__)

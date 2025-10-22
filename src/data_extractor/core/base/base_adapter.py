@@ -7,7 +7,7 @@ import pandas as pd
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .errors import ExtractionError  # tus excepciones existentes
+from data_extractor.core.errors import ExtractionError  # tus excepciones existentes
 
 logger = logging.getLogger(__name__)
 

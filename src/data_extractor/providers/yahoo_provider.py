@@ -2,7 +2,7 @@
 from __future__ import annotations
 import logging
 
-from ..core.base_provider import BaseProvider
+from data_extractor.core.base.base_provider import BaseProvider
 from ..adapters.yahoo_adapter import YahooAdapter
 
 logger = logging.getLogger(__name__)

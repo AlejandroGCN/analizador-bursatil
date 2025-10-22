@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 
-from ..core.base_provider import BaseProvider
+from data_extractor.core.base.base_provider import BaseProvider
 from ..adapters.binance_adapter import BinanceAdapter
 
 logger = logging.getLogger(__name__)
