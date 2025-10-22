@@ -88,10 +88,8 @@ class DataExtractor:
         )
 
         try:
-            # Nota: el provider actual espera 'symbols_input'. Si estandarizas a 'symbols',
-            # sólo cambia el nombre del keyword aquí y en el provider.
             return self.source.get_symbols(
-                symbols_input=symbols,
+                symbols=symbols,
                 start=start_ts,
                 end=end_ts,
                 interval=chosen_interval,

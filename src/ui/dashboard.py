@@ -107,6 +107,27 @@ tickers_text = st.sidebar.text_input(
     value="AAPL,MSFT,GSPC",  # ^GSPC en Yahoo para S&P 500
 )
 
+st.sidebar.markdown("#### 📂 O cargar una cartera desde archivo")
+cartera_file = st.sidebar.file_uploader("Archivo de cartera (.csv o .txt)", type=["csv", "txt"])
+
+tickers_text_manual = st.sidebar.text_input(
+    "⬇️ O introduce tickers manualmente (separados por coma, espacio o salto de línea):",
+    value=""
+)
+
+def parse_symbols_from_file(file) -> list[str]:
+    content = file.read().decode("utf-8")
+    raw = content.replace("\n", " ").replace(",", " ").split()
+    return list(set(s.strip().upper() for s in raw if s.strip()))
+
+def get_tickers_input() -> list[str]:
+    if cartera_file:
+        return parse_symbols_from_file(cartera_file)
+    elif tickers_text_manual:
+        return [t.strip().upper() for t in tickers_text_manual.replace("\n", ",").replace(" ", ",").split(",") if t.strip()]
+    else:
+        return []
+
 col_l, col_r = st.sidebar.columns(2)
 start_date_sel = col_l.date_input("Inicio", pd.to_datetime("2020-01-01"))
 end_date_sel = col_r.date_input("Fin", pd.to_datetime("2025-01-01"))

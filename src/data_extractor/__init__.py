@@ -1,7 +1,7 @@
 ﻿from .extractor import DataExtractor
 from .config import ExtractorConfig
 from .core.errors import ExtractionError, SymbolNotFound, RateLimitError
-from .models.series import PriceSeries, PerformanceSeries, VolatilitySeries, VolumeActivitySeries
+from .series import PriceSeries, PerformanceSeries, VolatilitySeries, VolumeActivitySeries
 
 __all__ = [
     "DataExtractor",

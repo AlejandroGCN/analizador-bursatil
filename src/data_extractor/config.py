@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Literal
 
 
 @dataclass(slots=True, frozen=True)
@@ -21,7 +21,7 @@ class ExtractorConfig:
     api_key: Optional[str]
     Clave de API para fuentes que lo requieran (no aplicable a Yahoo por defecto).
     """
-    source: str = "yahoo"
+    SourceName = Literal["yahoo", "alpha_vantage", "binance"]
     timeout: int = 30
     interval: str = "1d"
     ffill: bool = True

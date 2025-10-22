@@ -5,41 +5,63 @@ from typing import Optional, Dict, List, Any, Union
 import logging
 import pandas as pd
 
-from .errors import DataSource, SeriesType          # Protocolo + unión de tipos
-from .normalizer import normalizer_tipology       # Orquestador de normalización
+# Importa tus clases de series normalizadas
+from ..series import (
+    PriceSeries,
+    PerformanceSeries,
+    VolumeActivitySeries,
+    VolatilitySeries,
+)
+from .normalizer import normalizer_tipology  # Orquestador de normalización
 
 logger = logging.getLogger(__name__)
 
+# Alias de tipo: cualquier serie normalizada que pueda devolver el normalizador
+SeriesType = Union[PriceSeries, PerformanceSeries, VolumeActivitySeries, VolatilitySeries]
 
-class BaseProvider(DataSource):
+
+class BaseProvider:
     """
     Provider base: orquesta
       - adapter.get_symbols(...)  -> Dict[str, DataFrame] bruto
       - normalizer_tipology(...)  -> Dict[str, SeriesType] según 'kind'
 
     Subclases solo definen:
-      - self.adapter   (inyectando el adapter concreto)
-      - self.source_name (string corto de la fuente, p.ej. 'yahoo', 'alpha_vantage', 'binance')
+      - self.adapter      (inyectando el adapter concreto)
+      - self.source_name  (string corto: 'yahoo', 'alpha_vantage', 'binance')
     """
 
     def __init__(self, *, source_name: str, adapter: Any) -> None:
         self.source_name = source_name
         self.adapter = adapter
-        logger.info("BaseProvider init source=%s adapter=%s", source_name, adapter.__class__.__name__)
+        logger.info("BaseProvider init source=%s adapter=%s",
+                    source_name, adapter.__class__.__name__)
 
     # ---------- helpers ----------
     @staticmethod
-    def _normalize_symbols(symbols_input: Union[str, List[str]]) -> List[str]:
-        if isinstance(symbols_input, str):
-            symbols = [s.strip() for s in symbols_input.split(",") if s.strip()]
-        else:
-            # dedup conservando orden
-            symbols = list(dict.fromkeys([s.strip() for s in symbols_input if s and s.strip()]))
-        return symbols
+    def _normalize_symbols(symbols: Union[str, List[str]]) -> List[str]:
+        """
+        Acepta str o lista y devuelve una lista limpia, sin vacíos y sin duplicados (conservando orden).
+        """
+        if isinstance(symbols, str):
+            return [s.strip() for s in symbols.split(",") if s.strip()]
+        # dedup conservando orden
+        seen: Dict[str, None] = {}
+        out: List[str] = []
+        for s in symbols:
+            if not s:
+                continue
+            t = s.strip()
+            if not t or t in seen:
+                continue
+            seen[t] = None
+            out.append(t)
+        return out
 
+    # ---------- API principal ----------
     def get_symbols(
             self,
-            symbols_input: Union[str, List[str]],
+            symbols: Union[str, List[str]],
             start: Optional[pd.Timestamp],
             end: Optional[pd.Timestamp],
             interval: str = "1d",
@@ -54,18 +76,26 @@ class BaseProvider(DataSource):
         Descarga (adapter) y normaliza (normalizer_tipology) 1..N símbolos.
         Devuelve {symbol -> objeto SeriesType} acorde a 'kind'.
         """
-        symbols = self._normalize_symbols(symbols_input)
+        norm_symbols = self._normalize_symbols(symbols)
         logger.info(
             "%s.get_symbols symbols=%s start=%s end=%s interval=%s "
             "kind=%s align=%s ffill=%s bfill=%s",
-            self.__class__.__name__, symbols, start, end, interval, kind, align, ffill, bfill
+            self.__class__.__name__, norm_symbols, start, end, interval, kind, align, ffill, bfill
         )
 
+        if not norm_symbols:
+            msg = ("Debe introducir al menos un símbolo para obtener datos "
+                   "y realizar la simulación.")
+            logger.error("%s.get_symbols falló: %s", self.__class__.__name__, msg)
+            # Reutiliza tu ExtractionError si quieres consistencia con BaseAdapter; si no, ValueError.
+            from .errors import ExtractionError
+            raise ExtractionError(msg, source=self.source_name, extra={"input_symbols": symbols})
+
         # 1) Descarga bruta desde el adapter (Dict[str, DataFrame])
-        raw_map = self.adapter.get_symbols(symbols, start, end, interval)
+        raw_map = self.adapter.get_symbols(norm_symbols, start, end, interval, **options)
 
         # 2) Normalización/Tipología destino (Dict[str, SeriesType])
-        out = normalizer_tipology(
+        out: Dict[str, SeriesType] = normalizer_tipology(
             raw_frames=raw_map,
             kind=kind,
             source_name=self.source_name,
@@ -99,8 +129,17 @@ class BaseProvider(DataSource):
             "kind=%s align=%s ffill=%s bfill=%s",
             self.__class__.__name__, symbol, start, end, interval, kind, align, ffill, bfill
         )
+        norm_list = self._normalize_symbols([symbol])
+        if not norm_list:
+            msg = ("Debe introducir al menos un símbolo para obtener datos "
+                   "y realizar la simulación.")
+            logger.error("%s.get_data falló: %s", self.__class__.__name__, msg)
+            from .errors import ExtractionError
+            raise ExtractionError(msg, source=self.source_name, extra={"input_symbol": symbol})
+
+        norm_symbol = norm_list[0]
         out = self.get_symbols(
-            symbols_input=[symbol],
+            symbols=norm_symbol,  # acepta str o list
             start=start,
             end=end,
             interval=interval,
@@ -110,6 +149,6 @@ class BaseProvider(DataSource):
             bfill=bfill,
             **options,
         )
-        if symbol not in out:
-            raise KeyError(f"Símbolo '{symbol}' no presente en salida normalizada.")
-        return out[symbol]
+        if norm_symbol not in out:
+            raise KeyError(f"Símbolo '{norm_symbol}' no presente en salida normalizada.")
+        return out[norm_symbol]
