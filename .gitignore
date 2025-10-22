@@ -1,8 +1,29 @@
-﻿.venv/
+﻿# Entornos virtuales
+.venv/
+env/
+venv/
+
+# IDEs
+.idea/
+.vscode/
+
+# Python bytecode / cachés
 __pycache__/
 *.pyc
-.vscode/
-.idea/
+*.pyo
+*.pyd
+
+# Archivos temporales / logs
 *.log
-.ipynb_checkpoints/
+*.tmp
+*.bak
+*.swp
+
+# Datos locales
+data/
+datasets/
+outputs/
+
+# Archivos del sistema
 .DS_Store
+Thumbs.db
