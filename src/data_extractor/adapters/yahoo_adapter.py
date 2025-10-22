@@ -1,24 +1,26 @@
+# adapters/yahoo_adapter.py
 import warnings
-from typing import Dict, List, Union
+import logging
 import pandas as pd
 from importlib import util as importlib_util
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from ..core.base import SymbolNotFound, ExtractionError
-import logging
+from typing import Optional, Any
+
+from ..core.base_adapter import BaseAdapter
+from ..core.errors import SymbolNotFound, ExtractionError
 
 logger = logging.getLogger(__name__)
 
 
-class YahooAdapter:
+class YahooAdapter(BaseAdapter):
     """
-    Adapter para obtener datos desde Yahoo Finance.
-    Acepta uno o varios símbolos de forma transparente.
+    Adapter para obtener datos desde Yahoo Finance (yfinance / pandas_datareader).
+    Hereda la lógica de paralelización y normalización de símbolos de BaseAdapter.
     """
+    name = "yahoo"
+    supports_intraday = True
 
     def __init__(self, timeout: int = 30, max_workers: int = 8):
-        self.timeout = timeout
-        self.max_workers = max_workers
-        logger.info("YahooAdapter init (timeout=%s, max_workers=%s)", timeout, max_workers)
+        super().__init__(timeout=timeout, max_workers=max_workers)
 
         self._yf = importlib_util.find_spec("yfinance") is not None
         self._pdr = importlib_util.find_spec("pandas_datareader") is not None
@@ -36,12 +38,22 @@ class YahooAdapter:
         if not (self._yf or self._pdr):
             raise ImportError("Necesitas 'yfinance' o 'pandas_datareader' para usar YahooAdapter.")
 
-    def download_symbol(self, symbol: str, start, end, interval: str) -> pd.DataFrame:
-        last = None
+    def download_symbol(
+            self,
+            symbol: str,
+            start: Optional[pd.Timestamp],
+            end: Optional[pd.Timestamp],
+            interval: str,
+            **options: Any,
+    ) -> pd.DataFrame:
+        last: Optional[Exception] = None
+
         if self._yf:
             try:
-                df = self.yf.download(symbol, start=start, end=end, interval=interval,
-                                      progress=False, threads=False)
+                df = self.yf.download(
+                    symbol, start=start, end=end, interval=interval,
+                    progress=False, threads=False
+                )
                 if df is None or df.empty:
                     raise SymbolNotFound(
                         message=f"Símbolo no encontrado: {symbol}",
@@ -77,39 +89,3 @@ class YahooAdapter:
             headers=None,
             cause=last,
         )
-
-    def get_symbols(self, symbols: Union[str, List[str]], start, end, interval: str) -> Dict[str, pd.DataFrame]:
-        """
-        Descarga uno o varios símbolos de Yahoo Finance.
-        Devuelve dict[symbol] -> DataFrame (formato Yahoo).
-        """
-        # Normaliza entrada
-        if isinstance(symbols, str):
-            symbols = [s.strip() for s in symbols.split(",") if s.strip()]
-        if not symbols:
-            logger.warning("get_symbols sin símbolos; usando demo AAPL.")
-            symbols = ["AAPL"]
-
-        results: Dict[str, pd.DataFrame] = {}
-        errors: Dict[str, Exception] = {}
-
-        if len(symbols) == 1:
-            # Caso simple
-            s = symbols[0]
-            results[s] = self.download_symbol(s, start, end, interval)
-            return results
-
-        logger.info("Descargando %d símbolos desde Yahoo...", len(symbols))
-        with ThreadPoolExecutor(max_workers=self.max_workers) as ex:
-            fut_map = {ex.submit(self.download_symbol, s, start, end, interval): s for s in symbols}
-            for fut in as_completed(fut_map):
-                s = fut_map[fut]
-                try:
-                    results[s] = fut.result()
-                except Exception as e:
-                    errors[s] = e
-                    logger.warning("Error descargando %s: %s", s, e)
-
-        if not results:
-            raise ExtractionError(f"Falló la descarga de todos los símbolos: {errors}")
-        return results

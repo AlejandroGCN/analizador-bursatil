@@ -1,7 +1,7 @@
 from typing import Dict, Optional, Any, Callable
 import numpy as np
 import pandas as pd
-from .base import NormalizationError
+from .errors import NormalizationError
 from ..models.series import PriceSeries, PerformanceSeries, VolumeActivitySeries, VolatilitySeries
 
 OHLCV = ["open", "high", "low", "close", "volume"]

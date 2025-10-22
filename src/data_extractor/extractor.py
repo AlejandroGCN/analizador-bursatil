@@ -1,24 +1,26 @@
 # src/data_extractor/extractor.py
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, Optional, Any, List
 import logging
 import pandas as pd
 
 from .config import ExtractorConfig
-from .core.base import ExtractionError
+from .core.errors import ExtractionError
 from .core.registry import REGISTRY
 
 logger = logging.getLogger(__name__)
 
-def _ensure_dt(x):
+
+def _ensure_dt(x) -> Optional[pd.Timestamp]:
     """Convierte entrada flexible de fecha a `pd.Timestamp` o `None`."""
     return None if x is None else pd.to_datetime(x)
+
 
 class DataExtractor:
     """
     Fachada de alto nivel:
-    - Resuelve el provider desde REGISTRY (p. ej. YahooProvider).
-    - Llama al provider.get_symbols(), que se encarga de todo (adapter + normalizer).
-    - Devuelve dict[symbol -> objeto tipología].
+      - Resuelve el provider desde REGISTRY (p. ej. YahooProvider).
+      - Llama al provider.get_symbols(), que se encarga de adapter + normalizer.
+      - Devuelve dict[symbol -> tipología/objeto listo].
     """
 
     def __init__(self, cfg: Optional[ExtractorConfig] = None):
@@ -28,11 +30,12 @@ class DataExtractor:
         try:
             source_cls = REGISTRY[self.cfg.source]
         except KeyError as e:
-            logger.error("Fuente no registrada: %s", self.cfg.source)
+            logger.error("Fuente no registrada en REGISTRY: %s", self.cfg.source)
             raise ValueError(f"Fuente no registrada: {self.cfg.source}") from e
 
+        # Instancia del provider (pasa args comunes si aplica).
         self.source = source_cls(timeout=self.cfg.timeout)
-        logger.info("Proveedor instanciado: %s", source_cls.__name__)
+        logger.info("Proveedor instanciado: %s", getattr(source_cls, "__name__", str(source_cls)))
 
     def get_market_data(
             self,
@@ -41,36 +44,63 @@ class DataExtractor:
             end: Optional[str | pd.Timestamp] = None,
             interval: Optional[str] = None,
             kind: str = "ohlcv",
-            **params,
-    ) -> Dict[str, object]:
+            **params: Any,
+    ) -> Dict[str, Any]:
         """
-        Descarga 1..N símbolos usando el provider.
-        El provider maneja el adapter y normalizer internamente.
+        Descarga 1..N símbolos usando el provider (quien maneja adapter y normalizer).
+
+        Args:
+            tickers: Iterable de símbolos o una cadena con un solo símbolo.
+            start: fecha inicio (str/Timestamp/None).
+            end: fecha fin (str/Timestamp/None).
+            interval: resolución temporal; si None usa cfg.interval.
+            kind: tipología (p. ej. 'ohlcv').
+            **params: extras soportados por el provider (align, ffill, bfill, etc.).
+
+        Returns:
+            Dict[str, Any]: mapa símbolo -> objeto tipología ya normalizado por el provider.
         """
-        symbols = [tickers] if isinstance(tickers, str) else list(dict.fromkeys(tickers))
+        # Normaliza símbolos preservando orden y eliminando duplicados
+        if isinstance(tickers, str):
+            symbols: List[str] = [tickers]
+        else:
+            symbols = list(dict.fromkeys(tickers))
+
+        if not symbols:
+            raise ValueError("Debe indicar al menos un símbolo.")
+
         start_ts = _ensure_dt(start)
         end_ts = _ensure_dt(end)
-        interval = interval or self.cfg.interval
+        chosen_interval = interval or self.cfg.interval
+
+        if start_ts and end_ts and start_ts > end_ts:
+            raise ValueError(f"Rango de fechas inválido: start({start_ts}) > end({end_ts}).")
+
+        # Extra comunes de configuración si el caller no los pasa
+        params.setdefault("align", self.cfg.align)
+        params.setdefault("ffill", self.cfg.ffill)
+        params.setdefault("bfill", self.cfg.bfill)
 
         logger.info(
             "get_market_data: symbols=%s start=%s end=%s interval=%s kind=%s align=%s ffill=%s bfill=%s",
-            symbols, start_ts, end_ts, interval, kind, self.cfg.align, self.cfg.ffill, self.cfg.bfill
+            symbols, start_ts, end_ts, chosen_interval, kind,
+            params.get("align"), params.get("ffill"), params.get("bfill"),
         )
 
         try:
-            # 👉 El provider (p. ej. YahooProvider) implementa get_symbols()
-            # que usa internamente el adapter + normalizer_tipology()
+            # Nota: el provider actual espera 'symbols_input'. Si estandarizas a 'symbols',
+            # sólo cambia el nombre del keyword aquí y en el provider.
             return self.source.get_symbols(
                 symbols_input=symbols,
                 start=start_ts,
                 end=end_ts,
-                interval=interval,
+                interval=chosen_interval,
                 kind=kind,
-                align=self.cfg.align,
-                ffill=self.cfg.ffill,
-                bfill=self.cfg.bfill,
                 **params,
             )
+        except ExtractionError:
+            logger.exception("Fallo en provider.get_symbols (ExtractionError)")
+            raise
         except Exception as e:
-            logger.exception("Fallo en provider.get_symbols")
+            logger.exception("Fallo en provider.get_symbols (error no tipificado)")
             raise ExtractionError(f"Fallo en extracción: {e}") from e
