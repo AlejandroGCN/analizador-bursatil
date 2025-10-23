@@ -1,0 +1,53 @@
+# src/ui/app_config.py
+from __future__ import annotations
+from typing import Dict, List
+
+# ───────────────────────────────────────────────────────────────
+# 🎛️ Configuración general de la aplicación
+# ───────────────────────────────────────────────────────────────
+
+# Pestañas principales (nombre y emoji)
+TAB_LABELS: Dict[str, str] = {
+    "datos": "📊 Datos",
+    "cartera": "💼 Cartera",
+    "montecarlo": "🎲 Monte Carlo",
+    "reporte": "📋 Reporte",
+    "config": "⚙️ Configuración",
+}
+
+# Orden de las pestañas (para mostrarlas en Streamlit)
+TABS_ORDER: List[str] = [
+    TAB_LABELS["datos"],
+    TAB_LABELS["cartera"],
+    TAB_LABELS["montecarlo"],
+    TAB_LABELS["reporte"],
+    TAB_LABELS["config"],
+]
+
+# Etiquetas de la UI → claves internas del backend
+SOURCE_MAP: Dict[str, str] = {
+    "Yahoo": "yahoo",
+    "Alpha Vantage": "alpha_vantage",
+    "Binance": "binance",
+}
+
+KIND_MAP: Dict[str, str] = {
+    "OHLCV": "ohlcv",
+    "Volatilidad": "volatility",
+    "Returns": "returns_pct",
+}
+
+# Valores permitidos
+ALLOWED_INTERVALS = ["1d", "1h", "1wk"]
+ALLOWED_KINDS = list(KIND_MAP.keys())
+
+
+# Helper para construir cfg y kind (utilizado por views / backend)
+def build_cfg_and_kind(fuente_human: str, tipo_human: str, intervalo: str) -> tuple[dict, str]:
+    """
+    Traduce labels de la UI a claves internas y construye cfg_dict + kind.
+    """
+    source = SOURCE_MAP.get(fuente_human, "yahoo")
+    kind = KIND_MAP.get(tipo_human, "ohlcv")
+    cfg_dict = {"source": source, "interval": intervalo}
+    return cfg_dict, kind
