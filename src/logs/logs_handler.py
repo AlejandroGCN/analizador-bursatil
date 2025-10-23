@@ -70,13 +70,30 @@ def setup_logging_from_file(cfg_path: Path | None) -> None:
     _make_log_dirs(cfg, base_dir=cfg_path.parent)
     logging.config.dictConfig(cfg)
 
-def boot_logging_from_argv() -> None:
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--log-config", dest="log_config", default=None)
-    try:
-        args, _ = parser.parse_known_args()
-        cfg_path = resolve_log_cfg(args.log_config)
-    except SystemExit:
-        cfg_path = resolve_log_cfg(None)  # por si estás en un entorno que ya parseó argv
+def boot_logging_from_argv(default_path=None, default_level=logging.INFO):
+    """
+    Inicializa el logging desde YAML o crea uno básico si falla.
+    Usa las rutas de LOG_CFG y LOG_FILE del entorno.
+    """
+    log_cfg = os.environ.get("LOG_CFG", "")
+    log_file = os.environ.get("LOG_FILE", "")
 
-    setup_logging_from_file(cfg_path)
+    try:
+        if log_cfg and pathlib.Path(log_cfg).exists():
+            with open(log_cfg, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+
+            # Inyecta la ruta de LOG_FILE si existe en entorno
+            if log_file:
+                os.makedirs(os.path.dirname(log_file), exist_ok=True)
+                for handler in config.get("handlers", {}).values():
+                    if "filename" in handler:
+                        handler["filename"] = log_file
+
+            logging.config.dictConfig(config)
+        else:
+            logging.basicConfig(level=default_level)
+        logging.info(f"Logging inicializado (cfg={log_cfg}, file={log_file})")
+    except Exception as e:
+        logging.basicConfig(level=default_level)
+        logging.warning(f"No se pudo inicializar logging: {e}")

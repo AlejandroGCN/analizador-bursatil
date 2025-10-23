@@ -1,0 +1,36 @@
+loggers:
+  data_extractor:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+
+  data_extractor.adapters.yahoo_adapter:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+  data_extractor.adapters.binance_adapter:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+  data_extractor.adapters.stooq_adapter:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+
+  data_extractor.providers:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+
+  data_extractor.providers.alpha_vantage_provider:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+  data_extractor.providers.yahoo_provider:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+  data_extractor.providers.binance_provider:
+    level: INFO
+    handlers: [console, file]
+    propagate: false

@@ -1,91 +1,73 @@
-# adapters/yahoo_adapter.py
-import warnings
+from __future__ import annotations
 import logging
 import pandas as pd
-from importlib import util as importlib_util
-from typing import Optional, Any
-
-from data_extractor.core.base.base_adapter import BaseAdapter
-from ..core.errors import SymbolNotFound, ExtractionError
+from data_extractor.core.base.base_adapter  import BaseAdapter
+from data_extractor.core.errors import ExtractionError
 
 logger = logging.getLogger(__name__)
-
-
 class YahooAdapter(BaseAdapter):
-    """
-    Adapter para obtener datos desde Yahoo Finance (yfinance / pandas_datareader).
-    Hereda la lógica de paralelización y normalización de símbolos de BaseAdapter.
-    """
     name = "yahoo"
     supports_intraday = True
+    allowed_intervals = ["1d","1wk","1mo","1h","1m","5m","15m","30m","60m","90m"]
 
-    def __init__(self, timeout: int = 30, max_workers: int = 8):
+    def __init__(self, timeout: int = 30, max_workers: int = 8) -> None:
         super().__init__(timeout=timeout, max_workers=max_workers)
-
-        self._yf = importlib_util.find_spec("yfinance") is not None
-        self._pdr = importlib_util.find_spec("pandas_datareader") is not None
-        if self._yf:
+        import importlib.util as _u
+        self._yf_available  = _u.find_spec("yfinance") is not None
+        self._pdr_available = _u.find_spec("pandas_datareader") is not None
+        if self._yf_available:
             import yfinance as yf  # type: ignore
-            try:
-                yf.shared._DFS_CACHE.enable()
-            except Exception:
-                pass
             self.yf = yf
-        if self._pdr:
+        if self._pdr_available:
             import pandas_datareader.data as pdr  # type: ignore
             self.pdr = pdr
 
-        if not (self._yf or self._pdr):
-            raise ImportError("Necesitas 'yfinance' o 'pandas_datareader' para usar YahooAdapter.")
+    def _download_with_yfinance(self, symbol, start, end, interval) -> pd.DataFrame:
+        t = self.yf.Ticker(symbol)
+        df = t.history(start=start, end=end, interval=interval)
+        if df is None or df.empty:
+            raise ExtractionError(f"Sin datos en Yahoo (yfinance) para {symbol}", source=self.name)
+        # Asegura columnas mínimas para poder seleccionar después
+        if "Adj Close" not in df.columns:
+            df["Adj Close"] = df.get("Close")
+        if "Volume" not in df.columns:
+            df["Volume"] = 0.0
+        return df[["Open","High","Low","Close","Adj Close","Volume"]]
 
-    def download_symbol(
-            self,
-            symbol: str,
-            start: Optional[pd.Timestamp],
-            end: Optional[pd.Timestamp],
-            interval: str,
-            **options: Any,
-    ) -> pd.DataFrame:
-        last: Optional[Exception] = None
+    def _download_with_pdr(self, symbol, start, end) -> pd.DataFrame:
+        df = self.pdr.get_data_yahoo(symbol, start=start, end=end)
+        if df is None or df.empty:
+            raise ExtractionError(f"Sin datos en Yahoo (pdr) para {symbol}", source=self.name)
+        if "Adj Close" not in df.columns:
+            df["Adj Close"] = df.get("Close")
+        if "Volume" not in df.columns:
+            df["Volume"] = 0.0
+        return df[["Open","High","Low","Close","Adj Close","Volume"]]
 
-        if self._yf:
-            try:
-                df = self.yf.download(
-                    symbol, start=start, end=end, interval=interval,
-                    progress=False, threads=False
-                )
-                if df is None or df.empty:
-                    raise SymbolNotFound(
-                        message=f"Símbolo no encontrado: {symbol}",
-                        source="yahoo/yfinance",
-                        symbol=symbol,
-                    )
-                return df
-            except Exception as e:
-                last = e
-                logger.exception("Fallo en yfinance para %s", symbol)
+    def download_symbol(self, symbol, start, end, interval, **options) -> pd.DataFrame:
+        if interval not in self.allowed_intervals:
+            raise ExtractionError(f"Intervalo no soportado: {interval}", source=self.name)
 
-        if self._pdr:
-            try:
-                if interval != "1d":
-                    warnings.warn("pandas_datareader solo diario; se fuerza '1d'.")
-                df = self.pdr.get_data_yahoo(symbol, start=start, end=end)
-                if df is None or df.empty:
-                    raise SymbolNotFound(
-                        message=f"Símbolo no encontrado: {symbol}",
-                        source="yahoo/pdr",
-                        symbol=symbol,
-                    )
-                return df
-            except Exception as e:
-                last = e
-                logger.exception("Fallo en pandas_datareader para %s", symbol)
+        intradia = interval not in ("1d","1wk","1mo")
 
-        raise ExtractionError.from_http(
-            message=f"Yahoo error descargando {symbol}",
-            source="yahoo",
-            symbol=symbol,
-            status=None,
-            headers=None,
-            cause=last,
+        if self._yf_available:
+            df = self._download_with_yfinance(symbol, start, end, interval)
+        else:
+            if intradia:
+                # pdr no sirve para intradía
+                raise ExtractionError("Intradía requiere yfinance instalado", source=self.name)
+            if not self._pdr_available:
+                raise ExtractionError("Ni yfinance ni pandas_datareader disponibles", source=self.name)
+            df = self._download_with_pdr(symbol, start, end)
+
+        # Normalización y recorte coherentes para ambos backends
+        df = self._finalize_ohlcv(df)
+        df = self._clip_range(df, start, end)
+        self._validate_ohlcv(df)
+        sample = df.head(20)
+        logger.info(
+            "[%s] %d filas normalizadas, rango %s → %s\n%s",
+            symbol, len(df), df.index.min(), df.index.max(),
+            sample.to_string()
         )
+        return df

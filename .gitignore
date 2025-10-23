@@ -27,3 +27,7 @@ outputs/
 # Archivos del sistema
 .DS_Store
 Thumbs.db
+
+# Carpetas temporales / variables locales
+var/
+tmp/

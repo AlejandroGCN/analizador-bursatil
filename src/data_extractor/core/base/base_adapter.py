@@ -1,123 +1,167 @@
-# core/base_adapter.py
 from __future__ import annotations
-
 from abc import ABC, abstractmethod
-from typing import Dict, List, Union, Optional, Any
-import pandas as pd
-import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from data_extractor.core.errors import ExtractionError  # tus excepciones existentes
+from typing import Any, Dict, List, Optional, Tuple, Union
+from collections.abc import Iterable
+import logging
+import pandas as pd
+from data_extractor.core.errors import ExtractionError
 
 logger = logging.getLogger(__name__)
 
-
 class BaseAdapter(ABC):
     """
-    Clase base para adapters de mercado que descargan uno o varios símbolos y
-    devuelven DataFrames.
-
-    Proporciona:
-        - Normalización de la entrada (lista o string)
-        - Ejecución paralela para múltiples símbolos
-        - Manejo uniforme de errores
+    Clase base para adapters de datos OHLCV.
+    Los adapters concretos deben implementar download_symbol() y devolver
+    un DataFrame con columnas: Open, High, Low, Close, Adj Close, Volume
+    indexado por DatetimeIndex ascendente.
     """
+    name: str = "base"
+    supports_intraday: bool = True
+    allowed_intervals: List[str] = ["1d"]
 
-    name: str = "abstract"          # sobrescribir en subclases
-    supports_intraday: bool = True  # sobrescribir si aplica
-
-    def __init__(self, *, timeout: int = 30, max_workers: int = 8, **kwargs: Any):
+    def __init__(self, timeout: int = 30, max_workers: int = 8) -> None:
         self.timeout = timeout
         self.max_workers = max_workers
-        self.extra_opts: Dict[str, Any] = dict(kwargs)
-        logger.info(
-            "%s init (timeout=%s, max_workers=%s, extra=%s)",
-            self.__class__.__name__, timeout, max_workers, self.extra_opts
-        )
 
-    # ---------- helpers ----------
+    # ------------------------ utilidades comunes ------------------------
+
     @staticmethod
-    def _normalize_symbols(symbols: Union[str, List[str]]) -> List[str]:
-        """
-        Acepta una cadena o lista de símbolos y devuelve una lista limpia.
-        """
-        if isinstance(symbols, str):
-            return [s.strip() for s in symbols.split(",") if s.strip()]
-        return [s.strip() for s in symbols if s and s.strip()]
+    def _finalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
+        if df is None or df.empty:
+            raise ExtractionError("DataFrame vacío", source="base")
 
-    def get_symbols(
-            self,
-            symbols: Union[str, List[str], None],
-            start: Optional[pd.Timestamp],
-            end: Optional[pd.Timestamp],
-            interval: str = "1d",
-            **options: Any,
-    ) -> Dict[str, pd.DataFrame]:
-        """
-        Descarga uno o varios símbolos desde la fuente concreta.
-        Devuelve dict[symbol] -> DataFrame.
-        """
-        sym_list = self._normalize_symbols(symbols) if symbols else []
+        df = df.copy()
 
-        if not sym_list:
-            # 🚨 Error crítico: no se ha introducido ningún símbolo
-            msg = (
-                "Debe introducir al menos un símbolo para obtener datos "
-                "y realizar la simulación."
-            )
-            logger.error("get_symbols falló: %s", msg)
-            raise ExtractionError(
-                msg,
-                source=self.name,
-                extra={"input_symbols": symbols}
-            )
+        # 1) Normaliza nombres (title-case) sin perder "Adj Close"
+        rename_map = {c: c.title() for c in df.columns}
+        if "Adj Close" in df.columns:  # asegura preservación exacta
+            rename_map["Adj Close"] = "Adj Close"
+        df.rename(columns=rename_map, inplace=True)
 
-        results: Dict[str, pd.DataFrame] = {}
-        errors: Dict[str, Exception] = {}
+        # 2) Asegura columnas base y crea Adj Close si falta
+        required = ["Open", "High", "Low", "Close", "Volume"]
+        for c in required:
+            if c not in df.columns:
+                raise ExtractionError(f"Falta columna requerida: {c}", source="base")
+        if "Adj Close" not in df.columns:
+            df["Adj Close"] = df["Close"]
 
-        if len(sym_list) == 1:
-            s = sym_list[0]
-            logger.info("Descargando símbolo único: %s (%s)", s, self.name)
-            results[s] = self.download_symbol(s, start, end, interval, **options)
-            return results
+        # 3) Índice temporal (tz coherente)
+        if not isinstance(df.index, pd.DatetimeIndex):
+            try:
+                df.index = pd.to_datetime(df.index, utc=True)   # o utc=False si prefieres naive
+            except Exception as ex:
+                raise ExtractionError(f"Índice no convertible a fechas: {ex}", source="base")
+        if df.index.tz is not None:
+            df.index = df.index.tz_convert("UTC").tz_localize(None)  # deja naive en UTC
 
-        # Ejecución paralela
-        logger.info("Descargando %d símbolos desde %s...", len(sym_list), self.name)
-        with ThreadPoolExecutor(max_workers=self.max_workers) as ex:
-            fut_map = {
-                ex.submit(self.download_symbol, s, start, end, interval, **options): s
-                for s in sym_list
-            }
-            for fut in as_completed(fut_map):
-                s = fut_map[fut]
-                try:
-                    results[s] = fut.result()
-                except Exception as e:
-                    errors[s] = e
-                    logger.warning("Error descargando %s (%s): %s", s, self.name, e)
+        # 4) Tipos numéricos + limpieza de no-finitos
+        for c in ["Open","High","Low","Close","Adj Close","Volume"]:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
 
-        if not results:
-            raise ExtractionError(
-                f"Falló la descarga de todos los símbolos en {self.name}.",
-                source=self.name,
-                extra={"errors": {k: str(v) for k, v in errors.items()}},
-            )
+        # 5) Orden y duplicados
+        df.sort_index(inplace=True)
+        df = df[~df.index.duplicated(keep="first")]
 
-        return results
+        # 6) Reordena columnas
+        cols = ["Open","High","Low","Close","Adj Close","Volume"]
+        df = df[cols]
 
-    # ---------- método abstracto ----------
+        return df
+
+
+    @staticmethod
+    def _clip_range(df: pd.DataFrame, start: Optional[pd.Timestamp], end: Optional[pd.Timestamp]) -> pd.DataFrame:
+        if start is not None:
+            df = df[df.index >= pd.to_datetime(start)]
+        if end is not None:
+            df = df[df.index <= pd.to_datetime(end)]
+        return df
+
+    @staticmethod
+    def _validate_ohlcv(df: pd.DataFrame) -> None:
+        cols = ["Open","High","Low","Close","Adj Close","Volume"]
+        if list(df.columns) != cols:
+            raise ExtractionError(f"Columnas inválidas: {list(df.columns)}", source="base")
+        if not isinstance(df.index, pd.DatetimeIndex):
+            raise ExtractionError("Índice debe ser DatetimeIndex", source="base")
+        if not df.index.is_monotonic_increasing:
+            raise ExtractionError("Índice no está en orden ascendente", source="base")
+
+    @staticmethod
+    def _log_df_summary(df: pd.DataFrame, symbol: str) -> None:
+        try:
+            logger.info("[%s] filas=%d desde=%s hasta=%s",
+                        symbol, len(df),
+                        None if df.empty else df.index.min(),
+                        None if df.empty else df.index.max())
+        except Exception:
+            pass
+
+    # ------------------------ API pública ------------------------
+
     @abstractmethod
     def download_symbol(
             self,
             symbol: str,
-            start: Optional[pd.Timestamp],
-            end: Optional[pd.Timestamp],
+            start: Optional[Any],
+            end: Optional[Any],
             interval: str,
-            **options: Any,
+            **options: Any
     ) -> pd.DataFrame:
         """
-        Descarga 1 símbolo y devuelve un DataFrame bruto en el formato
-        propio de la fuente. Debe lanzar ExtractionError o SymbolNotFound
-        cuando corresponda.
+        Debe devolver un DataFrame OHLCV normalizado.
         """
         raise NotImplementedError
+
+    def get_symbols(
+            self,
+            symbols: Union[Iterable[str], str, None],
+            start: Optional[Any],
+            end: Optional[Any],
+            interval: str,
+            **options: Any
+    ) -> Dict[str, pd.DataFrame]:
+        """
+        Descarga en paralelo múltiples símbolos. Acepta lista/tupla/conjunto o un string único.
+        Rechaza None o colecciones vacías.
+        """
+        # normaliza entrada
+        if symbols is None:
+            raise ExtractionError("Debes proporcionar al menos un símbolo", source=self.name)
+
+        if isinstance(symbols, str):
+            norm_symbols = [symbols]
+        else:
+            try:
+                norm_symbols = [s for s in symbols if s]  # type: ignore[union-attr]
+            except TypeError as ex:
+                raise ExtractionError(f"Símbolos no iterables: {ex}", source=self.name)
+            if not norm_symbols:
+                raise ExtractionError("Lista de símbolos vacía", source=self.name)
+
+        results: Dict[str, pd.DataFrame] = {}
+        errors: List[Tuple[str, str]] = []
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
+            fut_map = {
+                pool.submit(self.download_symbol, s, start, end, interval, **options): s
+                for s in norm_symbols
+            }
+            for fut in as_completed(fut_map):
+                sym = fut_map[fut]
+                try:
+                    df = fut.result()
+                    self._validate_ohlcv(df)
+                    self._log_df_summary(df, sym)
+                    results[sym] = df
+                except Exception as ex:
+                    errors.append((sym, str(ex)))
+                    logger.warning("Fallo descargando %s: %s", sym, ex)
+
+        if not results and errors:
+            sym, msg = errors[0]
+            raise ExtractionError(f"Todos fallaron. Ej. {sym}: {msg}", source=self.name)
+
+        return results

@@ -1,169 +1,147 @@
-from typing import Dict, Optional, Any, Callable
+import logging
 import numpy as np
 import pandas as pd
-from .errors import NormalizationError
-from ..series import PriceSeries, PerformanceSeries, VolumeActivitySeries, VolatilitySeries
+from typing import Dict, Any, Callable
 
-OHLCV = ["open", "high", "low", "close", "volume"]
+from data_extractor.core.errors import NormalizationError
+from data_extractor.series import (
+    PriceSeries,
+    PerformanceSeries,
+    VolumeActivitySeries,
+    VolatilitySeries,
+)
 
-# ---------------------------
-# Normalización base a OHLCV
-# ---------------------------
+logger = logging.getLogger(__name__)
+
+OHLCV_COLUMNS = ["open", "high", "low", "close", "volume"]
+
+# Utilidad para extraer columnas con tolerancia a nombres alternativos
+def _safe_col(df: pd.DataFrame, names: str | list[str], idx: pd.Index) -> pd.Series:
+    if isinstance(names, str):
+        names = [names]
+    col_map = {col.lower(): col for col in df.columns}
+    for name in names:
+        col = col_map.get(name.lower())
+        if col:
+            return pd.to_numeric(df[col], errors="coerce")
+    return pd.Series(np.nan, index=idx, dtype=float)
+
+# Normaliza un DataFrame a formato OHLCV estándar
 def normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
-    """Devuelve un DataFrame con columnas ['open','high','low','close','volume'] y DateTimeIndex."""
     if df is None or df.empty:
-        return pd.DataFrame(columns=OHLCV, dtype=float)
+        return pd.DataFrame(columns=OHLCV_COLUMNS, dtype=float)
 
-    x = df.copy()
-
-    # Renombrado flexible
-    rename_map = {
-        "Open": "open", "High": "high", "Low": "low",
-        "Close": "close", "Adj Close": "close", "Volume": "volume",
-    }
-    for col in list(x.columns):
-        low = col.lower()
-        if low in OHLCV:
-            rename_map[col] = low
-    x = x.rename(columns=rename_map)
-
-    # Índice a datetime
-    if not isinstance(x.index, pd.DatetimeIndex):
-        try:
-            x.index = pd.to_datetime(x.index)
-        except Exception as e:
-            raise NormalizationError(f"Índice no convertible a fecha: {e}")
-
-    # Asegura columnas y orden
-    for c in OHLCV:
-        if c not in x.columns:
-            x[c] = pd.Series(dtype=float)
-    x = x[OHLCV]
-
-    # Tipos numéricos
-    for c in OHLCV:
-        x[c] = pd.to_numeric(x[c], errors="coerce")
-
-    return x
-
-
-def _align_dict(data: Dict[str, pd.DataFrame], how: Optional[str]) -> Dict[str, pd.DataFrame]:
-    """
-    Alinea todos los DF al mismo índice:
-      - 'intersect': intersección
-      - 'union': unión
-      - None/otro: sin cambios
-    """
-    if not data or how is None:
-        return data
-
-    idxs = [df.index for df in data.values() if not df.empty]
-    if not idxs:
-        return data
-
-    idx = idxs[0]
-    for i in idxs[1:]:
-        if how == "intersect":
-            idx = idx.intersection(i)
-        elif how == "union":
-            idx = idx.union(i)
-        else:
-            return data  # modo desconocido → no tocar
-
+    df = df.copy()
     try:
-        idx = idx.sort_values()
-    except Exception:
-        pass
+        df.index = pd.to_datetime(df.index)
+    except Exception as e:
+        raise NormalizationError(f"Índice no convertible a fecha: {e}")
 
-    return {sym: df.reindex(idx) for sym, df in data.items()}
+    if getattr(df.index, "tz", None):
+        df.index = df.index.tz_convert(None)
 
+    idx = pd.DatetimeIndex(df.index).sort_values()
 
+    return pd.DataFrame({
+        "open": _safe_col(df, "Open", idx),
+        "high": _safe_col(df, "High", idx),
+        "low": _safe_col(df, "Low", idx),
+        "close": _safe_col(df, ["Adj Close", "Close"], idx),
+        "volume": _safe_col(df, "Volume", idx),
+    }, index=idx)
+
+# Alinea múltiples DataFrames por índice (union o intersect)
+def _align_dict(dfs: Dict[str, pd.DataFrame], align: str = "union") -> Dict[str, pd.DataFrame]:
+    if not dfs:
+        return {}
+
+    if align == "intersect":
+        idx = None
+        for df in dfs.values():
+            idx = df.index if idx is None else idx.intersection(df.index)
+    else:
+        idx = pd.Index([])
+        for df in dfs.values():
+            idx = idx.union(df.index)
+
+    idx = pd.DatetimeIndex(idx).sort_values()
+    return {key: df.reindex(idx) for key, df in dfs.items()}
+
+# Rellena NaNs con ffill y/o bfill
 def _apply_fill(df: pd.DataFrame, ffill: bool, bfill: bool) -> pd.DataFrame:
-    """Aplica forward/backward fill sin modificar el original."""
-    out = df
+    df = df.copy(deep=True)
+    if ffill and bfill:
+        return df.ffill().bfill()
     if ffill:
-        out = out.ffill()
+        return df.ffill()
     if bfill:
-        out = out.bfill()
-    return out
+        return df.bfill()
+    return df
 
+# Constructores de series normalizadas
+def _build_ohlcv(symbol: str, source: str, df: pd.DataFrame, **_: Any) -> PriceSeries:
+    return PriceSeries(symbol, source, df[OHLCV_COLUMNS])
 
-# -----------------------------------------
-# Normalizadores que devuelven OBJETOS
-# -----------------------------------------
-def normalize_ohlcv_object(symbol: str, source: str, df: pd.DataFrame) -> PriceSeries:
-    x = normalize_ohlcv(df)
-    return PriceSeries(symbol=symbol, source=source, data=x)
+def _build_returns_pct(symbol: str, source: str, df: pd.DataFrame, **_: Any) -> PerformanceSeries:
+    returns = df["close"].pct_change().dropna()
+    return PerformanceSeries(symbol, source, returns, kind="returns_pct")
 
+def _build_returns_log(symbol: str, source: str, df: pd.DataFrame, **_: Any) -> PerformanceSeries:
+    log_returns = np.log(df["close"] / df["close"].shift(1)).dropna()
+    return PerformanceSeries(symbol, source, log_returns, kind="returns_log")
 
-def normalize_returns_pct(symbol: str, source: str, df: pd.DataFrame) -> PerformanceSeries:
-    """Rendimiento porcentual: pct_change() sobre 'close'."""
-    x = normalize_ohlcv(df)
-    s = x["close"].pct_change().dropna()
-    return PerformanceSeries(symbol=symbol, source=source, data=s, kind="returns_pct")
+def _build_volume_activity(symbol: str, source: str, df: pd.DataFrame, *, window: int = 20, **_: Any) -> VolumeActivitySeries:
+    volume = df["volume"].astype(float)
+    mean = volume.rolling(window, min_periods=window).mean()
+    std = volume.rolling(window, min_periods=window).std(ddof=1).replace(0, np.nan)
+    zscore = (volume - mean) / std
+    return VolumeActivitySeries(symbol, source, zscore)
 
+def _build_volatility(symbol: str, source: str, df: pd.DataFrame, *, window: int = 20, ann_factor: int = 252, **_: Any) -> VolatilitySeries:
+    log_ret = np.log(df["close"] / df["close"].shift(1))
+    vol = log_ret.rolling(window, min_periods=window).std(ddof=1) * np.sqrt(ann_factor)
+    return VolatilitySeries(symbol, source, vol)
 
-def normalize_returns_log(symbol: str, source: str, df: pd.DataFrame) -> PerformanceSeries:
-    """Rendimiento logarítmico: log(C_t / C_{t-1})."""
-    x = normalize_ohlcv(df)
-    s = np.log(x["close"] / x["close"].shift(1)).dropna()
-    return PerformanceSeries(symbol=symbol, source=source, data=s, kind="returns_log")
-
-
-def normalize_volume_activity(
-        symbol: str, source: str, df: pd.DataFrame, *, window: int = 20
-) -> VolumeActivitySeries:
-    """Actividad de volumen como z-score rolling sobre 'volume'."""
-    x = normalize_ohlcv(df)
-    v = x["volume"]
-    z = (v - v.rolling(window).mean()) / v.rolling(window).std(ddof=1)
-    return VolumeActivitySeries(symbol=symbol, source=source, data=z)
-
-
-def normalize_volatility(
-        symbol: str, source: str, df: pd.DataFrame, *, window: int = 20, ann_factor: int = 252
-) -> VolatilitySeries:
-    """Volatilidad anualizada: std rolling de los returns * sqrt(ann_factor)."""
-    x = normalize_ohlcv(df)
-    r = x["close"].pct_change()
-    vol = r.rolling(window).std(ddof=1) * np.sqrt(ann_factor)
-    return VolatilitySeries(symbol=symbol, source=source, data=vol)
-
-
+# Mapeo de tipos de normalización a sus constructores
 NORMALIZERS: Dict[str, Callable[..., Any]] = {
-    "ohlcv": normalize_ohlcv_object,
-    "returns_pct": normalize_returns_pct,
-    "returns_log": normalize_returns_log,
-    "volume_activity": normalize_volume_activity,
-    "volatility": normalize_volatility,
+    "ohlcv": _build_ohlcv,
+    "returns_pct": _build_returns_pct,
+    "returns_log": _build_returns_log,
+    "volume_activity": _build_volume_activity,
+    "volatility": _build_volatility,
 }
 
-
+# Pipeline principal de normalización
 def normalizer_tipology(
         raw_frames: Dict[str, pd.DataFrame],
         *,
-        kind: str = "ohlcv",
+        kind: str,
         source_name: str,
-        align: Optional[str] = None,
+        align: str = "union",
         ffill: bool = False,
         bfill: bool = False,
-        **params,
+        **params: Any,
 ) -> Dict[str, Any]:
     """
-    1) Normaliza cada DF a OHLCV
-    2) Alinea (union/intersect) si procede
-    3) Rellena ffill/bfill si procede
-    4) Construye objetos según 'kind'
+    Pipeline de normalización:
+    1. Convierte cada DataFrame a formato OHLCV.
+    2. Alinea índices (union o intersect).
+    3. Aplica relleno si se solicita.
+    4. Construye objetos tipológicos según `kind`.
     """
-    # 1) normaliza
-    normed = {sym: normalize_ohlcv(df) for sym, df in raw_frames.items()}
-    # 2) alinea
-    aligned = _align_dict(normed, align)
-    # 3) rellena
+    normalized = {sym: normalize_ohlcv(df) for sym, df in raw_frames.items()}
+    aligned = _align_dict(normalized, align)
     filled = {sym: _apply_fill(df, ffill, bfill) for sym, df in aligned.items()} if (ffill or bfill) else aligned
-    # 4) construye
-    builder = NORMALIZERS.get(kind.lower(), normalize_ohlcv_object)
-    built: Dict[str, Any] = {}
+
+    kind_key = kind.lower()
+    builder = NORMALIZERS.get(kind_key)
+    if builder is None:
+        raise NormalizationError(f"Tipo de normalización desconocido: {kind}")
+
+    result: Dict[str, Any] = {}
     for sym, df in filled.items():
-        built[sym] = builder(sym, source_name, df, **params) if params else builder(sym, source_name, df)
-    return built
+        try:
+            result[sym] = builder(sym, source_name, df, **params)
+        except TypeError:
+            result[sym] = builder(sym, source_name, df)
+    return result

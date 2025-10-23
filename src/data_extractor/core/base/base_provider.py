@@ -12,6 +12,7 @@ from data_extractor.series import (
     VolumeActivitySeries,
     VolatilitySeries,
 )
+from data_extractor.core.errors import ExtractionError
 from data_extractor.core.normalizer import normalizer_tipology  # Orquestador de normalización
 
 logger = logging.getLogger(__name__)
@@ -28,40 +29,47 @@ class BaseProvider:
 
     Subclases solo definen:
       - self.adapter      (inyectando el adapter concreto)
-      - self.source_name  (string corto: 'yahoo', 'alpha_vantage', 'binance')
+      - self.source_name  (string corto: 'yahoo', 'stooq', 'binance')
     """
 
     def __init__(self, *, source_name: str, adapter: Any) -> None:
         self.source_name = source_name
         self.adapter = adapter
-        logger.info("BaseProvider init source=%s adapter=%s",
-                    source_name, adapter.__class__.__name__)
+        logger.info(
+            "BaseProvider init source=%s adapter=%s",
+            source_name,
+            adapter.__class__.__name__,
+        )
 
     # ---------- helpers ----------
     @staticmethod
-    def _normalize_symbols(symbols: Union[str, List[str]]) -> List[str]:
+    def _normalize_symbols(symbols: Union[str, List[str], None]) -> List[str]:
         """
-        Acepta str o lista y devuelve una lista limpia, sin vacíos y sin duplicados (conservando orden).
+        Acepta None, str o lista y devuelve lista limpia (sin vacíos ni duplicados, conservando orden).
+        Soporta ',' y ';' como separadores.
         """
+        if symbols is None:
+            return []
+
         if isinstance(symbols, str):
-            return [s.strip() for s in symbols.split(",") if s.strip()]
-        # dedup conservando orden
-        seen: Dict[str, None] = {}
-        out: List[str] = []
-        for s in symbols:
-            if not s:
-                continue
-            t = s.strip()
-            if not t or t in seen:
-                continue
-            seen[t] = None
-            out.append(t)
-        return out
+            # permite ; además de ,
+            s = symbols.replace(";", ",")
+            parts = [p.strip() for p in s.split(",") if p.strip()]
+        else:
+            parts = [str(p).strip() for p in symbols if p and str(p).strip()]
+
+        seen: set[str] = set()
+        result: List[str] = []
+        for p in parts:
+            if p not in seen:
+                seen.add(p)
+                result.append(p)
+        return result
 
     # ---------- API principal ----------
     def get_symbols(
             self,
-            symbols: Union[str, List[str]],
+            symbols: Union[str, List[str], None],
             start: Optional[pd.Timestamp],
             end: Optional[pd.Timestamp],
             interval: str = "1d",
@@ -78,18 +86,24 @@ class BaseProvider:
         """
         norm_symbols = self._normalize_symbols(symbols)
         logger.info(
-            "%s.get_symbols symbols=%s start=%s end=%s interval=%s "
-            "kind=%s align=%s ffill=%s bfill=%s",
-            self.__class__.__name__, norm_symbols, start, end, interval, kind, align, ffill, bfill
+            "%s.get_symbols symbols=%s start=%s end=%s interval=%s kind=%s align=%s ffill=%s bfill=%s",
+            self.__class__.__name__,
+            norm_symbols,
+            start,
+            end,
+            interval,
+            kind,
+            align,
+            ffill,
+            bfill,
         )
 
         if not norm_symbols:
-            msg = ("Debe introducir al menos un símbolo para obtener datos "
-                   "y realizar la simulación.")
+            msg = "Debe introducir al menos un símbolo para obtener datos y realizar la simulación."
             logger.error("%s.get_symbols falló: %s", self.__class__.__name__, msg)
-            # Reutiliza tu ExtractionError si quieres consistencia con BaseAdapter; si no, ValueError.
-            from .errors import ExtractionError
-            raise ExtractionError(msg, source=self.source_name, extra={"input_symbols": symbols})
+            raise ExtractionError(
+                msg, source=self.source_name, extra={"input_symbols": symbols}
+            )
 
         # 1) Descarga bruta desde el adapter (Dict[str, DataFrame])
         raw_map = self.adapter.get_symbols(norm_symbols, start, end, interval, **options)
@@ -99,13 +113,17 @@ class BaseProvider:
             raw_frames=raw_map,
             kind=kind,
             source_name=self.source_name,
-            align=align,
+            align=align or "union",
             ffill=ffill,
             bfill=bfill,
             **options,
         )
-        logger.info("%s.get_symbols -> OK %d símbolos (kind=%s)",
-                    self.__class__.__name__, len(out), kind)
+        logger.info(
+            "%s.get_symbols -> OK %d símbolos (kind=%s)",
+            self.__class__.__name__,
+            len(out),
+            kind,
+        )
         return out
 
     def get_data(
@@ -125,21 +143,29 @@ class BaseProvider:
         Atajo para un único símbolo: llama a get_symbols y extrae el objeto.
         """
         logger.info(
-            "%s.get_data symbol=%s start=%s end=%s interval=%s "
-            "kind=%s align=%s ffill=%s bfill=%s",
-            self.__class__.__name__, symbol, start, end, interval, kind, align, ffill, bfill
+            "%s.get_data symbol=%s start=%s end=%s interval=%s kind=%s align=%s ffill=%s bfill=%s",
+            self.__class__.__name__,
+            symbol,
+            start,
+            end,
+            interval,
+            kind,
+            align,
+            ffill,
+            bfill,
         )
+
         norm_list = self._normalize_symbols([symbol])
         if not norm_list:
-            msg = ("Debe introducir al menos un símbolo para obtener datos "
-                   "y realizar la simulación.")
+            msg = "Debe introducir al menos un símbolo para obtener datos y realizar la simulación."
             logger.error("%s.get_data falló: %s", self.__class__.__name__, msg)
-            from .errors import ExtractionError
-            raise ExtractionError(msg, source=self.source_name, extra={"input_symbol": symbol})
+            raise ExtractionError(
+                msg, source=self.source_name, extra={"input_symbol": symbol}
+            )
 
         norm_symbol = norm_list[0]
         out = self.get_symbols(
-            symbols=norm_symbol,  # acepta str o list
+            symbols=norm_symbol,
             start=start,
             end=end,
             interval=interval,
@@ -149,6 +175,9 @@ class BaseProvider:
             bfill=bfill,
             **options,
         )
+
         if norm_symbol not in out:
-            raise KeyError(f"Símbolo '{norm_symbol}' no presente en salida normalizada.")
+            raise KeyError(
+                f"Símbolo '{norm_symbol}' no presente en salida normalizada."
+            )
         return out[norm_symbol]
