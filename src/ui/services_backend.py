@@ -1,24 +1,50 @@
-# src/ui/services_backend.py
 from __future__ import annotations
+
 import pandas as pd
 import streamlit as st
 from data_extractor import DataExtractor, ExtractorConfig
 from ui.app_config import build_cfg_and_kind
 
+
 @st.cache_resource(show_spinner=False)
-def get_extractor(cfg_dict: dict) -> DataExtractor:
+def get_extractor(cfg_dict: dict, _cache_version: str = "v2") -> DataExtractor:
+    """Crea y cachea el DataExtractor (todas las fuentes son públicas)."""
     cfg = ExtractorConfig(**cfg_dict)
     return DataExtractor(cfg)
 
-@st.cache_data(show_spinner=False, ttl=600)
+
+def resolve_backend_params():
+    """Recoge los parámetros del sidebar y los prepara para el backend."""
+    fuente = st.session_state.get("fuente_datos")
+    tipo = st.session_state.get("tipo_datos")
+    interval = st.session_state.get("intervalo_datos")
+    symbols = st.session_state.get("simbolos_datos")
+
+    # Fechas de inicio y fin → convertir a Timestamp
+    start = st.session_state.get("fecha_ini_datos")
+    end = st.session_state.get("fecha_fin_datos")
+    start = pd.to_datetime(start) if start else None
+    end = pd.to_datetime(end) if end else None
+
+    cfg_dict, kind = build_cfg_and_kind(fuente, tipo)
+    cfg_dict["interval"] = interval
+
+    if isinstance(symbols, str):
+        symbols = [s.strip() for s in symbols.split(",") if s.strip()]
+
+    return cfg_dict, symbols, start, end, interval, kind
+
+
+@st.cache_data(ttl=600, show_spinner=True)
 def fetch_market_data(cfg_dict: dict,
-                      symbols_csv: str,
+                      symbols: list[str],
                       start: pd.Timestamp | None,
                       end: pd.Timestamp | None,
                       interval: str,
-                      kind: str):
-    extractor = get_extractor(cfg_dict)
-    symbols = [s.strip() for s in symbols_csv.split(",") if s.strip()]
+                      kind: str,
+                      _cache_version: str = "v2"):
+    """Descarga y normaliza datos según los parámetros seleccionados."""
+    extractor = get_extractor(cfg_dict, _cache_version)
     return extractor.get_market_data(
         tickers=symbols,
         start=start,
@@ -26,17 +52,3 @@ def fetch_market_data(cfg_dict: dict,
         interval=interval,
         kind=kind,
     )
-
-def resolve_backend_params():
-    """
-    Lee parámetros de la UI desde session_state y retorna una tupla
-    (cfg_dict, symbols, start, end, interval, kind), usando los mapas centralizados.
-    """
-    fuente_human = st.session_state.get("fuente_datos", "Yahoo")
-    symbols = st.session_state.get("simbolos_datos", "AAPL,MSFT")
-    start = st.session_state.get("fecha_ini_datos")
-    end = st.session_state.get("fecha_fin_datos")
-    interval = st.session_state.get("intervalo_datos", "1d")
-    tipo_human = st.session_state.get("tipo_datos", "OHLCV")
-    cfg_dict, kind = build_cfg_and_kind(fuente_human, tipo_human, interval)
-    return cfg_dict, symbols, start, end, interval, kind

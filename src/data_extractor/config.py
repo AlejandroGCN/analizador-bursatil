@@ -1,27 +1,57 @@
 from dataclasses import dataclass
 from typing import Optional, Literal
 
+# Definir el tipo SourceName fuera de la clase
+SourceName = Literal["yahoo", "stooq", "binance"]
+
 
 @dataclass(slots=True, frozen=True)
 class ExtractorConfig:
     """
-    ---------
-    source: str
-    Nombre de la fuente (p. ej. 'yahoo').
-    timeout: int
-    Tiempo máximo de espera por petición en segundos.
-    interval: str
-    Intervalo temporal (dependiente de la fuente). Ej.: '1d', '1wk', '1mo'.
-    ffill: bool
-    Si True, rellena huecos hacia adelante tras la alineación.
-    bfill: bool
-    Si True, rellena huecos hacia atrás (usar con cautela).
-    align: Optional[str]
-    Alineación entre series múltiples: None | 'intersect' | 'union'.
-    api_key: Optional[str]
-    Clave de API para fuentes que lo requieran (no aplicable a Yahoo por defecto).
+    Configuración inmutable para el extractor de datos financieros.
+
+    Esta clase centraliza todos los parámetros de configuración necesarios
+    para la extracción de datos desde diferentes fuentes (Yahoo, Binance, Stooq).
+    Utiliza dataclass con slots=True para optimización de memoria y frozen=True
+    para inmutabilidad.
+
+    Attributes:
+        source (SourceName): Fuente de datos a utilizar. Valores permitidos:
+            - "yahoo": Yahoo Finance (gratuito, sin API key)
+            - "binance": Binance API (requiere API key)
+            - "stooq": Stooq API (requiere API key)
+        timeout (int): Tiempo máximo de espera por petición HTTP en segundos.
+            Valor por defecto: 30 segundos.
+        interval (str): Intervalo temporal de los datos. Formatos soportados:
+            - "1d": Diario (por defecto)
+            - "1h": Horario
+            - "1wk": Semanal
+            - "1mo": Mensual
+            - "1m", "5m", "15m", "30m": Intradía (solo Yahoo)
+        ffill (bool): Si True, rellena valores faltantes hacia adelante
+            (forward fill) tras la alineación de series múltiples.
+            Valor por defecto: True.
+        bfill (bool): Si True, rellena valores faltantes hacia atrás
+            (backward fill). Usar con cautela ya que puede introducir
+            sesgos en datos históricos. Valor por defecto: False.
+        align (Optional[str]): Estrategia de alineación para series múltiples:
+            - "intersect": Solo fechas comunes a todas las series (por defecto)
+            - "union": Todas las fechas disponibles (puede crear NaN)
+            - None: Sin alineación especial
+        api_key (Optional[str]): Clave de API para fuentes que lo requieran.
+            No necesario para Yahoo Finance. Valor por defecto: None.
+
+    Example:
+        >>> config = ExtractorConfig(
+        ...     source="yahoo",
+        ...     interval="1d",
+        ...     timeout=60,
+        ...     ffill=True
+        ... )
+        >>> print(config.source)
+        yahoo
     """
-    SourceName = Literal["yahoo", "alpha_vantage", "binance"]
+    source: SourceName = "yahoo"
     timeout: int = 30
     interval: str = "1d"
     ffill: bool = True

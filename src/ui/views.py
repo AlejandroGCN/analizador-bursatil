@@ -34,15 +34,18 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
         try:
             # Traducir etiquetas de la UI a claves internas y construir cfg
             cfg_dict, kind = build_cfg_and_kind(
-                fuente_human=params.fuente,
-                tipo_human=params.tipo,
-                intervalo=params.intervalo,
+                params.fuente,
+                params.tipo,
+                params.intervalo,
             )
 
             with st.spinner("Descargando y normalizando…"):
+                # Convertir string de símbolos a lista
+                symbols_list = [s.strip() for s in params.simbolos.split(",") if s.strip()]
+                
                 data_map = fetch_market_data(
                     cfg_dict=cfg_dict,
-                    symbols_csv=params.simbolos,
+                    symbols=symbols_list,
                     start=params.fecha_ini,
                     end=params.fecha_fin,
                     interval=params.intervalo,

@@ -39,7 +39,7 @@ def normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
 
     if getattr(df.index, "tz", None):
         df.index = df.index.tz_convert(None)
-
+    df = df[~df.index.duplicated(keep="last")]
     idx = pd.DatetimeIndex(df.index).sort_values()
 
     return pd.DataFrame({

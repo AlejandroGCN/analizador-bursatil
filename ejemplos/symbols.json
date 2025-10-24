@@ -1,0 +1,16 @@
+{
+  "symbols": [
+    "AAPL",
+    "MSFT", 
+    "GOOGL",
+    "TSLA",
+    "AMZN",
+    "NVDA",
+    "META",
+    "NFLX",
+    "AMD",
+    "INTC"
+  ],
+  "description": "Lista de símbolos tecnológicos principales",
+  "last_updated": "2025-10-24"
+}

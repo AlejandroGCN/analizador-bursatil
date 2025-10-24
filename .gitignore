@@ -31,3 +31,8 @@ Thumbs.db
 # Carpetas temporales / variables locales
 var/
 tmp/
+
+# Scripts personalizados de entorno virtual
+venv.ps1
+venv.bat
+stop_app.bat
