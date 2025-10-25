@@ -10,7 +10,6 @@ on:
 jobs:
   sonarcloud:
     runs-on: ubuntu-latest
-    if: false  # Deshabilitado temporalmente
 
     steps:
       - name: Checkout code
