@@ -1,8 +1,15 @@
 import pytest
 import pandas as pd
-from data_extractor.adapters.stooq_adapter import StooqAdapter
+
+# Verificar si pandas_datareader está disponible
+try:
+    from data_extractor.adapters.stooq_adapter import StooqAdapter, _PDR_OK
+    STOOQ_INTEGRATION_AVAILABLE = _PDR_OK
+except ImportError:
+    STOOQ_INTEGRATION_AVAILABLE = False
 
 @pytest.mark.integration
+@pytest.mark.skipif(not STOOQ_INTEGRATION_AVAILABLE, reason="pandas_datareader no disponible en Python 3.12+")
 def test_stooq_request_api(recent_window_days, skip_if_offline):
     start, end = recent_window_days
     s = StooqAdapter(timeout=20)

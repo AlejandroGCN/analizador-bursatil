@@ -1,9 +1,15 @@
 import pandas as pd
 import pytest
 
-from data_extractor.adapters.stooq_adapter import StooqAdapter
-from data_extractor.core.errors import ExtractionError, SymbolNotFound
+# Verificar si pandas_datareader está disponible
+try:
+    from data_extractor.adapters.stooq_adapter import StooqAdapter, _PDR_OK
+    from data_extractor.core.errors import ExtractionError, SymbolNotFound
+    STOOQ_TESTS_AVAILABLE = _PDR_OK
+except ImportError:
+    STOOQ_TESTS_AVAILABLE = False
 
+@pytest.mark.skipif(not STOOQ_TESTS_AVAILABLE, reason="pandas_datareader no disponible en Python 3.12+")
 def test_stooq_ok_builds_dataframe(monkeypatch):
     # Fake de pandas_datareader.data.DataReader
     class FakePDR:
@@ -26,11 +32,13 @@ def test_stooq_ok_builds_dataframe(monkeypatch):
     assert list(out.columns) == ["Open","High","Low","Close","Adj Close","Volume"]
     assert out.index.is_monotonic_increasing
 
+@pytest.mark.skipif(not STOOQ_TESTS_AVAILABLE, reason="pandas_datareader no disponible en Python 3.12+")
 def test_stooq_invalid_interval_raises():
     a = StooqAdapter()
     with pytest.raises(ExtractionError):
         a.download_symbol("AAPL", start=None, end=None, interval="1h")
 
+@pytest.mark.skipif(not STOOQ_TESTS_AVAILABLE, reason="pandas_datareader no disponible en Python 3.12+")
 def test_stooq_empty_raises(monkeypatch):
     class FakePDR:
         @staticmethod
