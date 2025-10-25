@@ -35,7 +35,7 @@ def resolve_backend_params():
     return cfg_dict, symbols, start, end, interval, kind
 
 
-@st.cache_data(ttl=600, show_spinner=True)
+@st.cache_data(ttl=300, show_spinner=True, max_entries=10)
 def fetch_market_data(cfg_dict: dict,
                       symbols: list[str],
                       start: pd.Timestamp | None,

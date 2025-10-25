@@ -31,16 +31,20 @@ def normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame(columns=OHLCV_COLUMNS, dtype=float)
 
-    df = df.copy()
-    try:
-        df.index = pd.to_datetime(df.index)
-    except Exception as e:
-        raise NormalizationError(f"Índice no convertible a fecha: {e}")
-
-    if getattr(df.index, "tz", None):
-        df.index = df.index.tz_convert(None)
-    df = df[~df.index.duplicated(keep="last")]
-    idx = pd.DatetimeIndex(df.index).sort_values()
+    # Solo procesar si es necesario
+    if not isinstance(df.index, pd.DatetimeIndex) or df.index.tz is not None or df.index.has_duplicates:
+        df = df.copy()
+        try:
+            df.index = pd.to_datetime(df.index)
+        except Exception as e:
+            raise NormalizationError(f"Índice no convertible a fecha: {e}")
+        
+        if getattr(df.index, "tz", None):
+            df.index = df.index.tz_convert(None)
+        df = df[~df.index.duplicated(keep="last")]
+        idx = df.index.sort_values()
+    else:
+        idx = df.index
 
     return pd.DataFrame({
         "open": _safe_col(df, "Open", idx),
@@ -69,7 +73,10 @@ def _align_dict(dfs: Dict[str, pd.DataFrame], align: str = "union") -> Dict[str,
 
 # Rellena NaNs con ffill y/o bfill
 def _apply_fill(df: pd.DataFrame, ffill: bool, bfill: bool) -> pd.DataFrame:
-    df = df.copy(deep=True)
+    if not ffill and not bfill:
+        return df
+    
+    df = df.copy(deep=False)
     if ffill and bfill:
         return df.ffill().bfill()
     if ffill:

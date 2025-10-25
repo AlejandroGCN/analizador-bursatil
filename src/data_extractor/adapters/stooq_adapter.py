@@ -58,10 +58,13 @@ class StooqAdapter(BaseAdapter):
                 source=self.name,
             )
 
-        # Normalización
-        df_raw = df_raw.copy()
-        df_raw.index = pd.to_datetime(df_raw.index)
-        df_raw.sort_index(inplace=True)
+        # Solo procesar si es necesario
+        if not isinstance(df_raw.index, pd.DatetimeIndex) or df_raw.index.has_duplicates:
+            df_raw = df_raw.copy()
+            df_raw.index = pd.to_datetime(df_raw.index)
+            df_raw.sort_index(inplace=True)
+        elif not df_raw.index.is_monotonic_increasing:
+            df_raw = df_raw.sort_index()
 
         for col in ["Open", "High", "Low", "Close"]:
             if col not in df_raw.columns:

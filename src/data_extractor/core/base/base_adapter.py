@@ -30,8 +30,13 @@ class BaseAdapter(ABC):
     def _finalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
         if df is None or df.empty:
             raise ExtractionError("DataFrame vacío", source="base")
-
-        df = df.copy()
+        # Solo copiar si necesitamos modificar
+        if (not isinstance(df.index, pd.DatetimeIndex) or 
+            df.index.tz is not None or 
+            df.index.has_duplicates or
+            not df.index.is_monotonic_increasing or
+            any(col.title() != col for col in df.columns if col != "Adj Close")):
+            df = df.copy()
 
         # 1) Normaliza nombres (title-case) sin perder "Adj Close"
         rename_map = {c: c.title() for c in df.columns}
@@ -50,19 +55,21 @@ class BaseAdapter(ABC):
         # 3) Índice temporal (tz coherente)
         if not isinstance(df.index, pd.DatetimeIndex):
             try:
-                df.index = pd.to_datetime(df.index, utc=True)   # o utc=False si prefieres naive
+                df.index = pd.to_datetime(df.index, utc=True)
             except Exception as ex:
                 raise ExtractionError(f"Índice no convertible a fechas: {ex}", source="base")
-        if df.index.tz is not None:
-            df.index = df.index.tz_convert("UTC").tz_localize(None)  # deja naive en UTC
+        elif df.index.tz is not None:
+            df.index = df.index.tz_convert("UTC").tz_localize(None)
 
         # 4) Tipos numéricos + limpieza de no-finitos
         for c in ["Open","High","Low","Close","Adj Close","Volume"]:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
         # 5) Orden y duplicados
-        df.sort_index(inplace=True)
-        df = df[~df.index.duplicated(keep="first")]
+        if not df.index.is_monotonic_increasing:
+            df.sort_index(inplace=True)
+        if df.index.has_duplicates:
+            df = df[~df.index.duplicated(keep="first")]
 
         # 6) Reordena columnas
         cols = ["Open","High","Low","Close","Adj Close","Volume"]

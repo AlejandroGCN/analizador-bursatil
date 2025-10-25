@@ -53,9 +53,7 @@ class BinanceAdapter(BaseAdapter):
         raw = resp.json()
         # cada kline: [openTime, open, high, low, close, volume, closeTime, ...]
         cols = ["openTime","open","high","low","close","volume","closeTime"]
-        rows: List[List[Any]] = []
-        for it in raw:
-            rows.append([it[0], it[1], it[2], it[3], it[4], it[5], it[6]])
+        rows = [[it[0], it[1], it[2], it[3], it[4], it[5], it[6]] for it in raw]
 
         df = pd.DataFrame(rows, columns=cols)
         df["openTime"] = pd.to_datetime(df["openTime"], unit="ms")
@@ -65,9 +63,9 @@ class BinanceAdapter(BaseAdapter):
             "close": "Close", "volume": "Volume"
         }, inplace=True)
 
-        # tipajes numéricos
-        for c in ["Open","High","Low","Close","Volume"]:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
+        # Conversión numérica vectorizada
+        numeric_cols = ["Open","High","Low","Close","Volume"]
+        df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce")
 
         df = self._finalize_ohlcv(df)
         df = self._clip_range(df, start, end)

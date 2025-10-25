@@ -56,7 +56,11 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
                 st.warning("No se recibieron datos.")
                 return
 
-            # Persistimos el último resultado para re-visualizar sin nuevo submit
+            # Limpiar cache anterior
+            if "last_data_map" in st.session_state:
+                del st.session_state["last_data_map"]
+            
+            # Persistir resultado
             st.session_state["last_data_map"] = data_map
             st.session_state["last_kind"] = kind
 
@@ -143,6 +147,7 @@ def _data_map(data_map: dict, kind: str) -> None:
     """
     Renderiza tablas y gráficos rápidos para el resultado normalizado.
     `data_map`: Dict[str, SeriesType-like] donde cada valor expone `.data`.
+    Optimizado para reducir uso de memoria.
     """
     for sym, series in data_map.items():
         st.markdown(f"### {sym}")
@@ -155,20 +160,36 @@ def _data_map(data_map: dict, kind: str) -> None:
             st.write(series)
             continue
 
-        # Tabla (head ampliado para inspección)
-        st.dataframe(df.head(200))
+        # Mostrar muestra representativa
+        sample_size = min(100, len(df))
+        st.dataframe(df.head(sample_size))
 
-        # Gráfico rápido según tipo
+        # Gráficos optimizados
         if kind == "ohlcv":
             # Busca columna de cierre con tolerancia a capitalización
             close_col = next((c for c in df.columns if c.lower() == "close"), None)
             if close_col:
-                st.line_chart(df[close_col])
+                chart_data = df[close_col]
+                if len(chart_data) > 1000:
+                    step = len(chart_data) // 500
+                    chart_data = chart_data.iloc[::step]
+                st.line_chart(chart_data)
             elif "Close" in df.columns:
-                st.line_chart(df["Close"])
+                chart_data = df["Close"]
+                if len(chart_data) > 1000:
+                    step = len(chart_data) // 500
+                    chart_data = chart_data.iloc[::step]
+                st.line_chart(chart_data)
         else:
-            # Si es Serie → grafícala; si es DF con 'value' → grafica esa columna
             if isinstance(df, pd.Series):
-                st.line_chart(df)
+                chart_data = df
+                if len(chart_data) > 1000:
+                    step = len(chart_data) // 500
+                    chart_data = chart_data.iloc[::step]
+                st.line_chart(chart_data)
             elif "value" in getattr(df, "columns", []):
-                st.line_chart(df["value"])
+                chart_data = df["value"]
+                if len(chart_data) > 1000:
+                    step = len(chart_data) // 500
+                    chart_data = chart_data.iloc[::step]
+                st.line_chart(chart_data)
