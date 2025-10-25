@@ -38,23 +38,19 @@ class ReporteParams:
 class ConfigParams:
     normalizacion: str
 
-
 # ───────────────────────────────────────────────────────────────
 # Formularios del sidebar
 # ───────────────────────────────────────────────────────────────
 def sidebar_datos() -> Tuple[bool, DatosParams]:
+    if "simbolos" not in st.session_state:
+        st.session_state.simbolos = "AAPL,MSFT"
+
+    load_message = st.empty()
+
     with st.sidebar.form("form_datos"):
         st.header("⚙️ Parámetros de datos")
         fuente = st.selectbox("Fuente de datos:", ["Yahoo", "Binance", "Stooq"], key="fuente_datos")
-        
-        # Campo de texto dinámico
-        simbolos_container = st.empty()
-        simbolos = simbolos_container.text_input("Símbolos:", "AAPL,MSFT", help="Separados por comas")
-        
-        # Placeholder para mostrar mensajes de carga
-        load_message = st.empty()
-        
-        # Sección de carga de archivos dentro del formulario
+
         with st.expander("📁 Cargar símbolos desde archivo", expanded=False):
             uploaded_file = st.file_uploader(
                 "Selecciona un archivo",
@@ -62,38 +58,44 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
                 help="Formatos soportados: CSV, Excel, JSON, TXT",
                 key="file_uploader"
             )
-            
-            # Botón para cargar símbolos (siempre visible)
             load_clicked = st.form_submit_button("🔄 Cargar símbolos", key="load_symbols")
-            
-            if uploaded_file is not None:
-                # Mostrar información del archivo
-                st.info(f"📄 Archivo: {uploaded_file.name} ({uploaded_file.size} bytes)")
-                
-                if load_clicked:
-                    try:
-                        symbols = load_symbols_from_file(uploaded_file)
-                        if symbols:
-                            symbols_str = ",".join(symbols)
-                            # Actualizar el campo de texto dinámicamente
-                            simbolos_container.text_input("Símbolos:", symbols_str, help="Separados por comas")
-                            # Mostrar mensaje de éxito
-                            load_message.success(f"✅ {len(symbols)} símbolos cargados directamente en el campo: {', '.join(symbols[:5])}{'...' if len(symbols) > 5 else ''}")
-                            # Actualizar la variable local
-                            simbolos = symbols_str
-                        else:
-                            load_message.error("❌ No se encontraron símbolos en el archivo")
-                    except Exception as e:
-                        load_message.error(f"❌ Error procesando archivo: {str(e)}")
-            elif load_clicked:
-                st.warning("⚠️ Primero selecciona un archivo")
-        
+
+        if uploaded_file is not None and load_clicked:
+            try:
+                symbols = load_symbols_from_file(uploaded_file)
+                if symbols:
+                    st.session_state.simbolos = ",".join(symbols)
+                    load_message.success(f"✅ {len(symbols)} símbolos cargados: {', '.join(symbols[:5])}{'...' if len(symbols) > 5 else ''}")
+                else:
+                    load_message.error("❌ No se encontraron símbolos en el archivo")
+            except Exception as e:
+                load_message.error(f"❌ Error procesando archivo: {str(e)}")
+        elif load_clicked:
+            load_message.warning("⚠️ Primero selecciona un archivo")
+
+        simbolos = st.text_input("Símbolos:", key="simbolos")
+
         fecha_ini = st.date_input("Fecha inicio", pd.to_datetime("2020-01-01"), key="fecha_ini_datos")
         fecha_fin = st.date_input("Fecha fin", pd.to_datetime("2025-01-01"), key="fecha_fin_datos")
-        intervalo = st.selectbox("Intervalo", ["1d", "1h", "1wk"], key="intervalo_datos")
+        # Intervalos disponibles según la fuente seleccionada
+        intervalos_por_fuente = {
+            "Yahoo": ["1d", "1h", "1wk", "1mo", "1m", "5m", "15m", "30m"],
+            "Binance": ["1d", "1h", "1wk", "1mo", "1m", "3m", "5m", "15m", "30m", "2h", "4h", "6h", "8h", "12h"],
+            "Stooq": ["1d", "1wk", "1mo"]
+        }
+        
+        intervalos_disponibles = intervalos_por_fuente.get(fuente, ["1d", "1h", "1wk"])
+        
+        # Mostrar información sobre intervalos disponibles
+        if fuente == "Stooq":
+            st.info("ℹ️ Stooq solo soporta datos diarios (no intradía)")
+        elif fuente == "Binance":
+            st.info("ℹ️ Binance soporta datos intradía desde 1 minuto")
+        
+        intervalo = st.selectbox("Intervalo", intervalos_disponibles, key="intervalo_datos")
         tipo = st.selectbox("Tipo", ["Precios Históricos", "Retornos"], key="tipo_datos")
         submitted = st.form_submit_button("Obtener datos")
-    
+
         return submitted, DatosParams(fuente, simbolos, fecha_ini, fecha_fin, intervalo, tipo)
 
 

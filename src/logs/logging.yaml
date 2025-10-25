@@ -1,36 +1,135 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  detailed:
+    format: '%(asctime)s | %(levelname)s | %(name)s | %(funcName)s:%(lineno)d | %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  simple:
+    format: '%(levelname)s | %(name)s | %(message)s'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: standard
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: tmp/logs/app.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf8
+
+  error_file:
+    class: logging.handlers.RotatingFileHandler
+    level: ERROR
+    formatter: detailed
+    filename: tmp/logs/errors.log
+    maxBytes: 5242880   # 5MB
+    backupCount: 3
+    encoding: utf8
+
+  performance:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: simple
+    filename: tmp/logs/performance.log
+    maxBytes: 5242880   # 5MB
+    backupCount: 2
+    encoding: utf8
+
 loggers:
+  # Logger raíz
+  root:
+    level: INFO
+    handlers: [console, file, error_file]
+
+  # Data extractor principal - Solo archivos, no consola
   data_extractor:
     level: INFO
-    handlers: [console, file]
+    handlers: [file]
+    propagate: false
+
+  # Adapters con logging específico - Solo archivos
+  data_extractor.adapters:
+    level: INFO
+    handlers: [file, performance]
+    propagate: false
+
+  data_extractor.adapters.binance_adapter:
+    level: INFO
+    handlers: [file, performance]
+    propagate: false
+
+  data_extractor.adapters.stooq_adapter:
+    level: INFO
+    handlers: [file, performance]
     propagate: false
 
   data_extractor.adapters.yahoo_adapter:
     level: INFO
-    handlers: [console, file]
-    propagate: false
-  data_extractor.adapters.binance_adapter:
-    level: INFO
-    handlers: [console, file]
-    propagate: false
-  data_extractor.adapters.stooq_adapter:
-    level: INFO
-    handlers: [console, file]
+    handlers: [file, performance]
     propagate: false
 
+  # Providers - Solo archivos
   data_extractor.providers:
     level: INFO
+    handlers: [file]
+    propagate: false
+
+  data_extractor.providers.binance_provider:
+    level: INFO
+    handlers: [file]
+    propagate: false
+
+  data_extractor.providers.stooq_provider:
+    level: INFO
+    handlers: [file]
+    propagate: false
+
+  data_extractor.providers.yahoo_provider:
+    level: INFO
+    handlers: [file]
+    propagate: false
+
+  # Core components - Solo archivos
+  data_extractor.core:
+    level: DEBUG
+    handlers: [file]
+    propagate: false
+
+  data_extractor.core.normalizer:
+    level: DEBUG
+    handlers: [file]
+    propagate: false
+
+  # UI components
+  ui:
+    level: INFO
     handlers: [console, file]
     propagate: false
 
-  data_extractor.providers.alpha_vantage_provider:
-    level: INFO
-    handlers: [console, file]
+  # External libraries (menos verbosos)
+  requests:
+    level: WARNING
+    handlers: [file]
     propagate: false
-  data_extractor.providers.yahoo_provider:
-    level: INFO
-    handlers: [console, file]
+
+  urllib3:
+    level: WARNING
+    handlers: [file]
     propagate: false
-  data_extractor.providers.binance_provider:
-    level: INFO
-    handlers: [console, file]
+
+  pandas:
+    level: WARNING
+    handlers: [file]
     propagate: false

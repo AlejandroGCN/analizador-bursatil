@@ -35,7 +35,7 @@ def resolve_backend_params():
     return cfg_dict, symbols, start, end, interval, kind
 
 
-@st.cache_data(ttl=300, show_spinner=True, max_entries=10)
+@st.cache_data(ttl=300, show_spinner=False, max_entries=10)
 def fetch_market_data(cfg_dict: dict,
                       symbols: list[str],
                       start: pd.Timestamp | None,
@@ -45,10 +45,23 @@ def fetch_market_data(cfg_dict: dict,
                       _cache_version: str = "v2"):
     """Descarga y normaliza datos según los parámetros seleccionados."""
     extractor = get_extractor(cfg_dict, _cache_version)
-    return extractor.get_market_data(
+    data_map = extractor.get_market_data(
         tickers=symbols,
         start=start,
         end=end,
         interval=interval,
         kind=kind,
     )
+    
+    # Convertir a formato serializable para el cache
+    serializable_data = {}
+    for symbol, series_obj in data_map.items():
+        # Extraer el DataFrame del objeto series
+        df = getattr(series_obj, "data", series_obj)
+        serializable_data[symbol] = {
+            "data": df,
+            "type": type(series_obj).__name__,
+            "kind": kind
+        }
+    
+    return serializable_data

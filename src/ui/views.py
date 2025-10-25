@@ -39,7 +39,7 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
                 params.intervalo,
             )
 
-            with st.spinner("Descargando y normalizando…"):
+            with st.spinner("Cargando datos…"):
                 # Convertir string de símbolos a lista
                 symbols_list = [s.strip() for s in params.simbolos.split(",") if s.strip()]
                 
@@ -146,50 +146,47 @@ def content_for(tab: str, submit: bool, params: Any) -> None:
 def _data_map(data_map: dict, kind: str) -> None:
     """
     Renderiza tablas y gráficos rápidos para el resultado normalizado.
-    `data_map`: Dict[str, SeriesType-like] donde cada valor expone `.data`.
+    `data_map`: Dict[str, dict] con formato serializable del cache.
     Optimizado para reducir uso de memoria.
     """
-    for sym, series in data_map.items():
+    for sym, data_info in data_map.items():
         st.markdown(f"### {sym}")
 
-        # Cada objeto normalizado debería exponer .data (DataFrame o Series)
-        df = getattr(series, "data", None)
+        # Manejar el nuevo formato serializable
+        if isinstance(data_info, dict) and "data" in data_info:
+            df = data_info["data"]
+            series_type = data_info.get("type", "Unknown")
+        else:
+            # Fallback para formato anterior
+            df = getattr(data_info, "data", None)
+            series_type = type(data_info).__name__
 
         if df is None:
             # Fallback: mostrar objeto tal cual si no tiene .data
-            st.write(series)
+            st.write(data_info)
             continue
 
-        # Mostrar muestra representativa
-        sample_size = min(100, len(df))
-        st.dataframe(df.head(sample_size))
+        # Mostrar todos los datos del rango seleccionado con altura personalizada
+        st.dataframe(df, height=400, use_container_width=True)
+        
+        # Mostrar información del rango de fechas
+        if not df.empty:
+            st.info(f"📅 **Rango de datos:** {df.index.min().strftime('%Y-%m-%d')} a {df.index.max().strftime('%Y-%m-%d')} ({len(df)} registros)")
 
-        # Gráficos optimizados
+        # Gráficos optimizados - mostrar todos los datos
         if kind == "ohlcv":
             # Busca columna de cierre con tolerancia a capitalización
             close_col = next((c for c in df.columns if c.lower() == "close"), None)
             if close_col:
                 chart_data = df[close_col]
-                if len(chart_data) > 1000:
-                    step = len(chart_data) // 500
-                    chart_data = chart_data.iloc[::step]
                 st.line_chart(chart_data)
             elif "Close" in df.columns:
                 chart_data = df["Close"]
-                if len(chart_data) > 1000:
-                    step = len(chart_data) // 500
-                    chart_data = chart_data.iloc[::step]
                 st.line_chart(chart_data)
         else:
             if isinstance(df, pd.Series):
                 chart_data = df
-                if len(chart_data) > 1000:
-                    step = len(chart_data) // 500
-                    chart_data = chart_data.iloc[::step]
                 st.line_chart(chart_data)
             elif "value" in getattr(df, "columns", []):
                 chart_data = df["value"]
-                if len(chart_data) > 1000:
-                    step = len(chart_data) // 500
-                    chart_data = chart_data.iloc[::step]
                 st.line_chart(chart_data)
