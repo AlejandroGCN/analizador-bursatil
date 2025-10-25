@@ -42,6 +42,5 @@ log_analyzer.py
 log_cleaner.py
 monitor_eficiencia.py
 analisis_local_sonar.bat
-sonar-project.properties
 LOGGING_BEST_PRACTICES.md
 efficiency_report.md
