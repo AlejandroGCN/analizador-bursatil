@@ -42,7 +42,7 @@ jobs:
           args: >
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.organization=alejandrogcn
-            -Dsonar.projectKey=analizdor-bursatil
+            -Dsonar.projectKey=analizador-bursatil
             -Dsonar.sources=src
             -Dsonar.tests=tests
             -Dsonar.python.version=3.12
