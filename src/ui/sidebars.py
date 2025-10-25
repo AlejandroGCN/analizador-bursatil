@@ -229,20 +229,11 @@ def sidebar_reporte() -> Tuple[bool, ReporteParams]:
     return submitted, ReporteParams(formato, incluir_riesgo)
 
 
-def sidebar_config() -> Tuple[bool, ConfigParams]:
-    with st.sidebar.form("form_config"):
-        st.header("⚙️ Configuración avanzada")
-        normalizacion = st.selectbox("Normalización", ["Sí", "No"], key="cfg_norm")
-        submitted = st.form_submit_button("Guardar configuración")
-    return submitted, ConfigParams(normalizacion)
-
-
 TAB_TO_SIDEBAR: Dict[str, Callable[[], Tuple[bool, Any]]] = {
     TAB_LABELS["datos"]: sidebar_datos,
     TAB_LABELS["cartera"]: sidebar_cartera,
     TAB_LABELS["montecarlo"]: sidebar_montecarlo,
     TAB_LABELS["reporte"]: sidebar_reporte,
-    TAB_LABELS["config"]: sidebar_config,
 }
 
 def sidebar_for(tab: str) -> Tuple[bool, Any]:

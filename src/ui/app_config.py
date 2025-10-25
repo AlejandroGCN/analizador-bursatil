@@ -10,7 +10,6 @@ TAB_LABELS: Dict[str, str] = {
     "cartera": "💼 Cartera",
     "montecarlo": "🎲 Monte Carlo",
     "reporte": "📋 Reporte",
-    "config": "⚙️ Configuración",
 }
 
 TABS_ORDER: List[str] = [
@@ -18,7 +17,6 @@ TABS_ORDER: List[str] = [
     TAB_LABELS["cartera"],
     TAB_LABELS["montecarlo"],
     TAB_LABELS["reporte"],
-    TAB_LABELS["config"],
 ]
 
 # Fuentes disponibles (dinámicamente detectadas)

@@ -12,7 +12,6 @@ from ui.sidebars import (
     CarteraParams,
     MonteCarloParams,
     ReporteParams,
-    ConfigParams,
 )
 
 # Backend: descarga y normalización cacheadas
@@ -80,11 +79,49 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
 def tab_cartera(submit: bool, params: CarteraParams | None) -> None:
     """Contenido central de la pestaña 💼 Cartera."""
     st.subheader("💼 Construcción de cartera")
-    st.info("Selecciona activos y asigna pesos.")
 
     if submit and params is not None:
-        # TODO: implementar validación de pesos (suma=1), cálculo retorno/vol/Sharpe, etc.
-        st.success("✅ Pesos aplicados (pendiente de lógica de cartera).")
+        try:
+            # Parsear símbolos y pesos
+            symbols = [s.strip() for s in params.symbols.split(",") if s.strip()]
+            weights_str = [w.strip() for w in params.weights.split(",") if w.strip()]
+            
+            if not symbols:
+                st.error("❌ Debes especificar al menos un activo.")
+                return
+            
+            if len(weights_str) != len(symbols):
+                st.error(f"❌ Número de pesos ({len(weights_str)}) debe coincidir con número de símbolos ({len(symbols)}).")
+                return
+            
+            weights = [float(w) for w in weights_str]
+            
+            # Validar que los pesos sumen aproximadamente 1
+            total_weight = sum(weights)
+            if not (0.99 <= total_weight <= 1.01):
+                st.warning(f"⚠️ Los pesos suman {total_weight:.3f} (deberían sumar 1.0). Ajustando proporcionalmente...")
+                weights = [w / total_weight for w in weights]
+            
+            # Guardar en session state
+            st.session_state["portfolio_symbols"] = symbols
+            st.session_state["portfolio_weights"] = weights
+            
+            st.success(f"✅ Cartera configurada con {len(symbols)} activos")
+            
+            # Mostrar información de la cartera
+            _show_portfolio_info(symbols, weights)
+            
+        except Exception as e:
+            st.error(f"❌ Error configurando cartera: {e}")
+            import traceback
+            st.code(traceback.format_exc())
+    
+    # Mostrar cartera guardada
+    elif "portfolio_symbols" in st.session_state and "portfolio_weights" in st.session_state:
+        st.info("Mostrando cartera configurada actual.")
+        _show_portfolio_info(st.session_state["portfolio_symbols"], st.session_state["portfolio_weights"])
+    else:
+        st.info("💡 Configura tu cartera en el panel lateral.")
 
 
 def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
@@ -129,11 +166,42 @@ def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
                 # Crear DataFrame de precios
                 prices_df = pd.DataFrame(prices_dict)
                 
-                # Usar cartera configurada si existe, sino pesos iguales
+                # Usar cartera configurada si existe y coincide con los datos descargados
                 if "portfolio_symbols" in st.session_state and "portfolio_weights" in st.session_state:
-                    symbols = st.session_state["portfolio_symbols"]
-                    weights = st.session_state["portfolio_weights"]
-                    st.info(f"💼 Usando cartera configurada con {len(symbols)} activos")
+                    portfolio_symbols = st.session_state["portfolio_symbols"]
+                    portfolio_weights = st.session_state["portfolio_weights"]
+                    
+                    # Verificar que todos los símbolos de la cartera estén en los datos
+                    available_symbols = set(prices_dict.keys())
+                    portfolio_symbols_set = set(portfolio_symbols)
+                    
+                    if portfolio_symbols_set.issubset(available_symbols):
+                        # Filtrar solo los símbolos disponibles y reajustar pesos
+                        symbols_in_data = [s for s in portfolio_symbols if s in available_symbols]
+                        if len(symbols_in_data) == len(portfolio_symbols):
+                            # Todos los símbolos están disponibles
+                            symbols = portfolio_symbols
+                            weights = portfolio_weights
+                            st.info(f"💼 Usando cartera configurada con {len(symbols)} activos")
+                        else:
+                            # Algunos símbolos faltan, reajustar pesos
+                            missing = set(portfolio_symbols) - available_symbols
+                            st.warning(f"⚠️ Algunos activos configurados no están en los datos: {missing}. Ajustando pesos...")
+                            # Filtrar símbolos y renormalizar pesos
+                            symbol_to_weight = dict(zip(portfolio_symbols, portfolio_weights))
+                            symbols = symbols_in_data
+                            filtered_weights = [symbol_to_weight[s] for s in symbols]
+                            # Renormalizar
+                            total_weight = sum(filtered_weights)
+                            weights = [w / total_weight for w in filtered_weights]
+                            st.info(f"📊 Usando {len(symbols)} activos disponibles con pesos ajustados")
+                    else:
+                        # La cartera configurada no coincide, usar pesos iguales
+                        st.warning(f"⚠️ La cartera configurada no coincide con los datos descargados. Usando pesos iguales.")
+                        symbols = list(prices_dict.keys())
+                        n_assets = len(symbols)
+                        weights = [1.0 / n_assets] * n_assets
+                        st.info(f"📊 Usando pesos iguales (1/{n_assets} = {1.0/n_assets:.2%} cada uno)")
                 else:
                     symbols = list(prices_dict.keys())
                     n_assets = len(symbols)
@@ -180,22 +248,93 @@ def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
 
 def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
     """Contenido central de la pestaña 📋 Reporte."""
-    st.subheader("📋 Reporte")
-    st.info("Informe resumen del análisis.")
-
+    st.subheader("📋 Reporte de Análisis")
+    
+    # Verificar si hay cartera configurada
+    if "portfolio_symbols" not in st.session_state or "portfolio_weights" not in st.session_state:
+        st.warning("⚠️ Primero configura una cartera en la pestaña '💼 Cartera'.")
+        return
+    
+    # Verificar si hay datos disponibles
+    if "last_data_map" not in st.session_state:
+        st.warning("⚠️ Primero descarga datos en la pestaña '📊 Datos'.")
+        return
+    
     if submit and params is not None:
-        # TODO: generar Markdown/HTML/PDF y permitir descarga
-        st.success("✅ Reporte generado (pendiente de render).")
-
-
-def tab_config(submit: bool, params: ConfigParams | None) -> None:
-    """Contenido central de la pestaña ⚙️ Configuración."""
-    st.subheader("⚙️ Configuración avanzada")
-    st.info("Ajusta parámetros globales y claves API.")
-
-    if submit and params is not None:
-        # TODO: guardar API keys de forma segura (st.secrets o almacén externo)
-        st.success("✅ Configuración guardada.")
+        try:
+            from simulation import Portfolio
+            
+            # Obtener datos históricos
+            data_map = st.session_state["last_data_map"]
+            
+            # Extraer símbolos y crear DataFrame de precios
+            prices_dict = {}
+            for symbol, data_info in data_map.items():
+                if isinstance(data_info, dict) and "data" in data_info:
+                    df = data_info["data"]
+                else:
+                    df = getattr(data_info, "data", None)
+                
+                if df is not None:
+                    # Extraer columna de cierre
+                    close_col = next((c for c in df.columns if c.lower() == 'close'), None)
+                    if close_col:
+                        prices_dict[symbol] = df[close_col]
+            
+            if not prices_dict:
+                st.error("No se pudieron extraer precios de los datos.")
+                return
+            
+            # Crear DataFrame de precios
+            prices_df = pd.DataFrame(prices_dict)
+            
+            # Obtener cartera configurada
+            portfolio_symbols = st.session_state["portfolio_symbols"]
+            portfolio_weights = st.session_state["portfolio_weights"]
+            
+            # Verificar que todos los símbolos de la cartera estén en los datos
+            available_symbols = set(prices_dict.keys())
+            portfolio_symbols_set = set(portfolio_symbols)
+            
+            if portfolio_symbols_set.issubset(available_symbols):
+                # Filtrar solo los símbolos disponibles y reajustar pesos
+                symbols_in_data = [s for s in portfolio_symbols if s in available_symbols]
+                if len(symbols_in_data) == len(portfolio_symbols):
+                    symbols = portfolio_symbols
+                    weights = portfolio_weights
+                else:
+                    # Algunos símbolos faltan, reajustar pesos
+                    symbol_to_weight = dict(zip(portfolio_symbols, portfolio_weights))
+                    symbols = symbols_in_data
+                    filtered_weights = [symbol_to_weight[s] for s in symbols]
+                    total_weight = sum(filtered_weights)
+                    weights = [w / total_weight for w in filtered_weights]
+            else:
+                st.error("⚠️ La cartera configurada no coincide con los datos descargados.")
+                return
+            
+            # Crear cartera
+            portfolio = Portfolio(
+                name="Mi Cartera",
+                symbols=symbols,
+                weights=weights
+            )
+            portfolio.set_prices(prices_df)
+            
+            # Guardar cartera en session state
+            st.session_state["reporte_portfolio"] = portfolio
+            
+            st.success("✅ Reporte generado exitosamente!")
+        
+        except Exception as e:
+            st.error(f"❌ Error generando reporte: {e}")
+            import traceback
+            st.code(traceback.format_exc())
+    
+    # Mostrar reporte si existe
+    if "reporte_portfolio" in st.session_state:
+        portfolio = st.session_state["reporte_portfolio"]
+        _show_portfolio_report(portfolio)
 
 
 # ───────────────────────────────────────────────────────────────
@@ -207,7 +346,6 @@ TAB_TO_VIEW: Dict[str, Callable[[bool, Any], None]] = {
     TAB_LABELS["cartera"]: tab_cartera,
     TAB_LABELS["montecarlo"]: tab_montecarlo,
     TAB_LABELS["reporte"]: tab_reporte,
-    TAB_LABELS["config"]: tab_config,
 }
 
 def content_for(tab: str, submit: bool, params: Any) -> None:
@@ -369,3 +507,104 @@ def _show_montecarlo_results(results: pd.DataFrame, portfolio: Any) -> None:
     # Tabla de resumen
     st.subheader("📋 Resumen de simulación")
     st.dataframe(results.describe())
+
+
+def _show_portfolio_info(symbols: list, weights: list) -> None:
+    """Muestra información de la cartera configurada."""
+    st.subheader("📋 Composición de la cartera")
+    
+    # Crear DataFrame
+    portfolio_df = pd.DataFrame({
+        "Activo": symbols,
+        "Peso (%)": [f"{w*100:.2f}%" for w in weights]
+    })
+    
+    st.dataframe(portfolio_df, use_container_width=True, hide_index=True)
+    
+    # Mostrar resumen visual con barras
+    st.subheader("📊 Distribución visual")
+    
+    # Crear gráfico de barras con matplotlib
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    colors = plt.cm.tab10(range(len(symbols)))
+    bars = ax.bar(symbols, [w*100 for w in weights], color=colors)
+    
+    # Añadir etiquetas en las barras
+    for i, bar in enumerate(bars):
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height,
+                f'{height:.1f}%', ha='center', va='bottom', fontsize=11, fontweight='bold')
+    
+    ax.set_xlabel('Activo', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Peso (%)', fontsize=12, fontweight='bold')
+    ax.set_title('Distribución de pesos en la cartera', fontsize=14, fontweight='bold')
+    ax.grid(True, alpha=0.3, axis='y')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    
+    st.pyplot(fig)
+    plt.close(fig)
+
+
+def _show_portfolio_report(portfolio: Any) -> None:
+    """Muestra el reporte completo de la cartera."""
+    from io import BytesIO
+    import matplotlib.pyplot as plt
+    
+    st.divider()
+    
+    # Generar reporte en markdown
+    st.subheader("📄 Reporte en Markdown")
+    report_md = portfolio.report(risk_free_rate=0.02, include_warnings=True)
+    
+    # Mostrar reporte
+    st.markdown(report_md)
+    
+    st.divider()
+    
+    # Botón para descargar reporte
+    st.download_button(
+        label="📥 Descargar reporte en Markdown",
+        data=report_md,
+        file_name=f"reporte_cartera_{portfolio.name.lower().replace(' ', '_')}.md",
+        mime="text/markdown"
+    )
+    
+    st.divider()
+    
+    # Generar visualizaciones
+    st.subheader("📊 Visualizaciones de la cartera")
+    
+    try:
+        # Crear figura en memoria
+        fig = plt.figure(figsize=(16, 10))
+        
+        # Generar visualizaciones usando el método plots_report
+        portfolio.plots_report(figsize=(16, 10), save_path=None)
+        
+        # Guardar en memory buffer para mostrar en Streamlit
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', bbox_inches='tight', dpi=150)
+        buffer.seek(0)
+        
+        st.image(buffer, use_container_width=True)
+        plt.close('all')
+        
+        st.divider()
+        
+        # Botón para descargar visualizaciones
+        st.download_button(
+            label="📥 Descargar gráficos (PNG)",
+            data=buffer.getvalue(),
+            file_name=f"visualizaciones_cartera_{portfolio.name.lower().replace(' ', '_')}.png",
+            mime="image/png"
+        )
+        
+    except Exception as e:
+        st.error(f"Error generando visualizaciones: {e}")
+        import traceback
+        st.code(traceback.format_exc())
