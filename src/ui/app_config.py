@@ -21,12 +21,25 @@ TABS_ORDER: List[str] = [
     TAB_LABELS["config"],
 ]
 
-# Fuentes disponibles
-SOURCE_MAP: Dict[str, str] = {
-    "Yahoo": "yahoo",
-    "Binance": "binance",
-    "Stooq": "stooq",
-}
+# Fuentes disponibles (dinámicamente detectadas)
+def get_available_sources() -> Dict[str, str]:
+    """Obtiene las fuentes disponibles dinámicamente."""
+    sources = {
+        "Yahoo": "yahoo",
+        "Binance": "binance",
+    }
+    
+    # Intentar añadir Stooq si está disponible
+    try:
+        from data_extractor.core.registry import STOOQ_AVAILABLE
+        if STOOQ_AVAILABLE:
+            sources["Stooq"] = "stooq"
+    except ImportError:
+        pass
+    
+    return sources
+
+SOURCE_MAP = get_available_sources()
 
 KIND_MAP: Dict[str, str] = {
     "Precios Históricos": "ohlcv",

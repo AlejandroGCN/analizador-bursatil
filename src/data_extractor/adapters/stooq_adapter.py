@@ -4,13 +4,18 @@ from __future__ import annotations
 from typing import Any, Optional
 import logging
 import pandas as pd
-from pandas_datareader import data as pdr  # asumes instalado; si no, ya manejas el error
 from data_extractor.core.base.base_adapter import BaseAdapter
 from data_extractor.core.errors import ExtractionError, SymbolNotFound
 
 logger = logging.getLogger(__name__)
 
-_PDR_OK = True  # si tienes una detección dinámica, mantenla; aquí simplifico
+# Intentar importar pandas_datareader, si falla será opcional
+try:
+    from pandas_datareader import data as pdr
+    _PDR_OK = True
+except ImportError:
+    _PDR_OK = False
+    pdr = None
 
 class StooqAdapter(BaseAdapter):
     name = "stooq"
@@ -27,8 +32,9 @@ class StooqAdapter(BaseAdapter):
     ) -> pd.DataFrame:
         if not _PDR_OK:
             raise ExtractionError(
-                "pandas_datareader no está instalado (requerido para Stooq). "
-                "Instala con: pip install pandas_datareader",
+                "pandas_datareader no está disponible (incompatible con Python 3.12+). "
+                "Stooq no está soportado en esta versión de Python. "
+                "Usa Yahoo o Binance como alternativa.",
                 source=self.name
             )
         if interval not in self.allowed_intervals:

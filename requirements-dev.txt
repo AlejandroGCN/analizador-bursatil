@@ -1,0 +1,21 @@
+# Development requirements
+# Include base requirements
+-r requirements.txt
+
+# Testing
+pytest>=8.0
+pytest-cov>=4.0
+pytest-mock>=3.10
+
+# Code quality
+black>=23.0
+flake8>=6.0
+mypy>=1.0
+
+# Optional: pandas_datareader (for Stooq support)
+# Note: Requires setuptools for Python 3.12+ compatibility
+setuptools>=65.0
+pandas_datareader>=0.10
+
+# Coverage reporting
+coverage>=7.0

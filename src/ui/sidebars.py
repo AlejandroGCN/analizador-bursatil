@@ -49,7 +49,10 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
 
     with st.sidebar.form("form_datos"):
         st.header("⚙️ Parámetros de datos")
-        fuente = st.selectbox("Fuente de datos:", ["Yahoo", "Binance", "Stooq"], key="fuente_datos")
+        # Obtener fuentes disponibles dinámicamente
+        from ui.app_config import SOURCE_MAP
+        available_sources = list(SOURCE_MAP.keys())
+        fuente = st.selectbox("Fuente de datos:", available_sources, key="fuente_datos")
 
         with st.expander("📁 Cargar símbolos desde archivo", expanded=False):
             uploaded_file = st.file_uploader(
@@ -81,13 +84,16 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
         intervalos_por_fuente = {
             "Yahoo": ["1d", "1h", "1wk", "1mo", "1m", "5m", "15m", "30m"],
             "Binance": ["1d", "1h", "1wk", "1mo", "1m", "3m", "5m", "15m", "30m", "2h", "4h", "6h", "8h", "12h"],
-            "Stooq": ["1d", "1wk", "1mo"]
         }
+        
+        # Añadir Stooq solo si está disponible
+        if "Stooq" in available_sources:
+            intervalos_por_fuente["Stooq"] = ["1d", "1wk", "1mo"]
         
         intervalos_disponibles = intervalos_por_fuente.get(fuente, ["1d", "1h", "1wk"])
         
         # Mostrar información sobre intervalos disponibles
-        if fuente == "Stooq":
+        if fuente == "Stooq" and "Stooq" in available_sources:
             st.info("ℹ️ Stooq solo soporta datos diarios (no intradía)")
         elif fuente == "Binance":
             st.info("ℹ️ Binance soporta datos intradía desde 1 minuto")
