@@ -36,11 +36,3 @@ tmp/
 venv.ps1
 venv.bat
 stop_app.bat
-
-# Herramientas de análisis y monitoreo (locales)
-log_analyzer.py
-log_cleaner.py
-monitor_eficiencia.py
-analisis_local_sonar.bat
-LOGGING_BEST_PRACTICES.md
-efficiency_report.md

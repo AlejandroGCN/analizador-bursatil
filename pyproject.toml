@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "Alejandro García", email = "alejandro@example.com"}
+    {name = "Alejandro García-Caro Nombela", email = "alex_garci_17@gmail.com"}
 ]
 keywords = ["finance", "stock", "analysis", "monte-carlo", "streamlit", "yfinance", "binance"]
 classifiers = [

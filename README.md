@@ -215,6 +215,43 @@ analizador-bursatil  # Comando global
 - Rango: Últimos 30 días
 - Fuente: Binance (criptomonedas)
 
+### Formatos de Archivos de Símbolos
+
+El proyecto incluye diferentes formatos de ejemplo para que puedas elegir el que más te convenga:
+
+**📄 symbols.txt** - Formato más simple
+```
+AAPL
+MSFT
+GOOGL
+```
+*Usa este formato si solo necesitas una lista simple de símbolos*
+
+**📊 symbols.csv** - Formato con información adicional
+```csv
+symbol,company,price
+AAPL,Apple Inc.,150.00
+MSFT,Microsoft Corporation,300.00
+```
+*Usa este formato si quieres incluir información adicional como empresa y precio*
+
+**📋 symbols.json** - Formato estructurado
+```json
+{
+  "symbols": ["AAPL", "MSFT", "GOOGL"],
+  "description": "Lista de símbolos tecnológicos",
+  "last_updated": "2025-10-24"
+}
+```
+*Usa este formato si necesitas metadatos y estructura compleja*
+
+**📝 symbols_example.txt** - Formato detallado con fuentes
+```
+AAPL,Apple Inc.,yahoo
+BTCUSDT,Bitcoin/USDT,binance
+```
+*Usa este formato si necesitas especificar la fuente de datos para cada símbolo*
+
 ## 🔧 Solución de Problemas
 
 ### ❌ "No se puede encontrar Python"
@@ -273,7 +310,10 @@ analizador-bursatil  # Comando global
 - **[install.bat](install.bat)**: Script de instalación automática (Windows)
 
 ### Ejemplos y Configuración
-- **[ejemplos/symbols_example.txt](ejemplos/symbols_example.txt)**: Lista de símbolos recomendados
+- **[ejemplos/symbols_example.txt](ejemplos/symbols_example.txt)**: Lista detallada de símbolos recomendados
+- **[ejemplos/symbols.csv](ejemplos/symbols.csv)**: Formato CSV con símbolos, empresas y precios
+- **[ejemplos/symbols.json](ejemplos/symbols.json)**: Formato JSON estructurado con metadatos
+- **[ejemplos/symbols.txt](ejemplos/symbols.txt)**: Formato simple, solo símbolos uno por línea
 - **[config_example.yaml](config_example.yaml)**: Configuración de ejemplo (se crea automáticamente)
 
 ### Ejecución
