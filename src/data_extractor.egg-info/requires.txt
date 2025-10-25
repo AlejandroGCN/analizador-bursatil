@@ -1,7 +1,0 @@
-pandas>=2.0
-requests>=2.31
-
-[dev]
-pytest>=8.0
-pandas_datareader>=0.10
-yfinance>=0.2

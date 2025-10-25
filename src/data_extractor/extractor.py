@@ -17,10 +17,36 @@ def _ensure_dt(x) -> Optional[pd.Timestamp]:
 
 class DataExtractor:
     """
-    Fachada de alto nivel:
-      - Resuelve el provider desde REGISTRY (p. ej. YahooProvider).
-      - Llama al provider.get_symbols(), que se encarga de adapter + normalizer.
-      - Devuelve dict[symbol -> tipología/objeto listo].
+    Fachada principal para la extracción de datos financieros desde múltiples fuentes.
+    
+    Esta clase actúa como punto de entrada unificado para acceder a datos bursátiles
+    desde diferentes proveedores (Yahoo Finance, Binance, Stooq). Proporciona una
+    interfaz consistente independientemente de la fuente de datos utilizada.
+    
+    Características principales:
+    - Resolución automática del provider basada en configuración
+    - Normalización automática de datos a formatos estándar
+    - Soporte para múltiples símbolos simultáneos
+    - Manejo robusto de errores y timeouts
+    - Configuración flexible de parámetros de extracción
+    
+    Attributes:
+        cfg (ExtractorConfig): Configuración del extractor
+        source (BaseProvider): Instancia del provider seleccionado
+    
+    Example:
+        >>> # Configuración básica
+        >>> extractor = DataExtractor()
+        >>> data = extractor.get_market_data(['AAPL', 'MSFT'], start='2023-01-01')
+        
+        >>> # Configuración personalizada
+        >>> config = ExtractorConfig(source='binance', timeout=60)
+        >>> extractor = DataExtractor(config)
+        >>> crypto_data = extractor.get_market_data(['BTCUSDT'], interval='1h')
+    
+    Note:
+        Los datos devueltos están normalizados y listos para análisis.
+        Cada serie temporal mantiene su formato original pero con estructura consistente.
     """
 
     def __init__(self, cfg: Optional[ExtractorConfig] = None):
@@ -47,18 +73,88 @@ class DataExtractor:
             **params: Any,
     ) -> Dict[str, Any]:
         """
-        Descarga 1..N símbolos usando el provider (quien maneja adapter y normalizer).
-
+        Extrae datos de mercado para uno o múltiples símbolos financieros.
+        
+        Este método es el punto de entrada principal para obtener datos históricos
+        de activos financieros. Soporta múltiples fuentes de datos y normaliza
+        automáticamente los resultados a un formato estándar.
+        
         Args:
-            tickers: Iterable de símbolos o una cadena con un solo símbolo.
-            start: fecha inicio (str/Timestamp/None).
-            end: fecha fin (str/Timestamp/None).
-            interval: resolución temporal; si None usa cfg.interval.
-            kind: tipología (p. ej. 'ohlcv').
-            **params: extras soportados por el provider (align, ffill, bfill, etc.).
-
+            tickers: Símbolo(es) a extraer. Puede ser:
+                - str: Un solo símbolo (ej: 'AAPL')
+                - Iterable[str]: Múltiples símbolos (ej: ['AAPL', 'MSFT', 'GOOGL'])
+            start: Fecha de inicio en formato flexible:
+                - str: '2023-01-01', '2023-01-01 09:30:00'
+                - pd.Timestamp: Timestamp de pandas
+                - None: Usa fecha por defecto del provider
+            end: Fecha de fin en formato flexible (mismo formato que start)
+            interval: Resolución temporal de los datos:
+                - '1d': Diario (por defecto)
+                - '1h': Horario
+                - '1wk': Semanal
+                - '1mo': Mensual
+                - '1m', '5m', '15m', '30m': Intradía (solo Yahoo)
+                - None: Usa intervalo por defecto de configuración
+            kind: Tipo de datos a extraer:
+                - 'ohlcv': Precios OHLCV (Open, High, Low, Close, Volume)
+                - 'returns_pct': Retornos porcentuales
+                - 'returns_log': Retornos logarítmicos
+                - 'volatility': Volatilidad móvil
+                - 'volume_activity': Actividad de volumen
+            **params: Parámetros adicionales específicos del provider:
+                - align: Estrategia de alineación ('intersect', 'union', None)
+                - ffill: Forward fill para valores faltantes (bool)
+                - bfill: Backward fill para valores faltantes (bool)
+                - max_workers: Número de workers para requests paralelos (int)
+        
         Returns:
-            Dict[str, Any]: mapa símbolo -> objeto tipología ya normalizado por el provider.
+            Dict[str, Any]: Diccionario con estructura:
+                {
+                    'symbol1': SerieObjeto1,
+                    'symbol2': SerieObjeto2,
+                    ...
+                }
+            
+            Cada SerieObjeto es una instancia de la clase correspondiente al tipo
+            solicitado (PriceSeries, PerformanceSeries, etc.) con datos normalizados.
+        
+        Raises:
+            ValueError: Si no se proporcionan símbolos o el rango de fechas es inválido
+            ExtractionError: Si falla la extracción de datos desde la fuente
+            KeyError: Si la fuente especificada no está registrada
+        
+        Example:
+            >>> extractor = DataExtractor()
+            
+            >>> # Datos básicos de una acción
+            >>> data = extractor.get_market_data('AAPL', start='2023-01-01')
+            >>> print(data['AAPL'].mean())  # Precio medio
+            
+            >>> # Múltiples símbolos con configuración personalizada
+            >>> symbols = ['AAPL', 'MSFT', 'GOOGL']
+            >>> data = extractor.get_market_data(
+            ...     symbols, 
+            ...     start='2023-01-01', 
+            ...     end='2023-12-31',
+            ...     interval='1d',
+            ...     align='intersect',
+            ...     ffill=True
+            ... )
+            
+            >>> # Datos de criptomonedas desde Binance
+            >>> config = ExtractorConfig(source='binance')
+            >>> crypto_extractor = DataExtractor(config)
+            >>> crypto_data = crypto_extractor.get_market_data(
+            ...     ['BTCUSDT', 'ETHUSDT'], 
+            ...     interval='1h',
+            ...     kind='ohlcv'
+            ... )
+        
+        Note:
+            - Los datos se normalizan automáticamente según el tipo solicitado
+            - Las fechas se alinean según la estrategia especificada
+            - Los valores faltantes se manejan según los parámetros ffill/bfill
+            - El método es thread-safe para múltiples símbolos
         """
         # Normaliza símbolos preservando orden y eliminando duplicados
         if isinstance(tickers, str):

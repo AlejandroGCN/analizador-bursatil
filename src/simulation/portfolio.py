@@ -19,14 +19,55 @@ except ImportError:
 @dataclass
 class Portfolio:
     """
-    Clase para representar una cartera de activos.
+    Representa una cartera de inversión con análisis de riesgo y rendimiento.
+    
+    Esta clase encapsula una cartera de activos financieros, proporcionando métodos
+    para calcular métricas de riesgo y rendimiento, así como para realizar simulaciones
+    Monte Carlo. Es el componente central para el análisis cuantitativo de carteras.
+    
+    Características principales:
+    - Gestión de pesos y composición de activos
+    - Cálculo automático de métricas de riesgo/rendimiento
+    - Simulación Monte Carlo integrada
+    - Generación de reportes en markdown
+    - Visualizaciones avanzadas de análisis
     
     Attributes:
-        name: Nombre de la cartera
-        symbols: Lista de símbolos de activos
-        weights: Pesos de cada activo en la cartera (deben sumar 1.0)
-        prices: DataFrame con precios históricos de cierre
-        returns: DataFrame con retornos de los activos
+        name (str): Nombre identificativo de la cartera
+        symbols (list[str]): Lista de símbolos de activos
+        weights (list[float]): Pesos de cada activo (deben sumar 1.0)
+        prices (Optional[pd.DataFrame]): Precios históricos de cierre
+        returns (Optional[pd.DataFrame]): Retornos logarítmicos calculados
+    
+    Example:
+        >>> # Crear cartera básica
+        >>> portfolio = Portfolio(
+        ...     name="Tech Portfolio",
+        ...     symbols=['AAPL', 'MSFT', 'GOOGL'],
+        ...     weights=[0.4, 0.3, 0.3]
+        ... )
+        
+        >>> # Establecer datos de precios
+        >>> portfolio.set_prices(price_dataframe)
+        
+        >>> # Calcular métricas
+        >>> ret = portfolio.portfolio_return()
+        >>> vol = portfolio.portfolio_volatility()
+        >>> sharpe = portfolio.sharpe_ratio()
+        
+        >>> # Simulación Monte Carlo
+        >>> simulation = portfolio.monte_carlo_simulation(
+        ...     n_simulations=1000,
+        ...     time_horizon=252
+        ... )
+        
+        >>> # Generar reportes
+        >>> report = portfolio.report()
+        >>> portfolio.plots_report()
+    
+    Note:
+        Los pesos se normalizan automáticamente si no suman 1.0.
+        Los retornos se calculan como logarítmicos tras establecer precios.
     """
     name: str
     symbols: list[str]
