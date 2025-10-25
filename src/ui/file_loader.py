@@ -51,12 +51,12 @@ def _load_from_csv(uploaded_file) -> List[str]:
     for col in symbol_columns:
         if col.lower() in [c.lower() for c in df.columns]:
             symbols = df[col].dropna().astype(str).tolist()
-            return [s.strip() for s in symbols if s.strip()]
+            return _sanitize_symbols([s.strip() for s in symbols if s.strip()])
     
     # Si no encuentra columnas específicas, usar la primera columna
     if len(df.columns) > 0:
         symbols = df.iloc[:, 0].dropna().astype(str).tolist()
-        return [s.strip() for s in symbols if s.strip()]
+        return _sanitize_symbols([s.strip() for s in symbols if s.strip()])
     
     return []
 
@@ -71,12 +71,12 @@ def _load_from_excel(uploaded_file) -> List[str]:
     for col in symbol_columns:
         if col.lower() in [c.lower() for c in df.columns]:
             symbols = df[col].dropna().astype(str).tolist()
-            return [s.strip() for s in symbols if s.strip()]
+            return _sanitize_symbols([s.strip() for s in symbols if s.strip()])
     
     # Si no encuentra columnas específicas, usar la primera columna
     if len(df.columns) > 0:
         symbols = df.iloc[:, 0].dropna().astype(str).tolist()
-        return [s.strip() for s in symbols if s.strip()]
+        return _sanitize_symbols([s.strip() for s in symbols if s.strip()])
     
     return []
 
@@ -88,7 +88,7 @@ def _load_from_json(uploaded_file) -> List[str]:
     
     # Si es una lista simple
     if isinstance(data, list):
-        return [str(item).strip() for item in data if str(item).strip()]
+        return _sanitize_symbols([str(item).strip() for item in data if str(item).strip()])
     
     # Si es un objeto con claves específicas
     if isinstance(data, dict):
@@ -98,9 +98,9 @@ def _load_from_json(uploaded_file) -> List[str]:
             if key in data:
                 symbols = data[key]
                 if isinstance(symbols, list):
-                    return [str(item).strip() for item in symbols if str(item).strip()]
+                    return _sanitize_symbols([str(item).strip() for item in symbols if str(item).strip()])
                 elif isinstance(symbols, str):
-                    return [s.strip() for s in symbols.split(',') if s.strip()]
+                    return _sanitize_symbols([s.strip() for s in symbols.split(',') if s.strip()])
     
     return []
 
@@ -120,7 +120,40 @@ def _load_from_txt(uploaded_file) -> List[str]:
             else:
                 symbols.append(line)
     
-    return symbols
+    return _sanitize_symbols(symbols)
+
+
+def _sanitize_symbols(symbols: List[str]) -> List[str]:
+    """
+    Sanitiza una lista de símbolos eliminando caracteres inválidos y duplicados.
+    
+    Args:
+        symbols: Lista de símbolos a sanitizar
+        
+    Returns:
+        Lista de símbolos sanitizados
+    """
+    import re
+    
+    sanitized = []
+    
+    for symbol in symbols:
+        # Remover caracteres no alfanuméricos (excepto puntos, guiones y barras)
+        cleaned = re.sub(r'[^A-Z0-9.\-/]', '', symbol.upper())
+        
+        # Solo agregar si tiene al menos una letra y no es demasiado largo
+        if cleaned and len(cleaned) <= 20 and any(c.isalpha() for c in cleaned):
+            sanitized.append(cleaned)
+    
+    # Eliminar duplicados preservando orden
+    seen = set()
+    unique = []
+    for symbol in sanitized:
+        if symbol not in seen:
+            seen.add(symbol)
+            unique.append(symbol)
+    
+    return unique
 
 
 def file_uploader_widget() -> Optional[List[str]]:
