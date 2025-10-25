@@ -83,7 +83,7 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
         # Intervalos disponibles según la fuente seleccionada
         intervalos_por_fuente = {
             "Yahoo": ["1d", "1h", "1wk", "1mo", "1m", "5m", "15m", "30m"],
-            "Binance": ["1d", "1h", "1wk", "1mo", "1m", "3m", "5m", "15m", "30m", "2h", "4h", "6h", "8h", "12h"],
+            "Binance": ["1d", "1h", "1w", "1M", "1m", "3m", "5m", "15m", "30m", "2h", "4h", "6h", "8h", "12h", "3d"],
         }
         
         # Añadir Stooq solo si está disponible

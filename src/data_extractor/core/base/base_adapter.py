@@ -169,6 +169,12 @@ class BaseAdapter(ABC):
 
         if not results and errors:
             sym, msg = errors[0]
-            raise ExtractionError(f"Todos fallaron. Ej. {sym}: {msg}", source=self.name)
+            # Extraer el mensaje limpio sin los metadatos [source=...]
+            clean_msg = msg.split('[source=')[0].strip() if '[source=' in msg else msg
+            raise ExtractionError(
+                f"❌ No se pudieron descargar datos para '{sym}'\n\n{clean_msg}",
+                source=self.name,
+                symbol=sym
+            )
 
         return results

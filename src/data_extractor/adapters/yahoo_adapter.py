@@ -26,7 +26,11 @@ class YahooAdapter(BaseAdapter):
         t = self.yf.Ticker(symbol)
         df = t.history(start=start, end=end, interval=interval)
         if df is None or df.empty:
-            raise ExtractionError(f"Sin datos en Yahoo (yfinance) para {symbol}", source=self.name)
+            raise ExtractionError(
+                f"No se encontraron datos para '{symbol}' en Yahoo Finance",
+                source="yfinance",
+                symbol=symbol
+            )
         # Asegura columnas mínimas para poder seleccionar después
         if "Adj Close" not in df.columns:
             df["Adj Close"] = df.get("Close")
@@ -37,7 +41,11 @@ class YahooAdapter(BaseAdapter):
     def _download_with_pdr(self, symbol, start, end) -> pd.DataFrame:
         df = self.pdr.get_data_yahoo(symbol, start=start, end=end)
         if df is None or df.empty:
-            raise ExtractionError(f"Sin datos en Yahoo (pdr) para {symbol}", source=self.name)
+            raise ExtractionError(
+                f"No se encontraron datos para '{symbol}' en Yahoo Finance",
+                source="pandas_datareader",
+                symbol=symbol
+            )
         if "Adj Close" not in df.columns:
             df["Adj Close"] = df.get("Close")
         if "Volume" not in df.columns:

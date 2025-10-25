@@ -55,9 +55,21 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
                 st.warning("No se recibieron datos.")
                 return
 
-            # Limpiar cache anterior
+            # Limpiar cache anterior y resultados de simulaciones antiguos
             if "last_data_map" in st.session_state:
                 del st.session_state["last_data_map"]
+            
+            # Limpiar simulaciones, cartera y reportes antiguos al obtener datos nuevos
+            if "montecarlo_results" in st.session_state:
+                del st.session_state["montecarlo_results"]
+            if "montecarlo_portfolio" in st.session_state:
+                del st.session_state["montecarlo_portfolio"]
+            if "portfolio_symbols" in st.session_state:
+                del st.session_state["portfolio_symbols"]
+            if "portfolio_weights" in st.session_state:
+                del st.session_state["portfolio_weights"]
+            if "reporte_portfolio" in st.session_state:
+                del st.session_state["reporte_portfolio"]
             
             # Persistir resultado
             st.session_state["last_data_map"] = data_map
@@ -66,7 +78,12 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
             _data_map(data_map, kind)
 
         except Exception as e:
-            st.error(f"❌ Error obteniendo datos: {e}")
+            error_msg = str(e)
+            # Si el mensaje ya tiene formato con emojis, mostrarlo tal cual
+            if error_msg.startswith("❌"):
+                st.error(error_msg)
+            else:
+                st.error(f"❌ Error obteniendo datos: {e}")
 
     # Si no hay submit, intenta mostrar el último resultado cacheado
     elif "last_data_map" in st.session_state:
@@ -130,7 +147,7 @@ def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
     
     # Verificar si hay datos disponibles
     if "last_data_map" not in st.session_state:
-        st.warning("⚠️ Primero descarga datos en la pestaña '📊 Datos' para poder simular.")
+        st.info("💡 Primero descarga datos en la pestaña '📊 Datos' para poder simular.")
         return
     
     if submit and params is not None:
@@ -244,6 +261,8 @@ def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
             st.session_state["montecarlo_results"],
             st.session_state.get("montecarlo_portfolio")
         )
+    else:
+        st.info("💡 Configura los parámetros de simulación en el panel lateral y ejecuta la simulación.")
 
 
 def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
@@ -252,12 +271,12 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
     
     # Verificar si hay cartera configurada
     if "portfolio_symbols" not in st.session_state or "portfolio_weights" not in st.session_state:
-        st.warning("⚠️ Primero configura una cartera en la pestaña '💼 Cartera'.")
+        st.info("💡 Primero configura una cartera en la pestaña '💼 Cartera'.")
         return
     
     # Verificar si hay datos disponibles
     if "last_data_map" not in st.session_state:
-        st.warning("⚠️ Primero descarga datos en la pestaña '📊 Datos'.")
+        st.info("💡 Primero descarga datos en la pestaña '📊 Datos'.")
         return
     
     if submit and params is not None:
@@ -335,6 +354,8 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
     if "reporte_portfolio" in st.session_state:
         portfolio = st.session_state["reporte_portfolio"]
         _show_portfolio_report(portfolio)
+    else:
+        st.info("💡 Configura los parámetros del reporte en el panel lateral y genera el reporte.")
 
 
 # ───────────────────────────────────────────────────────────────
@@ -463,12 +484,12 @@ def _show_montecarlo_results(results: pd.DataFrame, portfolio: Any) -> None:
     
     st.divider()
     
-    # Gráfico de trayectorias
+    # Gráfico de trayectorias (OPTIMIZADO: reducido de 100 a 50 trayectorias)
     st.subheader("📈 Trayectorias de simulación")
     
-    # Mostrar una muestra de trayectorias
+    # Mostrar una muestra de trayectorias (reducido para mejor rendimiento)
     import numpy as np
-    sample_size = min(100, len(results))
+    sample_size = min(50, len(results))  # Reducido de 100 a 50
     sample_indices = np.random.choice(len(results), sample_size, replace=False)
     sample_results = results.iloc[sample_indices]
     
@@ -556,6 +577,28 @@ def _show_portfolio_report(portfolio: Any) -> None:
     import matplotlib.pyplot as plt
     
     st.divider()
+    
+    # Si hay simulaciones Monte Carlo disponibles, mostrar resumen
+    if "montecarlo_results" in st.session_state and "montecarlo_portfolio" in st.session_state:
+        st.subheader("🎲 Análisis Monte Carlo")
+        results = st.session_state["montecarlo_results"]
+        mc_portfolio = st.session_state.get("montecarlo_portfolio")
+        
+        col1, col2, col3 = st.columns(3)
+        final_values = results.iloc[:, -1]
+        
+        with col1:
+            st.metric("💰 Valor medio esperado", f"${final_values.mean():,.2f}")
+        with col2:
+            st.metric("📊 Percentil 5%", f"${final_values.quantile(0.05):,.2f}")
+        with col3:
+            st.metric("📈 Percentil 95%", f"${final_values.quantile(0.95):,.2f}")
+        
+        st.info("💡 Estos valores provienen de una simulación Monte Carlo. Ejecuta una simulación en la pestaña '🎲 Monte Carlo' para ver resultados más detallados.")
+        st.divider()
+    else:
+        st.info("💡 No hay simulaciones Monte Carlo disponibles. El reporte a continuación se basa únicamente en análisis estadístico de datos históricos.")
+        st.divider()
     
     # Generar reporte en markdown
     st.subheader("📄 Reporte en Markdown")

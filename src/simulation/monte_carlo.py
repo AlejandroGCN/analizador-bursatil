@@ -39,7 +39,7 @@ class MonteCarloSimulation:
         random_seed: Optional[int] = None
     ) -> pd.DataFrame:
         """
-        Simula la evolución de una cartera usando Monte Carlo.
+        Simula la evolución de una cartera usando Monte Carlo (OPTIMIZADO con vectorización).
         
         Args:
             portfolio_return: Retorno esperado de la cartera (diario)
@@ -58,31 +58,33 @@ class MonteCarloSimulation:
         
         dt = 1.0 / 252  # Paso temporal (un día en años)
         
-        results = []
-        for sim in range(n_simulations):
-            values = [initial_value]
-            
-            for _ in range(time_horizon):
-                if dynamic_volatility:
-                    # Volatilidad variable (entre 80% y 120% del valor base)
-                    vol = portfolio_volatility * np.random.uniform(0.8, 1.2)
-                else:
-                    vol = portfolio_volatility
-                
-                # Generar shock aleatorio
-                shock = np.random.normal(0, 1)
-                
-                # Calcular retorno usando GBM
-                ret = portfolio_return * dt + vol * np.sqrt(dt) * shock
-                
-                # Nuevo valor
-                new_value = values[-1] * (1 + ret)
-                values.append(new_value)
-            
-            results.append(values)
+        # OPTIMIZACIÓN: Generar todas las simulaciones de forma vectorizada
+        # Forma: (n_simulations, time_horizon)
+        if dynamic_volatility:
+            # Volatilidad variable para cada paso de cada simulación
+            vol_multipliers = np.random.uniform(0.8, 1.2, size=(n_simulations, time_horizon))
+            vols = portfolio_volatility * vol_multipliers
+        else:
+            vols = np.full((n_simulations, time_horizon), portfolio_volatility)
+        
+        # Generar shocks aleatorios para todas las simulaciones
+        shocks = np.random.normal(0, 1, size=(n_simulations, time_horizon))
+        
+        # Calcular retornos de forma vectorizada
+        returns = portfolio_return * dt + vols * np.sqrt(dt) * shocks
+        
+        # Calcular trayectorias usando cumprod
+        # Necesitamos convertir retornos a factores de crecimiento
+        growth_factors = 1 + returns
+        
+        # Inicializar con valor inicial
+        trajectories = np.full((n_simulations, time_horizon + 1), initial_value, dtype=float)
+        
+        # Multiplicar acumuladamente los factores de crecimiento
+        trajectories[:, 1:] = initial_value * np.cumprod(growth_factors, axis=1)
         
         return pd.DataFrame(
-            results,
+            trajectories,
             index=range(n_simulations),
             columns=range(time_horizon + 1)
         )
