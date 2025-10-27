@@ -1,0 +1,41 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+docker-compose.yml
+.dockerignore
+
+# Datos locales
+data/
+*.log
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+
+# Sistema
+.DS_Store
+Thumbs.db

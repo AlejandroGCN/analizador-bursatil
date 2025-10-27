@@ -1,0 +1,22 @@
+
+
+services:
+  analizador-bursatil:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: analizador-bursatil
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Montar datos locales si es necesario
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

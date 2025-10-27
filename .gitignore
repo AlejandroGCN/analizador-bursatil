@@ -41,3 +41,6 @@ tmp/
 venv.ps1
 venv.bat
 stop_app.bat
+
+# Docker
+*.log

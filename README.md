@@ -48,6 +48,87 @@ Deberías ver algo como: `Python 3.12.x`
 
 ## 🚀 Instalación Paso a Paso
 
+### Opción 1: Instalación Simple (Recomendado) ✅
+
+**Solo necesitas hacer doble clic en un archivo**
+
+#### Para Windows:
+1. Descarga el proyecto desde GitHub
+2. Haz **doble clic** en `install.bat`
+3. Espera a que termine (puede tardar unos minutos)
+4. Haz **doble clic** en `run_app.bat` (o `run_app.py`)
+5. ¡Listo! Se abrirá tu navegador automáticamente
+
+#### Para Mac/Linux:
+1. Descarga el proyecto desde GitHub
+2. Abre "Terminal" en la carpeta del proyecto
+3. Escribe: `python install.py` y presiona Enter
+4. Espera a que termine
+5. Escribe: `python run_app.py` y presiona Enter
+6. ¡Listo! Se abrirá tu navegador automáticamente
+
+
+
+## 🐳 Instalación con Docker (Para usuarios avanzados)
+
+Si prefieres usar Docker para tener todo aislado en un contenedor, sigue estas instrucciones:
+
+### Requisitos previos
+- Tener Docker Desktop instalado: https://www.docker.com/products/docker-desktop/
+- Tener el proyecto descargado localmente
+
+### Pasos para ejecutar
+
+1. **Inicia Docker Desktop** (debe estar corriendo)
+
+2. **Abre una terminal en la carpeta del proyecto**
+
+3. **Construye e inicia el contenedor:**
+   ```bash
+   docker-compose up --build
+   ```
+   
+   ⏱️ **Nota:** La primera vez puede tardar 5-10 minutos (descarga dependencias)
+
+4. **Espera** hasta ver el mensaje:
+   ```
+   You can now view your Streamlit app in your browser.
+   URL: http://0.0.0.0:8501
+   ```
+
+5. **Abre tu navegador** en: http://localhost:8501
+
+### Comandos útiles
+
+```bash
+# Iniciar la aplicación
+docker-compose up
+
+# Iniciar en segundo plano (detached)
+docker-compose up -d
+
+# Detener la aplicación
+docker-compose down
+
+# Ver logs
+docker-compose logs -f
+
+# Reconstruir desde cero
+docker-compose down
+docker-compose build --no-cache
+docker-compose up
+```
+
+### Solución de problemas
+
+- **Error "Docker no está corriendo"**: Inicia Docker Desktop
+- **Puerto 8501 ocupado**: Cambia el puerto en `docker-compose.yml` (ej: `8502:8501`)
+- **Error al construir**: Asegúrate de estar en la carpeta del proyecto
+
+---
+
+## 📋 Información Adicional
+
 ### Paso 1: Descargar el Proyecto
 
 #### Opción A: Descarga Directa (Más Fácil)
