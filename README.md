@@ -258,52 +258,6 @@ BTCUSDT,Bitcoin/USDT,binance
 ```
 *Usa este formato si necesitas especificar la fuente de datos para cada símbolo*
 
-## 🔧 Solución de Problemas
-
-### ❌ "No se puede encontrar Python"
-**Problema**: El sistema no encuentra Python
-**Solución**: 
-1. Ve a [python.org/downloads](https://www.python.org/downloads/)
-2. Instala Python 3.12
-3. **IMPORTANTE**: Marca "Add Python to PATH" durante la instalación
-4. Reinicia tu computadora
-
-### ❌ "No module named 'streamlit'"
-**Problema**: Faltan componentes de la aplicación
-**Solución**: 
-1. Abre Terminal/CMD en la carpeta del proyecto
-2. Escribe: `pip install -e .[dev]`
-3. Espera a que termine
-
-### ❌ "Symbol not found" (Símbolo no encontrado)
-**Problema**: El símbolo que escribiste no existe
-**Solución**: 
-- **Yahoo Finance**: Usa `AAPL`, `MSFT`, `GOOGL`
-- **Binance**: Usa `BTCUSDT`, `ETHUSDT`, `ADAUSDT`
-- **Stooq**: Usa `AAPL.US`, `MSFT.US`
-
-### ❌ La aplicación no se abre en el navegador
-**Problema**: Puerto ocupado o problema de conexión
-**Solución**: 
-1. Cierra todas las ventanas del navegador
-2. Abre Terminal/CMD en la carpeta del proyecto
-3. Escribe: `python run_app.py`
-4. Si no funciona, escribe: `streamlit run src/ui/dashboard.py --server.port 8502`
-
-### ❌ "pandas_datareader no está disponible"
-**Problema**: Incompatibilidad con Python 3.12+
-**Solución**: 
-- **No uses Stooq** si tienes Python 3.12+
-- **Usa Yahoo Finance** para acciones
-- **Usa Binance** para criptomonedas
-
-### ❌ La aplicación va muy lenta
-**Problema**: Demasiados datos o símbolos
-**Solución**: 
-- Reduce el rango de fechas (ej: últimos 6 meses)
-- Usa menos símbolos (máximo 5)
-- Cambia a intervalo diario (`1d`) en lugar de horario (`1h`)
-
 ## 📁 Archivos de Ayuda
 
 ### Documentación
@@ -333,14 +287,6 @@ Para una documentación detallada de la arquitectura, consulta [ARCHITECTURE.md]
 - Flujo de datos detallado
 - Patrones de diseño utilizados
 - Tecnologías y dependencias
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
 
 ## 📄 Licencia
 
