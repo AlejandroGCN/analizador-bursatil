@@ -159,24 +159,30 @@ analizador-bursatil  # Comando global
                │      Adapter        │  ◄── Cliente HTTP (Yahoo, Binance, Stooq)
                └─────────────────────┘
 
-## 🚀 Mejoras Recientes
+## 🌟 Características Principales
 
-### Diagramas de Arquitectura
-- 📊 **Diagrama Mermaid detallado**: Visualización completa de la arquitectura del sistema
-- 🔄 **Diagrama de secuencia**: Flujo de datos paso a paso
-- 🏗️ **Patrones de diseño**: Documentación de los patrones utilizados
+### ✨ Funcionalidades Implementadas
+- 🎨 **Interfaz Streamlit**: Panel central para inputs de símbolos con mejor visibilidad
+- 💼 **Análisis de cartera**: Sistema de pesos con validación inteligente y tolerancia a redondeos
+- 🔄 **Persistencia de datos**: Los símbolos se mantienen al cambiar de pestaña
+- 📦 **Importación flexible**: Importar símbolos entre pestañas (Datos ↔ Cartera)
+- 🎯 **Validación robusta**: Mensajes de error claros cuando faltan símbolos
+- 📊 **Visualización enriquecida**: Distribución de cartera con valores monetarios
+- 🎲 **Simulación Monte Carlo**: Integrada con parámetros configurables
+- 📈 **Múltiples fuentes**: Yahoo Finance, Binance y Stooq
 
-### Documentación API Mejorada
-- 📝 **Docstrings detalladas**: Documentación completa con ejemplos
-- 🔍 **Parámetros documentados**: Descripción detallada de todos los argumentos
-- 💡 **Ejemplos de uso**: Casos de uso prácticos en la documentación
-- ⚠️ **Manejo de errores**: Documentación de excepciones y casos límite
+### 🏗️ Arquitectura Técnica
+- 🏗️ **Estructura modular**: Separación clara entre views, sidebars y utilities
+- 🔧 **Sin duplicación**: Código limpio con funciones compartidas en utils.py
+- 📝 **Nomenclatura clara**: Archivos con sufijos `_view.py` y `_sidebar.py`
+- ⚡ **Optimizado**: CSS unificado, validaciones simplificadas
+- 🎨 **Tema personalizado**: Sidebar con fondo azul para mejor contraste
 
-### Reportes y Visualizaciones
-- 📋 **Reportes enriquecidos**: Análisis completo con métricas básicas
-- 📊 **Gráficos mejorados**: Visualizaciones profesionales de carteras
-- ⚠️ **Análisis de advertencias**: Detección automática de riesgos y problemas
-- 🎨 **Interfaz mejorada**: Mejor organización visual de la información
+### 📊 Documentación Completa
+- 📊 **Diagramas Mermaid**: Visualización completa de la arquitectura
+- 🔄 **Diagramas de secuencia**: Flujo de datos paso a paso
+- 🏗️ **Patrones de diseño**: Documentación de patrones utilizados
+- 📝 **API documentada**: Docstrings completos con ejemplos
 
 ---
 

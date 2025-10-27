@@ -6,23 +6,34 @@ if SRC_ROOT not in sys.path:
     sys.path.insert(0, SRC_ROOT)
 
 import streamlit as st
+import logging
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
 
 # ── imports principales ───────────────────────────────────────────────
 from ui.sidebars import sidebar_for
 from ui.views import content_for
-from ui.app_config import TABS_ORDER as TABS
+from ui.app_config import TABS_ORDER as TABS, TAB_LABELS
+from ui.utils import initialize_symbols
 
 
 # ────────────────────────────────
 # Configuración inicial
 # ────────────────────────────────
 st.set_page_config(page_title="Analizador Bursátil", layout="wide")
+
 st.title("📈 Analizador Bursátil")
 
 # ────────────────────────────────
 # Tabs principales
 # ────────────────────────────────
-
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = TABS[0]
 
@@ -35,10 +46,24 @@ selected_tab = st.radio(
 )
 
 if selected_tab != st.session_state.active_tab:
+    # CRÍTICO: Guardar valores ANTES del rerun (se pierden si no hay widget renderizado)
+    temp_datos = st.session_state.get("datos_simbolos", "")
+    temp_cartera = st.session_state.get("cartera_symbols", "")
+    temp_weights = st.session_state.get("cartera_weights", "")
+    
     st.session_state.active_tab = selected_tab
+    
+    # Restaurar valores explícitamente para que no se pierdan
+    if temp_datos or temp_cartera or temp_weights:  # Solo si hay valores
+        st.session_state["datos_simbolos"] = temp_datos
+        st.session_state["cartera_symbols"] = temp_cartera
+        st.session_state["cartera_weights"] = temp_weights
+    
     st.rerun()
 
 tab = st.session_state.active_tab
+
+initialize_symbols()
 
 # ────────────────────────────────
 # Sidebar dinámico (dispatcher)
