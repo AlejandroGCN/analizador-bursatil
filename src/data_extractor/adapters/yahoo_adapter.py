@@ -5,6 +5,11 @@ from data_extractor.core.base.base_adapter  import BaseAdapter
 from data_extractor.core.errors import ExtractionError
 
 logger = logging.getLogger(__name__)
+
+# Constantes para columnas OHLCV
+ADJ_CLOSE_COL = "Adj Close"
+REQUIRED_OHLCV_COLS = ["Open","High","Low","Close",ADJ_CLOSE_COL,"Volume"]
+
 class YahooAdapter(BaseAdapter):
     name = "yahoo"
     supports_intraday = True
@@ -42,11 +47,11 @@ class YahooAdapter(BaseAdapter):
                 symbol=symbol
             )
         # Asegura columnas mínimas para poder seleccionar después
-        if "Adj Close" not in df.columns:
-            df["Adj Close"] = df.get("Close")
+        if ADJ_CLOSE_COL not in df.columns:
+            df[ADJ_CLOSE_COL] = df.get("Close")
         if "Volume" not in df.columns:
             df["Volume"] = 0.0
-        return df[["Open","High","Low","Close","Adj Close","Volume"]]
+        return df[REQUIRED_OHLCV_COLS]
 
     def _download_with_pdr(self, symbol, start, end) -> pd.DataFrame:
         df = self.pdr.get_data_yahoo(symbol, start=start, end=end)
@@ -56,11 +61,11 @@ class YahooAdapter(BaseAdapter):
                 source="pandas_datareader",
                 symbol=symbol
             )
-        if "Adj Close" not in df.columns:
-            df["Adj Close"] = df.get("Close")
+        if ADJ_CLOSE_COL not in df.columns:
+            df[ADJ_CLOSE_COL] = df.get("Close")
         if "Volume" not in df.columns:
             df["Volume"] = 0.0
-        return df[["Open","High","Low","Close","Adj Close","Volume"]]
+        return df[REQUIRED_OHLCV_COLS]
 
     def download_symbol(self, symbol, start, end, interval, **options) -> pd.DataFrame:
         if interval not in self.allowed_intervals:

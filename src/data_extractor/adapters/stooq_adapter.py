@@ -9,6 +9,10 @@ from data_extractor.core.errors import ExtractionError, SymbolNotFound
 
 logger = logging.getLogger(__name__)
 
+# Constantes para columnas OHLCV
+ADJ_CLOSE_COL = "Adj Close"
+OHLCV_COLS = ["Open","High","Low","Close",ADJ_CLOSE_COL,"Volume"]
+
 # Intentar importar pandas_datareader, si falla será opcional
 try:
     from pandas_datareader import data as pdr
@@ -80,16 +84,20 @@ class StooqAdapter(BaseAdapter):
                 )
         if "Volume" not in df_raw.columns:
             df_raw["Volume"] = 0
-        if "Adj Close" not in df_raw.columns:
-            df_raw["Adj Close"] = df_raw["Close"]
+        if ADJ_CLOSE_COL not in df_raw.columns:
+            df_raw[ADJ_CLOSE_COL] = df_raw["Close"]
 
-        df = df_raw[["Open","High","Low","Close","Adj Close","Volume"]]
+        df = df_raw[OHLCV_COLS]
 
         if interval in ("1wk", "1mo"):
             rule = "W-FRI" if interval == "1wk" else "M"
+            agg_dict = {
+                "Open":"first","High":"max","Low":"min",
+                "Close":"last",ADJ_CLOSE_COL:"last","Volume":"sum"
+            }
             df = (
                 df.resample(rule)
-                .agg({"Open":"first","High":"max","Low":"min","Close":"last","Adj Close":"last","Volume":"sum"})
+                .agg(agg_dict)
                 .dropna(how="any")
             )
 

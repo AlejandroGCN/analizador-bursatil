@@ -200,7 +200,7 @@ def _show_montecarlo_results(results: pd.DataFrame, portfolio: Any) -> None:
     
     # Mostrar una muestra de trayectorias (reducido para mejor rendimiento)
     sample_size = min(50, len(results))  # Reducido de 100 a 50
-    rng = default_rng()
+    rng = default_rng(seed=42)  # Seed para reproducibilidad
     sample_indices = rng.choice(len(results), sample_size, replace=False)
     sample_results = results.iloc[sample_indices]
     
@@ -231,6 +231,7 @@ def _show_montecarlo_results(results: pd.DataFrame, portfolio: Any) -> None:
     
     plt.tight_layout()
     st.pyplot(fig)
+    plt.close(fig)  # Cerrar figura para liberar memoria
     
     st.divider()
     
