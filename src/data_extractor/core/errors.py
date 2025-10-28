@@ -158,7 +158,7 @@ def _parse_retry_after(headers: Optional[Mapping[str, Any]]) -> Optional[float]:
             now = datetime.utcnow().replace(tzinfo=dt.tzinfo)
             delta = (dt - now).total_seconds()
             return max(delta, 0.0)
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             return None
 
 def _safe_params(params: Dict[str, Any]) -> Dict[str, Any]:

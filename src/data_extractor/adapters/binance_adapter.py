@@ -44,7 +44,7 @@ class BinanceAdapter(BaseAdapter):
         if resp.status_code >= 400:
             try:
                 payload = resp.json()
-            except Exception:
+            except (ValueError, TypeError, requests.exceptions.JSONDecodeError):
                 payload = {}
             if isinstance(payload, dict) and payload.get("code") == -1121:
                 raise SymbolNotFound(f"Símbolo inválido: {symbol}", source=self.name)

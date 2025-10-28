@@ -103,7 +103,8 @@ class BaseAdapter(ABC):
                         symbol, len(df),
                         None if df.empty else df.index.min(),
                         None if df.empty else df.index.max())
-        except Exception:
+        except (AttributeError, TypeError, ValueError, KeyError):
+            # Ignorar errores de logging que no afectan funcionalidad
             pass
 
     # ------------------------ API pública ------------------------
