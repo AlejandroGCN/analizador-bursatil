@@ -16,6 +16,14 @@ def initialize_symbols() -> None:
         st.session_state.cartera_symbols = ""
     if "cartera_weights" not in st.session_state:
         st.session_state.cartera_weights = ""
+    
+    # Inicializar valores guardados si no existen
+    if "saved_datos_simbolos" not in st.session_state:
+        st.session_state.saved_datos_simbolos = ""
+    if "saved_cartera_symbols" not in st.session_state:
+        st.session_state.saved_cartera_symbols = ""
+    if "saved_cartera_weights" not in st.session_state:
+        st.session_state.saved_cartera_weights = ""
 
 
 def display_symbol_info(session_state_key: str, contexto: str = "") -> None:

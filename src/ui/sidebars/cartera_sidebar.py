@@ -171,8 +171,6 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
             
             if valid_symbols:
                 validated_symbols_list = valid_symbols
-                # Actualizar en session_state los símbolos limpios
-                st.session_state.cartera_symbols = ",".join(valid_symbols)
             elif invalid_symbols:
                 st.error("❌ No se encontraron símbolos válidos. Verifica el formato (ej: AAPL, MSFT, GOOGL)")
     
@@ -208,9 +206,8 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
     # Si no hay símbolos, usar peso por defecto
     weights_str_final = weights_str if weights_str else "1.0"
     
-    # Guardar en session_state para preservar entre cambios de tab
-    if symbols_input:
-        st.session_state.cartera_symbols = symbols_input
+    # NO guardar symbols_input en session_state porque el input ya lo hace automáticamente
+    # al tener key="cartera_symbols"
     
     return submitted, CarteraParams(symbols_input, weights_str_final, float(valor_inicial_input))
 

@@ -73,19 +73,47 @@ selected_tab = st.radio(
     label_visibility="collapsed",
 )
 
-if selected_tab != st.session_state.active_tab:
-    # CRÍTICO: Guardar valores ANTES del rerun (se pierden si no hay widget renderizado)
-    # No importar qué tab se selecciona, SIEMPRE preservar estos valores
+# Guardar valores de la pestaña ACTUAL antes de cambiar
+current_tab = st.session_state.active_tab
+
+if selected_tab != current_tab:
+    # Guardar los valores actuales SOLO si no están vacíos
+    # Esto evita sobrescribir valores guardados con cadenas vacías cuando
+    # los widgets no se han renderizado en la pestaña actual
+    current_datos = st.session_state.get("datos_simbolos", "")
+    current_cartera = st.session_state.get("cartera_symbols", "")
+    current_weights = st.session_state.get("cartera_weights", "")
+    
+    # Solo actualizar saved_* si el valor actual no está vacío
+    # Esto preserva los valores guardados anteriores
+    if current_datos and current_datos.strip():
+        st.session_state["saved_datos_simbolos"] = current_datos
+    if current_cartera and current_cartera.strip():
+        st.session_state["saved_cartera_symbols"] = current_cartera
+    if current_weights and current_weights.strip():
+        st.session_state["saved_cartera_weights"] = current_weights
+    
+    # Marcar que vamos a cambiar de pestaña para restaurar valores en el próximo render
+    st.session_state["_tab_change_occurred"] = True
     st.session_state.active_tab = selected_tab
-    
-    # Los valores se preservan automáticamente en session_state, no necesitamos guardarlos
-    # st.rerun() los mantiene si existen
-    
     st.rerun()
 
 tab = st.session_state.active_tab
 
 initialize_symbols()
+
+# Restaurar los valores guardados SOLO cuando cambia la pestaña
+# (no en cada rerun para evitar sobrescribir lo que el usuario está escribiendo)
+if st.session_state.get("_tab_change_occurred", False):
+    if "saved_datos_simbolos" in st.session_state:
+        st.session_state["datos_simbolos"] = st.session_state["saved_datos_simbolos"]
+    if "saved_cartera_symbols" in st.session_state:
+        st.session_state["cartera_symbols"] = st.session_state["saved_cartera_symbols"]
+    if "saved_cartera_weights" in st.session_state:
+        st.session_state["cartera_weights"] = st.session_state["saved_cartera_weights"]
+    
+    # Limpiar la bandera para que no se ejecute en siguientes renders
+    st.session_state["_tab_change_occurred"] = False
 
 # ────────────────────────────────
 # Sidebar dinámico (dispatcher)
