@@ -106,7 +106,8 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
     
     # Obtener símbolos para usarlos en el form
     symbols_input = st.session_state.get("cartera_symbols", "")
-    symbols_list = [s.strip() for s in symbols_input.split(",") if s.strip()]
+    # NO parsear aquí, se hace abajo
+    symbols_list = []
     
     # Formulario
     with st.sidebar.form("form_cartera"):
@@ -115,6 +116,10 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
         )
         
         weights_str = ""
+        
+        # Parsear símbolos para mostrar inputs
+        if symbols_input:
+            symbols_list = [s.strip() for s in symbols_input.split(",") if s.strip()]
         
         if symbols_list:
             st.markdown("---")
