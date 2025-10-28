@@ -7,12 +7,38 @@ if SRC_ROOT not in sys.path:
 
 import streamlit as st
 import logging
+import os
 from pathlib import Path
-from logs.logs_handler import setup_logging_from_file, resolve_log_cfg
+from logs.logs_handler import resolve_log_cfg
 
-# Configurar logging desde archivo YAML
+# Configurar logging desde archivo YAML con paths ajustados
 log_config_path = Path(__file__).parent.parent / "logs" / "logging.yaml"
-setup_logging_from_file(resolve_log_cfg(str(log_config_path)))
+cfg_path = resolve_log_cfg(str(log_config_path))
+
+if cfg_path:
+    import yaml
+    with open(cfg_path, 'r', encoding='utf-8') as f:
+        cfg = yaml.safe_load(f)
+    
+    # Ajustar paths de handlers a la raíz del proyecto
+    project_root = Path(__file__).parent.parent.parent
+    for handler_name, handler_cfg in cfg.get('handlers', {}).items():
+        if isinstance(handler_cfg, dict) and 'filename' in handler_cfg:
+            filename = handler_cfg['filename']
+            if not os.path.isabs(filename):
+                log_dir = project_root / filename
+                log_dir.parent.mkdir(parents=True, exist_ok=True)
+                handler_cfg['filename'] = str(log_dir)
+    
+    # Aplicar configuración
+    import logging.config
+    logging.config.dictConfig(cfg)
+else:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
 # Reducir ruido de librerías externas
 logging.getLogger("yfinance").setLevel(logging.WARNING)
