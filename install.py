@@ -13,7 +13,7 @@ def run_command(command, description):
     """Ejecuta un comando y muestra el resultado"""
     print(f"[*] {description}...")
     try:
-        result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+        subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
         print(f"[OK] {description} completado")
         return True
     except subprocess.CalledProcessError as e:
@@ -111,7 +111,11 @@ monte_carlo:
 """
 
 def create_sample_config():
-    """Crea un archivo de configuración de ejemplo"""
+    """Crea un archivo de configuración de ejemplo
+    
+    Returns:
+        bool: True si se creó exitosamente o si falla (no crítico)
+    """
     print("[*] Creando configuracion de ejemplo...")
     
     sample_config = get_sample_config()
@@ -121,9 +125,11 @@ def create_sample_config():
             f.write(sample_config)
         print("[OK] Archivo config_example.yaml creado")
         return True
-    except Exception as e:
+    except (IOError, OSError) as e:
+        # Error de I/O no es crítico para la instalación
         print(f"[WARNING] No se pudo crear config_example.yaml: {e}")
-        return True  # No fallar por esto
+        print("   Puedes crearlo manualmente más tarde")
+        return True
 
 def main():
     """Función principal de instalación"""

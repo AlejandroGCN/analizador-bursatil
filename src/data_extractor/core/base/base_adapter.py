@@ -9,6 +9,11 @@ from data_extractor.core.errors import ExtractionError
 
 logger = logging.getLogger(__name__)
 
+# Constantes para columnas OHLCV
+ADJ_CLOSE_COL = "Adj Close"
+REQUIRED_BASE_COLS = ["Open", "High", "Low", "Close", "Volume"]
+REQUIRED_ALL_COLS = ["Open", "High", "Low", "Close", ADJ_CLOSE_COL, "Volume"]
+
 class BaseAdapter(ABC):
     """
     Clase base para adapters de datos OHLCV.
@@ -35,22 +40,21 @@ class BaseAdapter(ABC):
             df.index.tz is not None or 
             df.index.has_duplicates or
             not df.index.is_monotonic_increasing or
-            any(col.title() != col for col in df.columns if col != "Adj Close")):
+            any(col.title() != col for col in df.columns if col != ADJ_CLOSE_COL)):
             df = df.copy()
 
         # 1) Normaliza nombres (title-case) sin perder "Adj Close"
         rename_map = {c: c.title() for c in df.columns}
-        if "Adj Close" in df.columns:  # asegura preservación exacta
-            rename_map["Adj Close"] = "Adj Close"
+        if ADJ_CLOSE_COL in df.columns:  # asegura preservación exacta
+            rename_map[ADJ_CLOSE_COL] = ADJ_CLOSE_COL
         df.rename(columns=rename_map, inplace=True)
 
         # 2) Asegura columnas base y crea Adj Close si falta
-        required = ["Open", "High", "Low", "Close", "Volume"]
-        for c in required:
+        for c in REQUIRED_BASE_COLS:
             if c not in df.columns:
                 raise ExtractionError(f"Falta columna requerida: {c}", source="base")
-        if "Adj Close" not in df.columns:
-            df["Adj Close"] = df["Close"]
+        if ADJ_CLOSE_COL not in df.columns:
+            df[ADJ_CLOSE_COL] = df["Close"]
 
         # 3) Índice temporal (tz coherente)
         if not isinstance(df.index, pd.DatetimeIndex):
@@ -62,7 +66,7 @@ class BaseAdapter(ABC):
             df.index = df.index.tz_convert("UTC").tz_localize(None)
 
         # 4) Tipos numéricos + limpieza de no-finitos
-        for c in ["Open","High","Low","Close","Adj Close","Volume"]:
+        for c in REQUIRED_ALL_COLS:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
         # 5) Orden y duplicados
@@ -72,8 +76,7 @@ class BaseAdapter(ABC):
             df = df[~df.index.duplicated(keep="first")]
 
         # 6) Reordena columnas
-        cols = ["Open","High","Low","Close","Adj Close","Volume"]
-        df = df[cols]
+        df = df[REQUIRED_ALL_COLS]
 
         return df
 
@@ -88,8 +91,7 @@ class BaseAdapter(ABC):
 
     @staticmethod
     def _validate_ohlcv(df: pd.DataFrame) -> None:
-        cols = ["Open","High","Low","Close","Adj Close","Volume"]
-        if list(df.columns) != cols:
+        if list(df.columns) != REQUIRED_ALL_COLS:
             raise ExtractionError(f"Columnas inválidas: {list(df.columns)}", source="base")
         if not isinstance(df.index, pd.DatetimeIndex):
             raise ExtractionError("Índice debe ser DatetimeIndex", source="base")

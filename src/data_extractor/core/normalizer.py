@@ -13,6 +13,8 @@ from data_extractor.series import (
 
 logger = logging.getLogger(__name__)
 
+# Constantes para nombres de columnas
+ADJ_CLOSE_COL = "Adj Close"
 OHLCV_COLUMNS = ["open", "high", "low", "close", "volume"]
 
 # Utilidad para extraer columnas con tolerancia a nombres alternativos
@@ -50,7 +52,7 @@ def normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
         "open": _safe_col(df, "Open", idx),
         "high": _safe_col(df, "High", idx),
         "low": _safe_col(df, "Low", idx),
-        "close": _safe_col(df, ["Adj Close", "Close"], idx),
+        "close": _safe_col(df, [ADJ_CLOSE_COL, "Close"], idx),
         "volume": _safe_col(df, "Volume", idx),
     }, index=idx)
 
