@@ -64,3 +64,58 @@ def display_symbol_info(session_state_key: str, contexto: str = "") -> None:
         else:
             st.info("💡 **Configura los símbolos en el panel lateral para comenzar**")
 
+
+def validate_and_clean_symbols(symbols_str: str) -> tuple[list[str], list[str]]:
+    """
+    Valida y limpia una cadena de símbolos, separándolos correctamente.
+    
+    Returns:
+        (valid_symbols, invalid_symbols): Tupla con símbolos válidos e inválidos
+    """
+    if not symbols_str or not symbols_str.strip():
+        return [], []
+    
+    # Limpiar la entrada: remover espacios extra y normalizar
+    symbols_str = symbols_str.strip()
+    
+    # Intentar separar por comas primero
+    potential_symbols = [s.strip() for s in symbols_str.replace(" ", ",").split(",") if s.strip()]
+    
+    valid_symbols = []
+    invalid_symbols = []
+    
+    for symbol in potential_symbols:
+        # Validaciones básicas
+        is_valid = True
+        reasons = []
+        
+        # 1. No debe tener múltiples puntos consecutivos o mal posicionados
+        if symbol.count('.') > 1:
+            is_valid = False
+            reasons.append("demasiados puntos")
+        elif '.' in symbol and not symbol.endswith(('.US', '.DE', '.FR', '.UK', '.JP', '.CA', '.AU', '.CN')):
+            # Si tiene punto, debe ser una extensión conocida
+            is_valid = False
+            reasons.append("extensión desconocida")
+        
+        # 2. Longitud mínima y máxima
+        if len(symbol) < 1 or len(symbol) > 15:
+            is_valid = False
+            reasons.append("longitud inválida")
+        
+        # 3. Solo letras, números, puntos y guiones
+        if not all(c.isalnum() or c in '.-' for c in symbol):
+            is_valid = False
+            reasons.append("caracteres no permitidos")
+        
+        # 4. Debe empezar con letra
+        if not symbol[0].isalpha():
+            is_valid = False
+            reasons.append("debe empezar con letra")
+        
+        if is_valid:
+            valid_symbols.append(symbol)
+        else:
+            invalid_symbols.append(f"{symbol} ({', '.join(reasons)})")
+    
+    return valid_symbols, invalid_symbols

@@ -154,7 +154,6 @@ def _parse_retry_after(headers: Optional[Mapping[str, Any]]) -> Optional[float]:
             dt = eutils.parsedate_to_datetime(str(ra))
             if dt is None:
                 return None
-            # asume now utc naive (usando timezone-aware API)
             now = datetime.now(dt.tzinfo).replace(tzinfo=dt.tzinfo)
             delta = (dt - now).total_seconds()
             return max(delta, 0.0)

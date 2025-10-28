@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 from ui.app_config import SOURCE_MAP
 from .types import DatosParams
+from ui.utils import validate_and_clean_symbols
 
 
 def sidebar_datos() -> Tuple[bool, DatosParams]:
