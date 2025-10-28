@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 try:
     from pandas_datareader import data as pdr
     _PDR_OK = True
-except ImportError:
+except Exception:  # Captura cualquier error (ImportError, ModuleNotFoundError, etc.)
     _PDR_OK = False
     pdr = None
 
