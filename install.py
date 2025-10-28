@@ -114,7 +114,7 @@ def create_sample_config():
     """Crea un archivo de configuración de ejemplo
     
     Returns:
-        bool: True si se creó exitosamente o si falla (no crítico)
+        bool: True si se creó exitosamente, False si falla (no crítico)
     """
     print("[*] Creando configuracion de ejemplo...")
     
@@ -129,7 +129,7 @@ def create_sample_config():
         # Error de I/O no es crítico para la instalación
         print(f"[WARNING] No se pudo crear config_example.yaml: {e}")
         print("   Puedes crearlo manualmente más tarde")
-        return True
+        return False  # Retornar False cuando falla (aunque es no crítico)
 
 def main():
     """Función principal de instalación"""
