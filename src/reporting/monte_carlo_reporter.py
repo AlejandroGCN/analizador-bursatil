@@ -73,9 +73,6 @@ class MonteCarloReporter:
         st.subheader("📊 Visualizaciones de la cartera")
         
         try:
-            # Crear figura en memoria
-            fig = plt.figure(figsize=(16, 10))
-            
             # Generar visualizaciones usando el método plots_report
             portfolio.plots_report(figsize=(16, 10), save_path=None)
             

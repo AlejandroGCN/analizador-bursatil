@@ -81,9 +81,8 @@ def _apply_fill(df: pd.DataFrame, ffill: bool, bfill: bool) -> pd.DataFrame:
         return df.ffill().bfill()
     if ffill:
         return df.ffill()
-    if bfill:
-        return df.bfill()
-    return df
+    # At this point, bfill must be True (since if not ffill and not bfill, we returned earlier)
+    return df.bfill()
 
 # Constructores de series normalizadas
 def _build_ohlcv(symbol: str, source: str, df: pd.DataFrame, **_: Any) -> PriceSeries:

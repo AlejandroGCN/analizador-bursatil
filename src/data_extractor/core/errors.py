@@ -154,8 +154,8 @@ def _parse_retry_after(headers: Optional[Mapping[str, Any]]) -> Optional[float]:
             dt = eutils.parsedate_to_datetime(str(ra))
             if dt is None:
                 return None
-            # asume now utc naive
-            now = datetime.utcnow().replace(tzinfo=dt.tzinfo)
+            # asume now utc naive (usando timezone-aware API)
+            now = datetime.now(dt.tzinfo).replace(tzinfo=dt.tzinfo)
             delta = (dt - now).total_seconds()
             return max(delta, 0.0)
         except (ValueError, TypeError, OverflowError):
@@ -189,10 +189,10 @@ def build_error_from_http(
     Clasifica y construye la subclase adecuada en base a 'status' y payloads típicos.
     """
     retry_after = _parse_retry_after(headers)
-    base_kwargs = dict(
-        source=source, symbol=symbol, status=status, retry_after=retry_after,
-        cause=cause, extra=extra, endpoint=endpoint, method=method, params=params, code=code,
-    )
+    base_kwargs = {
+        "source": source, "symbol": symbol, "status": status, "retry_after": retry_after,
+        "cause": cause, "extra": extra, "endpoint": endpoint, "method": method, "params": params, "code": code,
+    }
 
     # Clasificación por status HTTP (heurística común)
     if status in (401, 403):

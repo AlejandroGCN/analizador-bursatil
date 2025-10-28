@@ -62,18 +62,17 @@ def install_dependencies():
 def run_tests():
     """Ejecuta los tests para verificar la instalación"""
     print("[*] Ejecutando tests...")
-    if run_command(f"{sys.executable} -m pytest tests/ -v", "Ejecutando tests"):
+    success = run_command(f"{sys.executable} -m pytest tests/ -v", "Ejecutando tests")
+    if success:
         print("[OK] Todos los tests pasaron")
-        return True
     else:
         print("[WARNING] Algunos tests fallaron, pero la instalacion puede estar correcta")
-        return True  # No fallar la instalación por tests
+    # No fallar la instalación por tests
+    return True
 
-def create_sample_config():
-    """Crea un archivo de configuración de ejemplo"""
-    print("[*] Creando configuracion de ejemplo...")
-    
-    sample_config = """# Configuracion de ejemplo para el Analizador Bursatil
+def get_sample_config() -> str:
+    """Devuelve el contenido del archivo de configuración de ejemplo"""
+    return """# Configuracion de ejemplo para el Analizador Bursatil
 # Copia este archivo como 'config.yaml' y modifica segun tus necesidades
 
 # Configuracion por defecto
@@ -110,6 +109,12 @@ monte_carlo:
   time_horizon: 252
   dynamic_volatility: false
 """
+
+def create_sample_config():
+    """Crea un archivo de configuración de ejemplo"""
+    print("[*] Creando configuracion de ejemplo...")
+    
+    sample_config = get_sample_config()
     
     try:
         with open("config_example.yaml", "w", encoding="utf-8") as f:
