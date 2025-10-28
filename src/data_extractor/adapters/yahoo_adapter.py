@@ -19,16 +19,17 @@ class YahooAdapter(BaseAdapter):
         if self._yf_available:
             import yfinance as yf  # type: ignore
             self.yf = yf
+        else:
+            self.yf = None
         
         # Intentar importar pandas_datareader de forma segura
         if self._pdr_available:
             try:
                 import pandas_datareader.data as pdr  # type: ignore
                 self.pdr = pdr
-            except Exception as e:
+            except Exception:
                 # Si falla la importación (ej: distutils no disponible en Python 3.12+), desactivar pdr
                 self._pdr_available = False
-                logger.warning(f"pandas_datareader no disponible: {e}. Usando solo yfinance.")
                 self.pdr = None
 
     def _download_with_yfinance(self, symbol, start, end, interval) -> pd.DataFrame:
@@ -67,17 +68,16 @@ class YahooAdapter(BaseAdapter):
 
         intradia = interval not in ("1d","1wk","1mo")
 
+        # Preferir yfinance (soporta intradía)
         if self._yf_available:
             df = self._download_with_yfinance(symbol, start, end, interval)
-        else:
-            if intradia:
-                # pdr no sirve para intradía
-                raise ExtractionError("Intradía requiere yfinance instalado", source=self.name)
-            if not self._pdr_available:
-                raise ExtractionError("Ni yfinance ni pandas_datareader disponibles", source=self.name)
+        elif self._pdr_available and not intradia:
+            # Fallback a pandas_datareader solo para datos diarios
             df = self._download_with_pdr(symbol, start, end)
+        else:
+            raise ExtractionError("Ni yfinance ni pandas_datareader disponibles", source=self.name)
 
-        # Normalización y recorte coherentes para ambos backends
+        # Normalización y recorte
         df = self._finalize_ohlcv(df)
         df = self._clip_range(df, start, end)
         self._validate_ohlcv(df)

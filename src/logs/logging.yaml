@@ -16,7 +16,7 @@ formatters:
 handlers:
   console:
     class: logging.StreamHandler
-    level: INFO
+    level: WARNING  # Solo mostrar warnings y errores en consola
     formatter: standard
     stream: ext://sys.stdout
 
@@ -24,7 +24,7 @@ handlers:
     class: logging.handlers.RotatingFileHandler
     level: DEBUG
     formatter: detailed
-    filename: tmp/logs/app.log
+    filename: ../logs/app.log
     maxBytes: 10485760  # 10MB
     backupCount: 5
     encoding: utf8
@@ -33,7 +33,7 @@ handlers:
     class: logging.handlers.RotatingFileHandler
     level: ERROR
     formatter: detailed
-    filename: tmp/logs/errors.log
+    filename: ../logs/errors.log
     maxBytes: 5242880   # 5MB
     backupCount: 3
     encoding: utf8
@@ -42,16 +42,16 @@ handlers:
     class: logging.handlers.RotatingFileHandler
     level: INFO
     formatter: simple
-    filename: tmp/logs/performance.log
+    filename: ../logs/performance.log
     maxBytes: 5242880   # 5MB
     backupCount: 2
     encoding: utf8
 
 loggers:
-  # Logger raíz
+  # Logger raíz - Solo archivos, no consola
   root:
     level: INFO
-    handlers: [console, file, error_file]
+    handlers: [file, error_file]
 
   # Data extractor principal - Solo archivos, no consola
   data_extractor:
@@ -119,6 +119,11 @@ loggers:
     propagate: false
 
   # External libraries (menos verbosos)
+  yfinance:
+    level: WARNING
+    handlers: [file]
+    propagate: false
+
   requests:
     level: WARNING
     handlers: [file]
@@ -130,6 +135,11 @@ loggers:
     propagate: false
 
   pandas:
+    level: WARNING
+    handlers: [file]
+    propagate: false
+  
+  numpy:
     level: WARNING
     handlers: [file]
     propagate: false

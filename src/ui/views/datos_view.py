@@ -47,7 +47,12 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
 
             with st.spinner("Cargando datos…"):
                 # Convertir string de símbolos a lista
-                symbols_list = [s.strip() for s in params.simbolos.split(",") if s.strip()]
+                symbols_list = [s.strip() for s in params.simbolos.replace(" ", ",").split(",") if s.strip()]
+                
+                # Validar formato de símbolos
+                for symbol in symbols_list:
+                    if "." in symbol and not any(symbol.endswith(f".{ext}") for ext in ["US", "DE", "FR", "UK", "JP", "CA"]):
+                        st.warning(f"⚠️ Advertencia: '{symbol}' parece mal formateado. Verifica que usas comas: 'MSFT, GOOGL'")
                 
                 # Validar nuevamente después de parsear
                 if not symbols_list:

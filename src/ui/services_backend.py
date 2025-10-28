@@ -30,7 +30,13 @@ def resolve_backend_params():
     cfg_dict["interval"] = interval
 
     if isinstance(symbols, str):
-        symbols = [s.strip() for s in symbols.split(",") if s.strip()]
+        # Soporta tanto comas como espacios como separadores
+        symbols = [s.strip() for s in symbols.replace(" ", ",").split(",") if s.strip()]
+        
+        # Validar formato de símbolos
+        for symbol in symbols:
+            if "." in symbol and not any(symbol.endswith(f".{ext}") for ext in ["US", "DE", "FR", "UK", "JP", "CA"]):
+                st.warning(f"⚠️ Advertencia: '{symbol}' parece estar mal formateado. Usa comas para separar múltiples símbolos: 'MSFT, GOOGL'")
 
     return cfg_dict, symbols, start, end, interval, kind
 

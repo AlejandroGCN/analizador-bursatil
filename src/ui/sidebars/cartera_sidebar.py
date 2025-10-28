@@ -83,12 +83,25 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
             if "portfolio_weights" in st.session_state:
                 del st.session_state["portfolio_weights"]
         
-        # Recalcular pesos
+        # Recalcular pesos - ajustar para que sumen exactamente 100%
         if new_symbols_list:
             _cleanup_old_weights()
             n_symbols = len(new_symbols_list)
-            equal_weight = round(1.0 / n_symbols, 3)
-            st.session_state.cartera_weights = ",".join([str(equal_weight)] * n_symbols)
+            base_weight = 1.0 / n_symbols
+            
+            # Calcular pesos base y ajuste
+            weights = [base_weight] * n_symbols
+            
+            # Ajustar el primer peso para compensar errores de redondeo
+            # Ejemplo: 3 activos -> 0.333... cada uno, sumaría 0.999, ajustamos a 0.334, 0.333, 0.333
+            total = sum(weights)
+            if total < 1.0:
+                adjustment = 1.0 - total
+                weights[0] += adjustment
+            
+            # Guardar como porcentajes
+            weights_str = ",".join([str(round(w * 100)) for w in weights])
+            st.session_state.cartera_weights = weights_str
     
     # Obtener símbolos para usarlos en el form
     symbols_input = st.session_state.get("cartera_symbols", "")
@@ -106,14 +119,21 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
             st.markdown("---")
             st.markdown("**Asigna pesos a cada activo (en %):**")
             
-            # Mostrar inputs de pesos
-            for symbol in symbols_list:
-                default_percent = int((1.0 / len(symbols_list)) * 100)
+            # Mostrar inputs de pesos - ajustar para que sume 100%
+            n = len(symbols_list)
+            base_pct = round(100.0 / n)
+            adjustment = 100 - (base_pct * n)  # Diferencia para llegar a 100
+            
+            for i, symbol in enumerate(symbols_list):
                 weight_key = f"weight_{symbol}"
+                # El primer símbolo recibe el ajuste para sumar exactamente 100%
+                default_value = base_pct + adjustment if i == 0 else base_pct
+                
                 # Inicializar si no existe
                 if weight_key not in st.session_state:
-                    st.session_state[weight_key] = default_percent
-                # Input de peso (usar value=int para evitar decimales)
+                    st.session_state[weight_key] = default_value
+                
+                # Input de peso
                 st.number_input(
                     f"{symbol}",
                     min_value=0,
@@ -134,7 +154,7 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
             weights_inputs = []
             for symbol in symbols_list:
                 weight_key = f"weight_{symbol}"
-                percent_value = st.session_state.get(weight_key, int((1.0 / len(symbols_list)) * 100))
+                percent_value = st.session_state.get(weight_key, 0)
                 weight = percent_value / 100.0
                 weights_inputs.append(weight)
             

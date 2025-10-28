@@ -7,15 +7,17 @@ if SRC_ROOT not in sys.path:
 
 import streamlit as st
 import logging
+from pathlib import Path
+from logs.logs_handler import setup_logging_from_file, resolve_log_cfg
 
-# Configurar logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
+# Configurar logging desde archivo YAML
+log_config_path = Path(__file__).parent.parent / "logs" / "logging.yaml"
+setup_logging_from_file(resolve_log_cfg(str(log_config_path)))
+
+# Reducir ruido de librerías externas
+logging.getLogger("yfinance").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 # ── imports principales ───────────────────────────────────────────────
 from ui.sidebars import sidebar_for
