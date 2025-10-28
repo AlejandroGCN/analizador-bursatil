@@ -15,12 +15,20 @@ class YahooAdapter(BaseAdapter):
         import importlib.util as _u
         self._yf_available  = _u.find_spec("yfinance") is not None
         self._pdr_available = _u.find_spec("pandas_datareader") is not None
+        
         if self._yf_available:
             import yfinance as yf  # type: ignore
             self.yf = yf
+        
+        # Intentar importar pandas_datareader de forma segura
         if self._pdr_available:
-            import pandas_datareader.data as pdr  # type: ignore
-            self.pdr = pdr
+            try:
+                import pandas_datareader.data as pdr  # type: ignore
+                self.pdr = pdr
+            except (ImportError, ModuleNotFoundError):
+                # Si falla la importación (ej: distutils no disponible), desactivar pdr
+                self._pdr_available = False
+                logger.warning("pandas_datareader no disponible (requiere distutils o Python <3.12)")
 
     def _download_with_yfinance(self, symbol, start, end, interval) -> pd.DataFrame:
         t = self.yf.Ticker(symbol)
