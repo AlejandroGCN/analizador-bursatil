@@ -150,7 +150,10 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
     
     # Leer valores SOLO CUANDO se pulsa el botón (FUERA del form)
     weights_str = ""
-    if submitted and symbols_list:
+    if submitted:
+        if not symbols_list:
+            st.error("❌ Debes ingresar al menos un símbolo para configurar la cartera.")
+        elif symbols_list:
             weights_inputs = []
             for symbol in symbols_list:
                 weight_key = f"weight_{symbol}"
