@@ -437,15 +437,15 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
         # Añadir valores en las barras
         for bar, val in zip(bars, values):
             height = bar.get_height()
-            if bar == bars[0]:
-                ax5.text(bar.get_x() + bar.get_width()/2., height,
-                        f'{val:.2%}', ha='center', va='bottom', fontweight='bold')
-            elif bar == bars[2]:
-                ax5.text(bar.get_x() + bar.get_width()/2., height,
-                        f'{val:.2f}', ha='center', va='bottom', fontweight='bold')
+            if bar == bars[2]:
+                # Caso especial para Sharpe ratio (no es porcentaje)
+                format_str = f'{val:.2f}'
             else:
-                ax5.text(bar.get_x() + bar.get_width()/2., height,
-                        f'{val:.2%}', ha='center', va='bottom', fontweight='bold')
+                # Todos los demás son porcentajes
+                format_str = f'{val:.2%}'
+            
+            ax5.text(bar.get_x() + bar.get_width()/2., height,
+                    format_str, ha='center', va='bottom', fontweight='bold')
 
     def plots_report(
         self,

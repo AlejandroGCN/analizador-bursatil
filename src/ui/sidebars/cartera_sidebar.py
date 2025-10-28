@@ -179,7 +179,7 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
     # Validar símbolos y procesar pesos si se envió el formulario
     weights_str_final = "1.0"
     if submitted:
-        valid_symbols, invalid_symbols = _validate_symbols_on_submit(symbols_input)
+        valid_symbols, _ = _validate_symbols_on_submit(symbols_input)
         if valid_symbols:
             weights_str_final = _process_and_validate_weights(valid_symbols) or "1.0"
     

@@ -32,15 +32,9 @@ def _clear_old_cache() -> None:
         del st.session_state["reporte_portfolio"]
 
 
-def _process_and_download_data(params: DatosParams) -> dict:
-    """Procesa y descarga datos del mercado."""
-    cfg_dict, kind = build_cfg_and_kind(
-        params.fuente,
-        params.tipo,
-        params.intervalo,
-    )
-    
-    symbols_list = [s.strip() for s in params.simbolos.replace(" ", ",").split(",") if s.strip()]
+def _parse_and_validate_symbols(symbols_text: str) -> list[str]:
+    """Parsea y valida los símbolos ingresados."""
+    symbols_list = [s.strip() for s in symbols_text.replace(" ", ",").split(",") if s.strip()]
     
     for symbol in symbols_list:
         if not _validate_symbol_format(symbol):
@@ -48,7 +42,17 @@ def _process_and_download_data(params: DatosParams) -> dict:
     
     if not symbols_list:
         st.error("❌ **Error:** No se pudieron parsear los símbolos. Verifica el formato.")
-        return {}
+    
+    return symbols_list
+
+
+def _fetch_data_with_spinner(params: DatosParams, symbols_list: list[str]) -> dict:
+    """Descarga datos del mercado con spinner."""
+    cfg_dict, kind = build_cfg_and_kind(
+        params.fuente,
+        params.tipo,
+        params.intervalo,
+    )
     
     with st.spinner("Cargando datos…"):
         data_map = fetch_market_data(
@@ -61,6 +65,57 @@ def _process_and_download_data(params: DatosParams) -> dict:
         )
     
     return data_map
+
+
+def _process_and_download_data(params: DatosParams) -> dict:
+    """Procesa y descarga datos del mercado."""
+    symbols_list = _parse_and_validate_symbols(params.simbolos)
+    
+    if not symbols_list:
+        return {}
+    
+    return _fetch_data_with_spinner(params, symbols_list)
+
+
+def _should_display_symbol_info(submit: bool, params: DatosParams | None, simbolos_texto: str) -> bool:
+    """Determina si se debe mostrar la información de símbolos."""
+    return not submit or not params or not simbolos_texto or not simbolos_texto.strip()
+
+
+def _handle_form_submit(params: DatosParams) -> None:
+    """Maneja el envío del formulario."""
+    if not params.simbolos or not params.simbolos.strip():
+        return
+    
+    try:
+        data_map = _process_and_download_data(params)
+        
+        if not data_map:
+            st.warning("No se recibieron datos.")
+            return
+        
+        _clear_old_cache()
+        st.session_state["last_data_map"] = data_map
+        _, kind = build_cfg_and_kind(params.fuente, params.tipo, params.intervalo)
+        st.session_state["last_kind"] = kind
+        
+        _data_map(data_map, kind)
+        
+    except Exception as e:
+        error_msg = str(e)
+        if error_msg.startswith("❌"):
+            st.error(error_msg)
+        else:
+            st.error(f"❌ Error obteniendo datos: {e}")
+
+
+def _display_cached_data() -> None:
+    """Muestra los datos cacheados."""
+    if "last_data_map" in st.session_state:
+        st.info("Mostrando últimos datos descargados (cache).")
+        data_map = st.session_state["last_data_map"]
+        kind = st.session_state.get("last_kind", "ohlcv")
+        _data_map(data_map, kind)
 
 
 def tab_datos(submit: bool, params: DatosParams | None) -> None:
@@ -76,44 +131,17 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
         st.error("❌ **Error:** Debes configurar al menos un símbolo antes de obtener datos.")
         st.divider()
     
-    # Mostrar información de símbolos (solo si no hay símbolos configurados y NO se ha pulsado el botón)
-    if not submit or not params or not simbolos_texto or not simbolos_texto.strip():
+    # Mostrar información de símbolos si corresponde
+    if _should_display_symbol_info(submit, params, simbolos_texto):
         display_symbol_info("datos_simbolos", contexto="datos")
     
     st.divider()
-
-    # Cuando el usuario envía el formulario del sidebar de Datos
+    
+    # Manejar envío del formulario o mostrar datos cacheados
     if submit and params is not None:
-        if not params.simbolos or not params.simbolos.strip():
-            return
-        
-        try:
-            data_map = _process_and_download_data(params)
-
-            if not data_map:
-                st.warning("No se recibieron datos.")
-                return
-
-            _clear_old_cache()
-            st.session_state["last_data_map"] = data_map
-            cfg_dict, kind = build_cfg_and_kind(params.fuente, params.tipo, params.intervalo)
-            st.session_state["last_kind"] = kind
-
-            _data_map(data_map, kind)
-
-        except Exception as e:
-            error_msg = str(e)
-            if error_msg.startswith("❌"):
-                st.error(error_msg)
-            else:
-                st.error(f"❌ Error obteniendo datos: {e}")
-
-    # Si no hay submit, intenta mostrar el último resultado cacheado
-    elif "last_data_map" in st.session_state:
-        st.info("Mostrando últimos datos descargados (cache).")
-        data_map = st.session_state["last_data_map"]
-        kind = st.session_state.get("last_kind", "ohlcv")
-        _data_map(data_map, kind)
+        _handle_form_submit(params)
+    else:
+        _display_cached_data()
 
 
 def _data_map(data_map: dict, kind: str) -> None:
