@@ -37,7 +37,7 @@ def load_symbols_from_file(uploaded_file) -> Optional[List[str]]:
         
         return symbols
             
-    except Exception as e:
+    except Exception:
         return None
 
 

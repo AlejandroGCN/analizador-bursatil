@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 import pandas as pd
 import numpy as np
+from numpy.random import default_rng
 import matplotlib.pyplot as plt
 
 
@@ -53,8 +54,8 @@ class MonteCarloSimulation:
         Returns:
             DataFrame con las simulaciones (filas = simulaciones, columnas = días)
         """
-        if random_seed is not None:
-            np.random.seed(random_seed)
+        # Usar generator en lugar de numpy.random legacy API
+        rng = default_rng(random_seed)
         
         dt = 1.0 / 252  # Paso temporal (un día en años)
         
@@ -62,13 +63,13 @@ class MonteCarloSimulation:
         # Forma: (n_simulations, time_horizon)
         if dynamic_volatility:
             # Volatilidad variable para cada paso de cada simulación
-            vol_multipliers = np.random.uniform(0.8, 1.2, size=(n_simulations, time_horizon))
+            vol_multipliers = rng.uniform(0.8, 1.2, size=(n_simulations, time_horizon))
             vols = portfolio_volatility * vol_multipliers
         else:
             vols = np.full((n_simulations, time_horizon), portfolio_volatility)
         
         # Generar shocks aleatorios para todas las simulaciones
-        shocks = np.random.normal(0, 1, size=(n_simulations, time_horizon))
+        shocks = rng.normal(0, 1, size=(n_simulations, time_horizon))
         
         # Calcular retornos de forma vectorizada
         returns = portfolio_return * dt + vols * np.sqrt(dt) * shocks
@@ -158,7 +159,8 @@ class MonteCarloSimulation:
         
         # Mostrar subconjunto de trayectorias
         sample_paths = min(max_paths, len(simulation_results))
-        sample_indices = np.random.choice(
+        rng = default_rng()
+        sample_indices = rng.choice(
             len(simulation_results),
             sample_paths,
             replace=False

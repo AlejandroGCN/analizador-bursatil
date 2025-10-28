@@ -84,9 +84,9 @@ class TestStooqAdapterUnit:
             expected_columns = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
             assert list(result.columns) == expected_columns
             
-            # Verificar que los datos son correctos
-            assert result["Close"].iloc[0] == 10.5
-            assert result["Volume"].iloc[1] == 120
+            # Verificar que los datos son correctos (usar approx para floats)
+            assert result["Close"].iloc[0] == pytest.approx(10.5)
+            assert result["Volume"].iloc[1] == pytest.approx(120)
     
     def test_stooq_timeout_handling(self):
         """Test que StooqAdapter maneja timeouts correctamente."""

@@ -9,6 +9,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Constantes
+ERR_NO_RETURNS = "No hay datos de retornos. Ejecuta set_prices primero."
+
 try:
     import seaborn as sns
     HAS_SEABORN = True
@@ -108,7 +111,7 @@ class Portfolio:
             Retorno esperado (media ponderada)
         """
         if self.returns is None:
-            raise ValueError("No hay datos de retornos. Ejecuta set_prices primero.")
+            raise ValueError(ERR_NO_RETURNS)
         
         # Retorno medio de cada activo
         mean_returns = self.returns.mean()
@@ -124,7 +127,7 @@ class Portfolio:
             Volatilidad anualizada de la cartera
         """
         if self.returns is None:
-            raise ValueError("No hay datos de retornos. Ejecuta set_prices primero.")
+            raise ValueError(ERR_NO_RETURNS)
         
         # Matriz de covarianza
         cov_matrix = self.returns.cov()
@@ -189,7 +192,7 @@ class Portfolio:
             DataFrame con las simulaciones
         """
         if self.returns is None:
-            raise ValueError("No hay datos de retornos. Ejecuta set_prices primero.")
+            raise ValueError(ERR_NO_RETURNS)
         
         from .monte_carlo import MonteCarloSimulation
         
@@ -249,7 +252,7 @@ class Portfolio:
             Cadena markdown con el reporte
         """
         if self.returns is None:
-            raise ValueError("No hay datos de retornos. Ejecuta set_prices primero.")
+            raise ValueError(ERR_NO_RETURNS)
         
         # Obtener estadísticas con tasa libre de riesgo personalizada
         stats = {

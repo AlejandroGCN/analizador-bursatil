@@ -1,6 +1,7 @@
 # tests/units/test_normalizer.py
 import pandas as pd
 import numpy as np
+from numpy.random import default_rng
 import pytest
 
 from data_extractor.core.normalizer import normalizer_tipology
@@ -17,16 +18,17 @@ from data_extractor.series import (
 def _make_ohlcv_df(n=40):
     idx = pd.date_range("2025-01-01", periods=n, freq="D")
     base = np.linspace(100, 120, n)
+    rng = default_rng()
     # Nota: los nombres aquí dan igual; el normalizador renombra y escoge columnas
     # pero incluimos todas para cubrir caminos (Adj Close/Close)
     return pd.DataFrame(
         {
-            "Open": base + np.random.normal(0, 0.5, n),
-            "High": base + 1.0 + np.random.normal(0, 0.5, n),
-            "Low": base - 1.0 + np.random.normal(0, 0.5, n),
-            "Close": base + np.random.normal(0, 0.5, n),
-            "Adj Close": base + np.random.normal(0, 0.5, n),
-            "Volume": np.random.randint(1_000, 10_000, n),
+            "Open": base + rng.normal(0, 0.5, n),
+            "High": base + 1.0 + rng.normal(0, 0.5, n),
+            "Low": base - 1.0 + rng.normal(0, 0.5, n),
+            "Close": base + rng.normal(0, 0.5, n),
+            "Adj Close": base + rng.normal(0, 0.5, n),
+            "Volume": rng.integers(1_000, 10_000, n),
         },
         index=idx,
     )
@@ -34,14 +36,15 @@ def _make_ohlcv_df(n=40):
 def _make_ohlcv_partial(start, periods, freq="D", with_nans=False):
     idx = pd.date_range(start, periods=periods, freq=freq)
     base = np.linspace(100, 110, periods)
+    rng = default_rng()
     df = pd.DataFrame(
         {
-            "Open": base + np.random.normal(0, 0.2, periods),
-            "High": base + 1.0 + np.random.normal(0, 0.2, periods),
-            "Low": base - 1.0 + np.random.normal(0, 0.2, periods),
-            "Close": base + np.random.normal(0, 0.2, periods),
-            "Adj Close": base + np.random.normal(0, 0.2, periods),
-            "Volume": np.random.randint(1_000, 5_000, periods),
+            "Open": base + rng.normal(0, 0.2, periods),
+            "High": base + 1.0 + rng.normal(0, 0.2, periods),
+            "Low": base - 1.0 + rng.normal(0, 0.2, periods),
+            "Close": base + rng.normal(0, 0.2, periods),
+            "Adj Close": base + rng.normal(0, 0.2, periods),
+            "Volume": rng.integers(1_000, 5_000, periods),
         },
         index=idx,
     )

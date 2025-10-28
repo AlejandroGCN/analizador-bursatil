@@ -103,8 +103,8 @@ class TestBaseProviderUnit:
         assert "GOOGL" in result
         assert isinstance(result["GOOGL"], PriceSeries)
         assert result["GOOGL"].symbol == "GOOGL"
-        assert result["GOOGL"].data["close"].iloc[0] == 151.0
-        assert result["GOOGL"].data["volume"].iloc[1] == 1600
+        assert result["GOOGL"].data["close"].iloc[0] == pytest.approx(151.0)
+        assert result["GOOGL"].data["volume"].iloc[1] == pytest.approx(1600)
     
     def test_provider_with_binance_adapter_mock(self):
         """Test BaseProvider con BinanceAdapter usando mocks."""
@@ -127,8 +127,8 @@ class TestBaseProviderUnit:
         assert "BTCUSDT" in result
         assert isinstance(result["BTCUSDT"], PriceSeries)
         assert result["BTCUSDT"].symbol == "BTCUSDT"
-        assert result["BTCUSDT"].data["close"].iloc[0] == 51000.0
-        assert result["BTCUSDT"].data["volume"].iloc[1] == 1.8
+        assert result["BTCUSDT"].data["close"].iloc[0] == pytest.approx(51000.0)
+        assert result["BTCUSDT"].data["volume"].iloc[1] == pytest.approx(1.8)
     
     def test_provider_error_handling(self):
         """Test que BaseProvider maneja errores correctamente."""

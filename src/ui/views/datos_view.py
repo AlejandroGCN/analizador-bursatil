@@ -113,12 +113,10 @@ def _data_map(data_map: dict, kind: str) -> None:
         # Manejar el nuevo formato serializable
         if isinstance(data_info, dict) and "data" in data_info:
             df = data_info["data"]
-            series_type = data_info.get("type", "Unknown")
         else:
             # Fallback para formato anterior
             df = getattr(data_info, "data", None)
-            series_type = type(data_info).__name__
-
+        
         if df is None:
             # Fallback: mostrar objeto tal cual si no tiene .data
             st.write(data_info)

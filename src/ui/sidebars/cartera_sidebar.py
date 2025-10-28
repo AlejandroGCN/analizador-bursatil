@@ -64,7 +64,7 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
         conflictos cuando cambian los símbolos de la cartera.
         """
         keys_to_delete = []
-        for key in list(st.session_state.keys()):
+        for key in st.session_state.keys():
             if key.startswith("weight_"):
                 keys_to_delete.append(key)
         for key in keys_to_delete:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 import streamlit as st
+import pandas as pd
 from ui.sidebars import ReporteParams
+from ui.views.montecarlo_view import _extract_prices_from_data_map
 
 
 def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
@@ -24,52 +26,40 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
             # Obtener datos históricos
             data_map = st.session_state["last_data_map"]
             
-            # Extraer símbolos y crear DataFrame de precios
-            prices_dict = {}
-            for symbol, data_info in data_map.items():
-                if isinstance(data_info, dict) and "data" in data_info:
-                    df = data_info["data"]
-                else:
-                    df = getattr(data_info, "data", None)
-                
-                if df is not None:
-                    # Extraer columna de cierre
-                    close_col = next((c for c in df.columns if c.lower() == 'close'), None)
-                    if close_col:
-                        prices_dict[symbol] = df[close_col]
+            # Extraer precios usando función helper
+            prices_dict = _extract_prices_from_data_map(data_map)
             
             if not prices_dict:
                 st.error("No se pudieron extraer precios de los datos.")
                 return
             
             # Crear DataFrame de precios
-            import pandas as pd
             prices_df = pd.DataFrame(prices_dict)
             
             # Obtener cartera configurada
             portfolio_symbols = st.session_state["portfolio_symbols"]
             portfolio_weights = st.session_state["portfolio_weights"]
             
-            # Verificar que todos los símbolos de la cartera estén en los datos
+            # Verificar coincidencia y ajustar pesos si es necesario
             available_symbols = set(prices_dict.keys())
             portfolio_symbols_set = set(portfolio_symbols)
             
-            if portfolio_symbols_set.issubset(available_symbols):
-                # Filtrar solo los símbolos disponibles y reajustar pesos
-                symbols_in_data = [s for s in portfolio_symbols if s in available_symbols]
-                if len(symbols_in_data) == len(portfolio_symbols):
-                    symbols = portfolio_symbols
-                    weights = portfolio_weights
-                else:
-                    # Algunos símbolos faltan, reajustar pesos
-                    symbol_to_weight = dict(zip(portfolio_symbols, portfolio_weights))
-                    symbols = symbols_in_data
-                    filtered_weights = [symbol_to_weight[s] for s in symbols]
-                    total_weight = sum(filtered_weights)
-                    weights = [w / total_weight for w in filtered_weights]
-            else:
+            if not portfolio_symbols_set.issubset(available_symbols):
                 st.error("⚠️ La cartera configurada no coincide con los datos descargados.")
                 return
+            
+            # Ajustar pesos si faltan algunos símbolos
+            symbols_in_data = [s for s in portfolio_symbols if s in available_symbols]
+            if len(symbols_in_data) == len(portfolio_symbols):
+                symbols = portfolio_symbols
+                weights = portfolio_weights
+            else:
+                # Algunos faltan, reajustar pesos
+                symbol_to_weight = dict(zip(portfolio_symbols, portfolio_weights))
+                symbols = symbols_in_data
+                filtered_weights = [symbol_to_weight[s] for s in symbols]
+                total_weight = sum(filtered_weights)
+                weights = [w / total_weight for w in filtered_weights]
             
             # Crear cartera
             portfolio = Portfolio(
