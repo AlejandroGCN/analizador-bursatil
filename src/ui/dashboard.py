@@ -75,17 +75,11 @@ selected_tab = st.radio(
 
 if selected_tab != st.session_state.active_tab:
     # CRÍTICO: Guardar valores ANTES del rerun (se pierden si no hay widget renderizado)
-    temp_datos = st.session_state.get("datos_simbolos", "")
-    temp_cartera = st.session_state.get("cartera_symbols", "")
-    temp_weights = st.session_state.get("cartera_weights", "")
-    
+    # No importar qué tab se selecciona, SIEMPRE preservar estos valores
     st.session_state.active_tab = selected_tab
     
-    # Restaurar valores explícitamente para que no se pierdan
-    if temp_datos or temp_cartera or temp_weights:  # Solo si hay valores
-        st.session_state["datos_simbolos"] = temp_datos
-        st.session_state["cartera_symbols"] = temp_cartera
-        st.session_state["cartera_weights"] = temp_weights
+    # Los valores se preservan automáticamente en session_state, no necesitamos guardarlos
+    # st.rerun() los mantiene si existen
     
     st.rerun()
 
