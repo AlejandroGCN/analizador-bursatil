@@ -30,33 +30,38 @@ class BaseAdapter(ABC):
         self.max_workers = max_workers
 
     # ------------------------ utilidades comunes ------------------------
-
+    
     @staticmethod
-    def _finalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
-        if df is None or df.empty:
-            raise ExtractionError("DataFrame vacío", source="base")
-        # Solo copiar si necesitamos modificar
-        if (not isinstance(df.index, pd.DatetimeIndex) or 
-            df.index.tz is not None or 
-            df.index.has_duplicates or
-            not df.index.is_monotonic_increasing or
-            any(col.title() != col for col in df.columns if col != ADJ_CLOSE_COL)):
-            df = df.copy()
-
-        # 1) Normaliza nombres (title-case) sin perder "Adj Close"
+    def _should_copy_dataframe(df: pd.DataFrame) -> bool:
+        """Determina si el DataFrame necesita ser copiado antes de modificar."""
+        return (not isinstance(df.index, pd.DatetimeIndex) or 
+                df.index.tz is not None or 
+                df.index.has_duplicates or
+                not df.index.is_monotonic_increasing or
+                any(col.title() != col for col in df.columns if col != ADJ_CLOSE_COL))
+    
+    @staticmethod
+    def _normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
+        """Normaliza los nombres de columnas a title-case sin perder 'Adj Close'."""
         rename_map = {c: c.title() for c in df.columns}
-        if ADJ_CLOSE_COL in df.columns:  # asegura preservación exacta
+        if ADJ_CLOSE_COL in df.columns:
             rename_map[ADJ_CLOSE_COL] = ADJ_CLOSE_COL
         df.rename(columns=rename_map, inplace=True)
-
-        # 2) Asegura columnas base y crea Adj Close si falta
+        return df
+    
+    @staticmethod
+    def _ensure_ohlcv_structure(df: pd.DataFrame) -> pd.DataFrame:
+        """Asegura que existan todas las columnas OHLCV requeridas."""
         for c in REQUIRED_BASE_COLS:
             if c not in df.columns:
                 raise ExtractionError(f"Falta columna requerida: {c}", source="base")
         if ADJ_CLOSE_COL not in df.columns:
             df[ADJ_CLOSE_COL] = df["Close"]
-
-        # 3) Índice temporal (tz coherente)
+        return df
+    
+    @staticmethod
+    def _normalize_datetime_index(df: pd.DataFrame) -> pd.DataFrame:
+        """Normaliza el índice a DatetimeIndex sin timezone."""
         if not isinstance(df.index, pd.DatetimeIndex):
             try:
                 df.index = pd.to_datetime(df.index, utc=True)
@@ -64,18 +69,40 @@ class BaseAdapter(ABC):
                 raise ExtractionError(f"Índice no convertible a fechas: {ex}", source="base")
         elif df.index.tz is not None:
             df.index = df.index.tz_convert("UTC").tz_localize(None)
-
-        # 4) Tipos numéricos + limpieza de no-finitos
-        for c in REQUIRED_ALL_COLS:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
-
-        # 5) Orden y duplicados
+        return df
+    
+    @staticmethod
+    def _clean_and_sort_index(df: pd.DataFrame) -> pd.DataFrame:
+        """Ordena el índice y elimina duplicados."""
         if not df.index.is_monotonic_increasing:
             df.sort_index(inplace=True)
         if df.index.has_duplicates:
             df = df[~df.index.duplicated(keep="first")]
+        return df
 
-        # 6) Reordena columnas
+    @staticmethod
+    def _finalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
+        """Normaliza y valida un DataFrame OHLCV."""
+        if df is None or df.empty:
+            raise ExtractionError("DataFrame vacío", source="base")
+        
+        # Solo copiar si necesitamos modificar
+        if BaseAdapter._should_copy_dataframe(df):
+            df = df.copy()
+
+        # Aplicar normalizaciones usando funciones auxiliares
+        df = BaseAdapter._normalize_column_names(df)
+        df = BaseAdapter._ensure_ohlcv_structure(df)
+        df = BaseAdapter._normalize_datetime_index(df)
+        
+        # Tipos numéricos + limpieza de no-finitos
+        for c in REQUIRED_ALL_COLS:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+        
+        # Ordenar y limpiar duplicados
+        df = BaseAdapter._clean_and_sort_index(df)
+        
+        # Reordena columnas
         df = df[REQUIRED_ALL_COLS]
 
         return df

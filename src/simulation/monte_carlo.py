@@ -155,11 +155,11 @@ class MonteCarloSimulation:
             figsize: Tamaño de la figura
             max_paths: Número máximo de trayectorias a mostrar
         """
-        fig, ax = plt.subplots(figsize=figsize)
+        _, ax = plt.subplots(figsize=figsize)
         
         # Mostrar subconjunto de trayectorias
         sample_paths = min(max_paths, len(simulation_results))
-        rng = default_rng()
+        rng = default_rng(seed=42)  # Seed para reproducibilidad
         sample_indices = rng.choice(
             len(simulation_results),
             sample_paths,

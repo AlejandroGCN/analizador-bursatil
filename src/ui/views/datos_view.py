@@ -6,6 +6,63 @@ from ui.services_backend import fetch_market_data
 from ui.sidebars import DatosParams
 from ui.utils import display_symbol_info, render_symbol_input
 
+
+def _validate_symbol_format(symbol: str) -> bool:
+    """Valida el formato de un símbolo individual."""
+    if "." in symbol and not any(symbol.endswith(f".{ext}") for ext in ["US", "DE", "FR", "UK", "JP", "CA"]):
+        return False
+    return True
+
+
+def _display_date_range_info(df: pd.DataFrame) -> None:
+    """Muestra información del rango de fechas de los datos."""
+    if not df.empty:
+        st.info(f"📅 **Rango de datos:** {df.index.min().strftime('%Y-%m-%d')} a {df.index.max().strftime('%Y-%m-%d')} ({len(df)} registros)")
+
+
+def _clear_old_cache() -> None:
+    """Limpia el cache anterior y resultados de simulaciones antiguos."""
+    if "last_data_map" in st.session_state:
+        del st.session_state["last_data_map"]
+    if "montecarlo_results" in st.session_state:
+        del st.session_state["montecarlo_results"]
+    if "montecarlo_portfolio" in st.session_state:
+        del st.session_state["montecarlo_portfolio"]
+    if "reporte_portfolio" in st.session_state:
+        del st.session_state["reporte_portfolio"]
+
+
+def _process_and_download_data(params: DatosParams) -> dict:
+    """Procesa y descarga datos del mercado."""
+    cfg_dict, kind = build_cfg_and_kind(
+        params.fuente,
+        params.tipo,
+        params.intervalo,
+    )
+    
+    symbols_list = [s.strip() for s in params.simbolos.replace(" ", ",").split(",") if s.strip()]
+    
+    for symbol in symbols_list:
+        if not _validate_symbol_format(symbol):
+            st.warning(f"⚠️ Advertencia: '{symbol}' parece mal formateado. Verifica que usas comas: 'MSFT, GOOGL'")
+    
+    if not symbols_list:
+        st.error("❌ **Error:** No se pudieron parsear los símbolos. Verifica el formato.")
+        return {}
+    
+    with st.spinner("Cargando datos…"):
+        data_map = fetch_market_data(
+            cfg_dict=cfg_dict,
+            symbols=symbols_list,
+            start=params.fecha_ini,
+            end=params.fecha_fin,
+            interval=params.intervalo,
+            kind=kind,
+        )
+    
+    return data_map
+
+
 def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """Contenido central de la pestaña 📊 Datos."""
     st.subheader("📊 Vista de datos")
@@ -27,66 +84,25 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
 
     # Cuando el usuario envía el formulario del sidebar de Datos
     if submit and params is not None:
-        # Validar que haya símbolos configurados (ANTES del try)
         if not params.simbolos or not params.simbolos.strip():
             return
         
         try:
-            # Traducir etiquetas de la UI a claves internas y construir cfg
-            cfg_dict, kind = build_cfg_and_kind(
-                params.fuente,
-                params.tipo,
-                params.intervalo,
-            )
-
-            with st.spinner("Cargando datos…"):
-                # Convertir string de símbolos a lista
-                symbols_list = [s.strip() for s in params.simbolos.replace(" ", ",").split(",") if s.strip()]
-                
-                # Validar formato de símbolos
-                for symbol in symbols_list:
-                    if "." in symbol and not any(symbol.endswith(f".{ext}") for ext in ["US", "DE", "FR", "UK", "JP", "CA"]):
-                        st.warning(f"⚠️ Advertencia: '{symbol}' parece mal formateado. Verifica que usas comas: 'MSFT, GOOGL'")
-                
-                # Validar nuevamente después de parsear
-                if not symbols_list:
-                    st.error("❌ **Error:** No se pudieron parsear los símbolos. Verifica el formato.")
-                    return
-                
-                data_map = fetch_market_data(
-                    cfg_dict=cfg_dict,
-                    symbols=symbols_list,
-                    start=params.fecha_ini,
-                    end=params.fecha_fin,
-                    interval=params.intervalo,
-                    kind=kind,
-                )
+            data_map = _process_and_download_data(params)
 
             if not data_map:
                 st.warning("No se recibieron datos.")
                 return
 
-            # Limpiar cache anterior y resultados de simulaciones antiguos
-            if "last_data_map" in st.session_state:
-                del st.session_state["last_data_map"]
-            
-            # Limpiar simulaciones antiguos al obtener datos nuevos (pero mantener cartera)
-            if "montecarlo_results" in st.session_state:
-                del st.session_state["montecarlo_results"]
-            if "montecarlo_portfolio" in st.session_state:
-                del st.session_state["montecarlo_portfolio"]
-            if "reporte_portfolio" in st.session_state:
-                del st.session_state["reporte_portfolio"]
-            
-            # Persistir resultado
+            _clear_old_cache()
             st.session_state["last_data_map"] = data_map
+            cfg_dict, kind = build_cfg_and_kind(params.fuente, params.tipo, params.intervalo)
             st.session_state["last_kind"] = kind
 
             _data_map(data_map, kind)
 
         except Exception as e:
             error_msg = str(e)
-            # Si el mensaje ya tiene formato con emojis, mostrarlo tal cual
             if error_msg.startswith("❌"):
                 st.error(error_msg)
             else:
@@ -125,24 +141,33 @@ def _data_map(data_map: dict, kind: str) -> None:
         st.dataframe(df, height=400, width='stretch')
         
         # Mostrar información del rango de fechas
-        if not df.empty:
-            st.info(f"📅 **Rango de datos:** {df.index.min().strftime('%Y-%m-%d')} a {df.index.max().strftime('%Y-%m-%d')} ({len(df)} registros)")
+        _display_date_range_info(df)
 
         # Gráficos optimizados - mostrar todos los datos
-        if kind == "ohlcv":
-            # Busca columna de cierre con tolerancia a capitalización
-            close_col = next((c for c in df.columns if c.lower() == "close"), None)
-            if close_col:
-                chart_data = df[close_col]
-                st.line_chart(chart_data)
-            elif "Close" in df.columns:
-                chart_data = df["Close"]
-                st.line_chart(chart_data)
-        else:
-            if isinstance(df, pd.Series):
-                chart_data = df
-                st.line_chart(chart_data)
-            elif "value" in getattr(df, "columns", []):
-                chart_data = df["value"]
-                st.line_chart(chart_data)
+        _render_charts(df, kind)
+
+
+def _render_charts(df: pd.DataFrame, kind: str) -> None:
+    """Renderiza gráficos según el tipo de datos."""
+    if kind == "ohlcv":
+        _render_ohlcv_chart(df)
+    else:
+        _render_series_chart(df)
+
+
+def _render_ohlcv_chart(df: pd.DataFrame) -> None:
+    """Renderiza gráfico de precios OHLCV."""
+    close_col = next((c for c in df.columns if c.lower() == "close"), None)
+    if close_col:
+        st.line_chart(df[close_col])
+    elif "Close" in df.columns:
+        st.line_chart(df["Close"])
+
+
+def _render_series_chart(df: pd.DataFrame) -> None:
+    """Renderiza gráfico de series temporales."""
+    if isinstance(df, pd.Series):
+        st.line_chart(df)
+    elif "value" in getattr(df, "columns", []):
+        st.line_chart(df["value"])
 

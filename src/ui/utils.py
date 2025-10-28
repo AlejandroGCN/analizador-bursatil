@@ -160,6 +160,42 @@ def display_symbol_info(session_state_key: str, contexto: str = "") -> None:
             st.info("💡 **Configura los símbolos en el panel lateral para comenzar**")
 
 
+def _validate_symbol_format(symbol: str) -> tuple[bool, list[str]]:
+    """
+    Valida el formato de un símbolo individual.
+    
+    Returns:
+        (is_valid, reasons): Tupla con resultado de validación y razones de invalidez
+    """
+    is_valid = True
+    reasons = []
+    
+    # 1. No debe tener múltiples puntos consecutivos o mal posicionados
+    if symbol.count('.') > 1:
+        is_valid = False
+        reasons.append("demasiados puntos")
+    elif '.' in symbol and not symbol.endswith(('.US', '.DE', '.FR', '.UK', '.JP', '.CA', '.AU', '.CN')):
+        is_valid = False
+        reasons.append("extensión desconocida")
+    
+    # 2. Longitud mínima y máxima
+    if len(symbol) < 1 or len(symbol) > 15:
+        is_valid = False
+        reasons.append("longitud inválida")
+    
+    # 3. Solo letras, números, puntos y guiones
+    if not all(c.isalnum() or c in '.-' for c in symbol):
+        is_valid = False
+        reasons.append("caracteres no permitidos")
+    
+    # 4. Debe empezar con letra
+    if not symbol[0].isalpha():
+        is_valid = False
+        reasons.append("debe empezar con letra")
+    
+    return is_valid, reasons
+
+
 def validate_and_clean_symbols(symbols_str: str) -> tuple[list[str], list[str]]:
     """
     Valida y limpia una cadena de símbolos, separándolos correctamente.
@@ -180,34 +216,7 @@ def validate_and_clean_symbols(symbols_str: str) -> tuple[list[str], list[str]]:
     invalid_symbols = []
     
     for symbol in potential_symbols:
-        # Validaciones básicas
-        is_valid = True
-        reasons = []
-        
-        # 1. No debe tener múltiples puntos consecutivos o mal posicionados
-        if symbol.count('.') > 1:
-            is_valid = False
-            reasons.append("demasiados puntos")
-        elif '.' in symbol and not symbol.endswith(('.US', '.DE', '.FR', '.UK', '.JP', '.CA', '.AU', '.CN')):
-            # Si tiene punto, debe ser una extensión conocida
-            is_valid = False
-            reasons.append("extensión desconocida")
-        
-        # 2. Longitud mínima y máxima
-        if len(symbol) < 1 or len(symbol) > 15:
-            is_valid = False
-            reasons.append("longitud inválida")
-        
-        # 3. Solo letras, números, puntos y guiones
-        if not all(c.isalnum() or c in '.-' for c in symbol):
-            is_valid = False
-            reasons.append("caracteres no permitidos")
-        
-        # 4. Debe empezar con letra
-        if not symbol[0].isalpha():
-            is_valid = False
-            reasons.append("debe empezar con letra")
-        
+        is_valid, reasons = _validate_symbol_format(symbol)
         if is_valid:
             valid_symbols.append(symbol)
         else:

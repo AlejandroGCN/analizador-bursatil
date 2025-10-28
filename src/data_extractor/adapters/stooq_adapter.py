@@ -25,6 +25,45 @@ class StooqAdapter(BaseAdapter):
     name = "stooq"
     supports_intraday = False
     allowed_intervals = ["1d", "1wk", "1mo"]
+    
+    @staticmethod
+    def _normalize_dataframe_index(df: pd.DataFrame) -> pd.DataFrame:
+        """Normaliza el índice del DataFrame a DatetimeIndex y lo ordena."""
+        if not isinstance(df.index, pd.DatetimeIndex) or df.index.has_duplicates:
+            df = df.copy()
+            df.index = pd.to_datetime(df.index)
+            df.sort_index(inplace=True)
+        elif not df.index.is_monotonic_increasing:
+            df = df.sort_index()
+        return df
+    
+    @staticmethod
+    def _ensure_ohlcv_columns(df: pd.DataFrame) -> pd.DataFrame:
+        """Valida y crea las columnas OHLCV necesarias."""
+        for col in ["Open", "High", "Low", "Close"]:
+            if col not in df.columns:
+                raise ExtractionError(
+                    f"Columna esperada ausente en Stooq: {col}",
+                    source="stooq",
+                )
+        if "Volume" not in df.columns:
+            df["Volume"] = 0
+        if ADJ_CLOSE_COL not in df.columns:
+            df[ADJ_CLOSE_COL] = df["Close"]
+        return df
+    
+    @staticmethod
+    def _resample_by_interval(df: pd.DataFrame, interval: str) -> pd.DataFrame:
+        """Resample el DataFrame si el intervalo es 1wk o 1mo."""
+        if interval not in ("1wk", "1mo"):
+            return df
+        
+        rule = "W-FRI" if interval == "1wk" else "M"
+        agg_dict = {
+            "Open":"first","High":"max","Low":"min",
+            "Close":"last",ADJ_CLOSE_COL:"last","Volume":"sum"
+        }
+        return df.resample(rule).agg(agg_dict).dropna(how="any")
 
     def download_symbol(
             self,
@@ -68,38 +107,11 @@ class StooqAdapter(BaseAdapter):
                 source=self.name,
             )
 
-        # Solo procesar si es necesario
-        if not isinstance(df_raw.index, pd.DatetimeIndex) or df_raw.index.has_duplicates:
-            df_raw = df_raw.copy()
-            df_raw.index = pd.to_datetime(df_raw.index)
-            df_raw.sort_index(inplace=True)
-        elif not df_raw.index.is_monotonic_increasing:
-            df_raw = df_raw.sort_index()
-
-        for col in ["Open", "High", "Low", "Close"]:
-            if col not in df_raw.columns:
-                raise ExtractionError(
-                    f"Columna esperada ausente en Stooq: {col}",
-                    source=self.name,
-                )
-        if "Volume" not in df_raw.columns:
-            df_raw["Volume"] = 0
-        if ADJ_CLOSE_COL not in df_raw.columns:
-            df_raw[ADJ_CLOSE_COL] = df_raw["Close"]
-
+        # Normalizar índice y columnas usando funciones auxiliares
+        df_raw = self._normalize_dataframe_index(df_raw)
+        df_raw = self._ensure_ohlcv_columns(df_raw)
         df = df_raw[OHLCV_COLS]
-
-        if interval in ("1wk", "1mo"):
-            rule = "W-FRI" if interval == "1wk" else "M"
-            agg_dict = {
-                "Open":"first","High":"max","Low":"min",
-                "Close":"last",ADJ_CLOSE_COL:"last","Volume":"sum"
-            }
-            df = (
-                df.resample(rule)
-                .agg(agg_dict)
-                .dropna(how="any")
-            )
+        df = self._resample_by_interval(df, interval)
 
         df = self._clip_range(df, start, end)
         df = self._finalize_ohlcv(df)
