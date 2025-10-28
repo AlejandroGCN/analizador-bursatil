@@ -3,22 +3,15 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from ui.sidebars import CarteraParams
+from ui.utils import display_symbol_info, render_symbol_input
 
 
 def tab_cartera(submit: bool, params: CarteraParams | None) -> None:
     """Contenido central de la pestaña 💼 Cartera."""
-    from ui.utils import display_symbol_info
-    
     st.subheader("💼 Construcción de cartera")
     
     # Input de símbolos en el panel central (más espacio para ver todos)
-    st.text_input(
-        "📝 Símbolos:", 
-        key="cartera_symbols",
-        placeholder="Ej: AAPL, MSFT, GOOGL",
-        help="Escribe los símbolos separados por coma (ej: AAPL, MSFT, GOOGL)",
-        label_visibility="visible"
-    )
+    render_symbol_input("cartera_symbols")
     
     # Mostrar información de símbolos (solo si no hay símbolos configurados)
     display_symbol_info("cartera_symbols", contexto="cartera")

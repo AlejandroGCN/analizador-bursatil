@@ -3,57 +3,35 @@ from typing import Tuple
 import streamlit as st
 import pandas as pd
 from .types import CarteraParams
-from ui.utils import validate_and_clean_symbols
+from ui.utils import (
+    validate_and_clean_symbols,
+    apply_sidebar_styles,
+    render_symbol_import_controls,
+    render_file_upload_controls
+)
 
 
 def sidebar_cartera() -> Tuple[bool, CarteraParams]:
     """Sidebar para la pestaña de Cartera."""
     st.sidebar.header("💼 Parámetros de cartera")
     
-    # CSS para sidebar un poco más oscuro
-    st.markdown("""
-    <style>
-    [data-testid="stSidebar"] {
-        background-color: #d4e4f7;
-    }
-    [data-testid="stSidebar"] > div {
-        background-color: transparent;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    # Aplicar estilos del sidebar (función reutilizable)
+    apply_sidebar_styles()
     
-    # Botón de importar desde datos (ANTES del widget)
-    btn_import = st.sidebar.button("📊 Importar símbolos desde Datos", key="btn_import_cartera", width='stretch')
-    
-    if btn_import:
-        datos_simbolos = st.session_state.get("datos_simbolos", "")
-        if datos_simbolos and datos_simbolos.strip():
-            st.session_state.cartera_symbols = datos_simbolos
-            st.success("✅ Símbolos importados desde Datos")
-        else:
-            st.warning("⚠️ No hay símbolos en Datos")
-    
-    # Sección de carga de archivos
-    uploaded_file = st.sidebar.file_uploader(
-        "Selecciona un archivo",
-        type=['csv', 'xlsx', 'xls', 'json', 'txt'],
-        help="Formatos: CSV, Excel, JSON, TXT",
-        key="file_uploader_cartera"
+    # Controles de importación de símbolos (función reutilizable)
+    render_symbol_import_controls(
+        source_key="datos_simbolos",
+        target_key="cartera_symbols",
+        from_label="Datos",
+        button_label="📊 Importar símbolos desde Datos"
     )
     
-    btn_load = st.sidebar.button("📁 Cargar símbolos desde archivo", key="btn_load_file_cartera", width='stretch')
-    
-    if btn_load and uploaded_file is not None:
-        try:
-            from ui.file_loader import load_symbols_from_file
-            symbols = load_symbols_from_file(uploaded_file)
-            if symbols:
-                st.session_state.cartera_symbols = ",".join(symbols)
-                st.success(f"✅ {len(symbols)} símbolos cargados")
-        except Exception as e:
-            st.error(f"❌ Error: {str(e)}")
-    elif btn_load:
-        st.warning("⚠️ Primero selecciona un archivo")
+    # Controles de carga de archivos (función reutilizable)
+    render_file_upload_controls(
+        target_key="cartera_symbols",
+        button_label="📁 Cargar símbolos desde archivo",
+        uploader_key="file_uploader_cartera"
+    )
     
     st.sidebar.markdown("---")
     

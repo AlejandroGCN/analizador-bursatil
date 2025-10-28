@@ -4,20 +4,14 @@ import pandas as pd
 from ui.app_config import build_cfg_and_kind
 from ui.services_backend import fetch_market_data
 from ui.sidebars import DatosParams
-from ui.utils import display_symbol_info
+from ui.utils import display_symbol_info, render_symbol_input
 
 def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """Contenido central de la pestaña 📊 Datos."""
     st.subheader("📊 Vista de datos")
     
     # Input de símbolos en el panel central (más espacio para ver todos)
-    st.text_input(
-        "📝 Símbolos:", 
-        key="datos_simbolos",
-        placeholder="Ej: AAPL, MSFT, GOOGL",
-        help="Escribe los símbolos separados por coma (ej: AAPL, MSFT, GOOGL)",
-        label_visibility="visible"
-    )
+    render_symbol_input("datos_simbolos")
     
     # Validar que haya símbolos si se está pulsando el botón
     simbolos_texto = st.session_state.get("datos_simbolos", "")

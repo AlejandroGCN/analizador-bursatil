@@ -26,6 +26,93 @@ def initialize_symbols() -> None:
         st.session_state.saved_cartera_weights = ""
 
 
+def apply_sidebar_styles() -> None:
+    """
+    Aplica estilos CSS al sidebar.
+    Esta función centraliza el CSS para evitar duplicación.
+    """
+    st.markdown("""
+    <style>
+    [data-testid="stSidebar"] {
+        background-color: #d4e4f7;
+    }
+    [data-testid="stSidebar"] > div {
+        background-color: transparent;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def render_symbol_import_controls(source_key: str, target_key: str, from_label: str, button_label: str) -> None:
+    """
+    Renderiza los controles para importar símbolos desde otra pestaña.
+    
+    Args:
+        source_key: Key en session_state de donde importar (ej: "cartera_symbols")
+        target_key: Key en session_state donde guardar (ej: "datos_simbolos")
+        from_label: Nombre de la pestaña origen (ej: "Cartera")
+        button_label: Texto del botón (ej: "💼 Importar símbolos desde Cartera")
+    """
+    btn_import = st.sidebar.button(button_label, key=f"btn_import_{target_key}", width='stretch')
+    
+    if btn_import:
+        source_symbols = st.session_state.get(source_key, "")
+        if source_symbols and source_symbols.strip():
+            st.session_state[target_key] = source_symbols
+            st.success(f"✅ Símbolos importados desde {from_label}")
+        else:
+            st.warning(f"⚠️ No hay símbolos en {from_label}")
+
+
+def render_file_upload_controls(target_key: str, button_label: str, uploader_key: str) -> None:
+    """
+    Renderiza los controles para cargar símbolos desde archivo.
+    
+    Args:
+        target_key: Key en session_state donde guardar los símbolos
+        button_label: Texto del botón de carga
+        uploader_key: Key única para el file_uploader
+    """
+    # Sección de carga de archivos
+    uploaded_file = st.sidebar.file_uploader(
+        "Selecciona un archivo",
+        type=['csv', 'xlsx', 'xls', 'json', 'txt'],
+        help="Formatos: CSV, Excel, JSON, TXT",
+        key=uploader_key
+    )
+    
+    btn_load = st.sidebar.button(button_label, key=f"btn_load_{uploader_key}", width='stretch')
+    
+    if btn_load and uploaded_file is not None:
+        try:
+            from ui.file_loader import load_symbols_from_file
+            symbols = load_symbols_from_file(uploaded_file)
+            if symbols:
+                st.session_state[target_key] = ",".join(symbols)
+                st.success(f"✅ {len(symbols)} símbolos cargados")
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}")
+    elif btn_load:
+        st.warning("⚠️ Primero selecciona un archivo")
+
+
+def render_symbol_input(key: str, label: str = "📝 Símbolos:") -> None:
+    """
+    Renderiza un input de texto para símbolos.
+    
+    Args:
+        key: Key único para el widget en session_state
+        label: Etiqueta del input
+    """
+    st.text_input(
+        label,
+        key=key,
+        placeholder="Ej: AAPL, MSFT, GOOGL",
+        help="Escribe los símbolos separados por coma (ej: AAPL, MSFT, GOOGL)",
+        label_visibility="visible"
+    )
+
+
 def display_symbol_info(session_state_key: str, contexto: str = "") -> None:
     """
     Muestra información de símbolos configurados (read-only).
