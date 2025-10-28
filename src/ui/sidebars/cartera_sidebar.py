@@ -156,6 +156,8 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
     
     # Leer valores SOLO CUANDO se pulsa el botón (FUERA del form)
     weights_str = ""
+    validated_symbols_list = symbols_list  # Por defecto usar la lista parseada anteriormente
+    
     if submitted:
         if not symbols_input or not symbols_input.strip():
             st.error("❌ Debes ingresar al menos un símbolo para configurar la cartera.")
@@ -167,39 +169,41 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
                 st.warning(f"⚠️ Símbolos inválidos detectados:\n- " + "\n- ".join(invalid_symbols))
                 st.info("💡 Los símbolos válidos son los que se usarán.")
             
-            if not valid_symbols:
-                st.error("❌ No se encontraron símbolos válidos. Verifica el formato (ej: AAPL, MSFT, GOOGL)")
-            else:
-                symbols_list = valid_symbols
+            if valid_symbols:
+                validated_symbols_list = valid_symbols
                 # Actualizar en session_state los símbolos limpios
                 st.session_state.cartera_symbols = ",".join(valid_symbols)
-                
-                weights_inputs = []
-                for symbol in symbols_list:
-                    weight_key = f"weight_{symbol}"
-                    percent_value = st.session_state.get(weight_key, 0)
-                    weight = percent_value / 100.0
-                    weights_inputs.append(weight)
-                
-                total_weight = sum(weights_inputs)
-                
-                # Usar rango más amplio para tolerar redondeos (ej: 33%+33%+33%=99%)
-                if 0.98 <= total_weight <= 1.02:
-                    st.success(f"✅ Total: {total_weight:.1%}")
-                    weights_str = ",".join([str(w) for w in weights_inputs])
-                elif total_weight == 0:
-                    st.info("💡 Suma 0%. Se usarán pesos iguales.")
-                    equal_weight = 1.0 / len(symbols_list)
-                    weights_inputs = [equal_weight] * len(symbols_list)
-                    weights_str = ",".join([str(w) for w in weights_inputs])
-                elif total_weight > 1.02:
-                    st.error(f"❌ Total: {total_weight:.1%} - Los pesos suman más del 100%. Corrígelos antes de continuar.")
-                    # No calcular weights_str, queda vacío y el botón no funcionará
-                else:  # total_weight < 0.98
-                    st.warning(f"⚠️ Total: {total_weight:.1%} (suma menos de 100%)")
-                    # Normalizar a 1.0
-                    weights_inputs = [w / total_weight for w in weights_inputs]
-                    weights_str = ",".join([str(w) for w in weights_inputs])
+            elif invalid_symbols:
+                st.error("❌ No se encontraron símbolos válidos. Verifica el formato (ej: AAPL, MSFT, GOOGL)")
+    
+    # Solo procesar pesos si tenemos símbolos válidos
+    if submitted and validated_symbols_list:
+        weights_inputs = []
+        for symbol in validated_symbols_list:
+            weight_key = f"weight_{symbol}"
+            percent_value = st.session_state.get(weight_key, 0)
+            weight = percent_value / 100.0
+            weights_inputs.append(weight)
+        
+        total_weight = sum(weights_inputs)
+        
+        # Usar rango más amplio para tolerar redondeos (ej: 33%+33%+33%=99%)
+        if 0.98 <= total_weight <= 1.02:
+            st.success(f"✅ Total: {total_weight:.1%}")
+            weights_str = ",".join([str(w) for w in weights_inputs])
+        elif total_weight == 0:
+            st.info("💡 Suma 0%. Se usarán pesos iguales.")
+            equal_weight = 1.0 / len(validated_symbols_list)
+            weights_inputs = [equal_weight] * len(validated_symbols_list)
+            weights_str = ",".join([str(w) for w in weights_inputs])
+        elif total_weight > 1.02:
+            st.error(f"❌ Total: {total_weight:.1%} - Los pesos suman más del 100%. Corrígelos antes de continuar.")
+            # No calcular weights_str, queda vacío y el botón no funcionará
+        else:  # total_weight < 0.98
+            st.warning(f"⚠️ Total: {total_weight:.1%} (suma menos de 100%)")
+            # Normalizar a 1.0
+            weights_inputs = [w / total_weight for w in weights_inputs]
+            weights_str = ",".join([str(w) for w in weights_inputs])
     
     # Si no hay símbolos, usar peso por defecto
     weights_str_final = weights_str if weights_str else "1.0"
