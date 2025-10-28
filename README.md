@@ -52,20 +52,59 @@ Deberías ver algo como: `Python 3.12.x`
 
 **Solo necesitas hacer doble clic en un archivo**
 
+#### Paso 1: Descargar el Proyecto
+
+##### Opción A: Descarga Directa (Más Fácil) 📥
+1. Ve a [GitHub del proyecto](https://github.com/AlejandroGCN/analizador-bursatil)
+2. Haz clic en el botón verde **"Code"**
+3. Selecciona **"Download ZIP"**
+4. Extrae el archivo ZIP en tu escritorio
+5. Navega a la carpeta extraída
+
+##### Opción B: Con Git (Recomendado para actualizaciones) 🔧
+**Primero instala Git si no lo tienes:**
+
+**Windows:**
+1. Ve a [git-scm.com/downloads](https://git-scm.com/downloads)
+2. Descarga Git para Windows
+3. Instala con la configuración predeterminada
+4. Reabre tu terminal/PowerShell
+
+**Mac:**
+```bash
+# Git viene preinstalado. Si no lo tienes:
+brew install git
+```
+
+**Linux:**
+```bash
+# Ubuntu/Debian
+sudo apt install git
+
+# CentOS/RHEL
+sudo yum install git
+```
+
+**Clonar el proyecto:**
+```bash
+git clone https://github.com/AlejandroGCN/analizador-bursatil.git
+cd analizador-bursatil
+```
+
+#### Paso 2: Instalar y Ejecutar
+
 #### Para Windows:
-1. Descarga el proyecto desde GitHub
-2. Haz **doble clic** en `install.bat`
-3. Espera a que termine (puede tardar unos minutos)
-4. Haz **doble clic** en `run_app.bat` (o `run_app.py`)
-5. ¡Listo! Se abrirá tu navegador automáticamente
+1. Haz **doble clic** en `install.bat`
+2. Espera a que termine (puede tardar unos minutos)
+3. Haz **doble clic** en `run_app.bat` (o `run_app.py`)
+4. ¡Listo! Se abrirá tu navegador automáticamente
 
 #### Para Mac/Linux:
-1. Descarga el proyecto desde GitHub
-2. Abre "Terminal" en la carpeta del proyecto
-3. Escribe: `python install.py` y presiona Enter
-4. Espera a que termine
-5. Escribe: `python run_app.py` y presiona Enter
-6. ¡Listo! Se abrirá tu navegador automáticamente
+1. Abre "Terminal" en la carpeta del proyecto
+2. Escribe: `python install.py` y presiona Enter
+3. Espera a que termine
+4. Escribe: `python run_app.py` y presiona Enter
+5. ¡Listo! Se abrirá tu navegador automáticamente
 
 
 
@@ -126,41 +165,6 @@ docker-compose up
 - **Error al construir**: Asegúrate de estar en la carpeta del proyecto
 
 ---
-
-## 📋 Información Adicional
-
-### Paso 1: Descargar el Proyecto
-
-#### Opción A: Descarga Directa (Más Fácil)
-1. Ve a [GitHub del proyecto](https://github.com/AlejandroGCN/analizador-bursatil)
-2. Haz clic en el botón verde **"Code"**
-3. Selecciona **"Download ZIP"**
-4. Extrae el archivo ZIP en tu escritorio
-
-#### Opción B: Con Git (Si sabes usarlo)
-```bash
-git clone https://github.com/AlejandroGCN/analizador-bursatil.git
-cd analizador-bursatil
-```
-
-### Paso 2: Instalación Automática
-
-#### Windows
-1. Abre la carpeta del proyecto
-2. Haz **doble clic** en `install.bat`
-3. Espera a que termine la instalación
-4. Haz **doble clic** en `run_app.py`
-
-#### Mac/Linux
-1. Abre "Terminal" en la carpeta del proyecto
-2. Escribe: `python install.py`
-3. Espera a que termine la instalación
-4. Escribe: `python run_app.py`
-
-### Paso 3: ¡Usar la Aplicación!
-1. Se abrirá automáticamente tu navegador
-2. La aplicación estará en `http://localhost:8501`
-3. ¡Empieza a analizar datos financieros!
 
 ## 🎯 Instalación Avanzada (Para Desarrolladores)
 
