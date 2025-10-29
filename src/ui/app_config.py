@@ -47,6 +47,14 @@ KIND_MAP: Dict[str, str] = {
 ALLOWED_INTERVALS = ["1d", "1h", "1wk"]
 ALLOWED_KINDS = list(KIND_MAP.keys())
 
+# ───────────────────────────────────────────────────────────────
+# 🔍 Configuración de Logging Debug
+# ───────────────────────────────────────────────────────────────
+
+# Cambiar a True para activar logs de debug detallados
+# Los logs se escribirán en var/logs/debug.log
+DEBUG_LOGGING_ENABLED = True  # Activado para análisis de datos
+
 
 def build_cfg_and_kind(fuente_human: str, tipo_human: str, intervalo: str) -> tuple[dict, str]:
     """Traduce labels de la UI a claves internas y construye cfg_dict + kind."""

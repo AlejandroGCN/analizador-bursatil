@@ -8,6 +8,10 @@ from typing import Optional, Tuple
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Constantes
 ERR_NO_RETURNS = "No hay datos de retornos. Ejecuta set_prices primero."
@@ -58,11 +62,22 @@ class Portfolio:
         >>> vol = portfolio.portfolio_volatility()
         >>> sharpe = portfolio.sharpe_ratio()
         
-        >>> # Simulación Monte Carlo
+        >>> # Simulación Monte Carlo de la cartera completa
         >>> simulation = portfolio.monte_carlo_simulation(
         ...     n_simulations=1000,
         ...     time_horizon=252
         ... )
+        
+        >>> # Simulación Monte Carlo de un activo individual
+        >>> aapl_sim = portfolio.monte_carlo_simulation_individual(
+        ...     symbol='AAPL',
+        ...     n_simulations=1000,
+        ...     time_horizon=252
+        ... )
+        
+        >>> # Visualizar simulaciones
+        >>> portfolio.visualize_monte_carlo(simulation)
+        >>> portfolio.visualize_monte_carlo_individual(aapl_sim, 'AAPL')
         
         >>> # Generar reportes
         >>> report = portfolio.report()
@@ -95,6 +110,13 @@ class Portfolio:
         Args:
             prices_df: DataFrame con precios históricos (columnas = símbolos)
         """
+        logger.debug(f"🔧 set_prices llamado para cartera '{self.name}'")
+        logger.debug(f"  Shape de precios: {prices_df.shape}")
+        logger.debug(f"  Columnas (símbolos): {list(prices_df.columns)}")
+        logger.debug(f"  Rango de fechas: {prices_df.index.min()} a {prices_df.index.max()}")
+        logger.debug(f"  Valores NaN: {prices_df.isna().sum().sum()}")
+        logger.debug(f"  Valores finitos: {np.isfinite(prices_df.values).sum()} / {prices_df.size}")
+        
         self.prices = prices_df
         
         # Calcular retornos logarítmicos
@@ -102,6 +124,15 @@ class Portfolio:
             raise ValueError("DataFrame de precios vacío")
         
         self.returns = np.log(prices_df / prices_df.shift(1)).dropna()
+        
+        logger.debug(f"  Shape de retornos calculados: {self.returns.shape}")
+        logger.debug(f"  Retornos NaN: {self.returns.isna().sum().sum()}")
+        logger.debug(f"  Retornos infinitos: {np.isinf(self.returns.values).sum()}")
+        
+        if not self.returns.empty:
+            logger.debug(f"  Estadísticas de retornos (primeras filas):")
+            logger.debug(f"    Media por activo: {self.returns.mean().to_dict()}")
+            logger.debug(f"    Std por activo: {self.returns.std().to_dict()}")
     
     def portfolio_return(self) -> float:
         """
@@ -116,8 +147,17 @@ class Portfolio:
         # Retorno medio de cada activo
         mean_returns = self.returns.mean()
         
+        logger.debug(f"📊 portfolio_return para '{self.name}':")
+        logger.debug(f"  Pesos: {dict(zip(self.symbols, self.weights))}")
+        logger.debug(f"  Retornos medios por activo (diarios): {mean_returns.to_dict()}")
+        
         # Retorno ponderado de la cartera
-        return np.dot(self.weights, mean_returns)
+        portfolio_ret = np.dot(self.weights, mean_returns)
+        
+        logger.debug(f"  Retorno cartera (diario): {portfolio_ret:.6f}")
+        logger.debug(f"  Retorno cartera (anualizado): {portfolio_ret * 252:.4%}")
+        
+        return portfolio_ret
     
     def portfolio_volatility(self) -> float:
         """
@@ -132,11 +172,21 @@ class Portfolio:
         # Matriz de covarianza
         cov_matrix = self.returns.cov()
         
+        logger.debug(f"📊 portfolio_volatility para '{self.name}':")
+        logger.debug(f"  Shape matriz covarianza: {cov_matrix.shape}")
+        logger.debug(f"  Diagonales (varianzas individuales): {cov_matrix.values.diagonal().tolist()}")
+        
         # Volatilidad de la cartera
         portfolio_variance = np.dot(self.weights, np.dot(cov_matrix.values, self.weights))
         
+        logger.debug(f"  Varianza cartera (diaria): {portfolio_variance:.8f}")
+        
         # Anualizar (asumiendo 252 días de trading)
-        return np.sqrt(portfolio_variance * 252)
+        portfolio_vol = np.sqrt(portfolio_variance * 252)
+        
+        logger.debug(f"  Volatilidad cartera (anualizada): {portfolio_vol:.4%}")
+        
+        return portfolio_vol
     
     def sharpe_ratio(self, risk_free_rate: float = 0.0) -> float:
         """
@@ -194,12 +244,25 @@ class Portfolio:
         if self.returns is None:
             raise ValueError(ERR_NO_RETURNS)
         
+        logger.info(f"🎲 Iniciando simulación Monte Carlo para '{self.name}'")
+        logger.debug(f"  Parámetros de simulación:")
+        logger.debug(f"    n_simulations: {n_simulations}")
+        logger.debug(f"    time_horizon: {time_horizon} días")
+        logger.debug(f"    initial_value: ${initial_value:,.2f}")
+        logger.debug(f"    dynamic_volatility: {dynamic_volatility}")
+        logger.debug(f"    random_seed: {random_seed}")
+        
         from .monte_carlo import MonteCarloSimulation
         
         portfolio_return = self.portfolio_return()
         portfolio_volatility = self.portfolio_volatility()
         
-        return MonteCarloSimulation.simulate_portfolio(
+        logger.debug(f"  Parámetros calculados de la cartera:")
+        logger.debug(f"    Retorno esperado (diario): {portfolio_return:.8f}")
+        logger.debug(f"    Volatilidad (anualizada): {portfolio_volatility:.4%}")
+        logger.debug(f"    Retorno esperado (anualizado): {portfolio_return * 252:.4%}")
+        
+        results = MonteCarloSimulation.simulate_portfolio(
             portfolio_return=portfolio_return,
             portfolio_volatility=portfolio_volatility,
             n_simulations=n_simulations,
@@ -208,14 +271,186 @@ class Portfolio:
             dynamic_volatility=dynamic_volatility,
             random_seed=random_seed
         )
+        
+        logger.debug(f"  Resultados de simulación:")
+        logger.debug(f"    Shape: {results.shape}")
+        logger.debug(f"    Valor inicial: ${results.iloc[0, 0]:,.2f}")
+        logger.debug(f"    Valor final medio: ${results.iloc[:, -1].mean():,.2f}")
+        logger.debug(f"    Valor final min: ${results.iloc[:, -1].min():,.2f}")
+        logger.debug(f"    Valor final max: ${results.iloc[:, -1].max():,.2f}")
+        logger.debug(f"    Desviación estándar final: ${results.iloc[:, -1].std():,.2f}")
+        
+        return results
+    
+    def monte_carlo_simulation_individual(
+        self,
+        symbol: str,
+        n_simulations: int = 1000,
+        time_horizon: int = 252,
+        initial_value: Optional[float] = None,
+        dynamic_volatility: bool = False,
+        random_seed: Optional[int] = None,
+        risk_free_rate: float = 0.02
+    ) -> pd.DataFrame:
+        """
+        Simula la evolución de un activo individual de la cartera usando Monte Carlo.
+        
+        Este método permite analizar la evolución esperada de un activo específico
+        independientemente del resto de la cartera, utilizando su propio retorno
+        y volatilidad histórica.
+        
+        Args:
+            symbol: Símbolo del activo a simular (debe estar en la cartera)
+            n_simulations: Número de simulaciones a realizar
+            time_horizon: Horizonte temporal en días (default: 252 = 1 año)
+            initial_value: Valor inicial para la simulación. Si None, usa el precio
+                          actual del activo (último precio disponible)
+            dynamic_volatility: Si True, usa volatilidad variable en el tiempo
+            random_seed: Semilla para reproducibilidad de resultados
+            risk_free_rate: Tasa libre de riesgo anualizada (no usado directamente,
+                           pero útil para contexto en logs)
+        
+        Returns:
+            DataFrame con las simulaciones (filas = simulaciones, columnas = días)
+            Shape: (n_simulations, time_horizon + 1) - incluye valor inicial
+        
+        Raises:
+            ValueError: Si el símbolo no está en la cartera o no hay datos de retornos
+        
+        Example:
+            >>> portfolio = Portfolio(
+            ...     name="Tech Portfolio",
+            ...     symbols=['AAPL', 'MSFT', 'GOOGL'],
+            ...     weights=[0.4, 0.3, 0.3]
+            ... )
+            >>> portfolio.set_prices(prices_df)
+            >>> 
+            >>> # Simular solo AAPL
+            >>> aapl_sim = portfolio.monte_carlo_simulation_individual(
+            ...     symbol='AAPL',
+            ...     n_simulations=1000,
+            ...     time_horizon=252
+            ... )
+            >>> 
+            >>> # Visualizar
+            >>> portfolio.visualize_monte_carlo_individual(aapl_sim, 'AAPL')
+        """
+        if self.returns is None:
+            raise ValueError(ERR_NO_RETURNS)
+        
+        if symbol not in self.symbols:
+            raise ValueError(
+                f"Símbolo '{symbol}' no está en la cartera. "
+                f"Símbolos disponibles: {self.symbols}"
+            )
+        
+        logger.info(f"🎲 Iniciando simulación Monte Carlo individual para '{symbol}' (de cartera '{self.name}')")
+        logger.debug(f"  Parámetros de simulación:")
+        logger.debug(f"    Símbolo: {symbol}")
+        logger.debug(f"    n_simulations: {n_simulations}")
+        logger.debug(f"    time_horizon: {time_horizon} días")
+        logger.debug(f"    dynamic_volatility: {dynamic_volatility}")
+        logger.debug(f"    random_seed: {random_seed}")
+        
+        from .monte_carlo import MonteCarloSimulation
+        
+        # Obtener retornos del activo individual
+        asset_returns = self.returns[symbol]
+        
+        # Calcular retorno medio diario del activo
+        asset_return_daily = asset_returns.mean()
+        
+        # Calcular volatilidad anualizada del activo
+        # Volatilidad diaria = std de retornos diarios
+        asset_volatility_daily = asset_returns.std()
+        # Convertir a anualizada: σ_anual = σ_diaria * √252
+        asset_volatility_annualized = asset_volatility_daily * np.sqrt(252)
+        
+        logger.debug(f"  Parámetros calculados del activo '{symbol}':")
+        logger.debug(f"    Retorno medio (diario): {asset_return_daily:.8f}")
+        logger.debug(f"    Retorno esperado (anualizado): {asset_return_daily * 252:.4%}")
+        logger.debug(f"    Volatilidad (diaria): {asset_volatility_daily:.8f}")
+        logger.debug(f"    Volatilidad (anualizada): {asset_volatility_annualized:.4%}")
+        
+        # Determinar valor inicial
+        if initial_value is None:
+            if self.prices is not None and not self.prices.empty and symbol in self.prices.columns:
+                initial_value = float(self.prices[symbol].iloc[-1])
+                logger.debug(f"    Valor inicial (precio actual): ${initial_value:,.2f}")
+            else:
+                initial_value = 100.0
+                logger.warning(f"    Valor inicial no disponible, usando default: ${initial_value:,.2f}")
+        else:
+            logger.debug(f"    Valor inicial (especificado): ${initial_value:,.2f}")
+        
+        # Realizar simulación usando la misma infraestructura
+        results = MonteCarloSimulation.simulate_portfolio(
+            portfolio_return=asset_return_daily,
+            portfolio_volatility=asset_volatility_annualized,
+            n_simulations=n_simulations,
+            time_horizon=time_horizon,
+            initial_value=initial_value,
+            dynamic_volatility=dynamic_volatility,
+            random_seed=random_seed
+        )
+        
+        logger.debug(f"  Resultados de simulación para '{symbol}':")
+        logger.debug(f"    Shape: {results.shape}")
+        logger.debug(f"    Valor inicial: ${results.iloc[0, 0]:,.2f}")
+        logger.debug(f"    Valor final medio: ${results.iloc[:, -1].mean():,.2f}")
+        logger.debug(f"    Valor final min: ${results.iloc[:, -1].min():,.2f}")
+        logger.debug(f"    Valor final max: ${results.iloc[:, -1].max():,.2f}")
+        logger.debug(f"    Desviación estándar final: ${results.iloc[:, -1].std():,.2f}")
+        
+        return results
+    
+    def visualize_monte_carlo_individual(
+        self,
+        simulation_results: pd.DataFrame,
+        symbol: str,
+        title: Optional[str] = None,
+        figsize: Tuple[int, int] = (12, 6),
+        max_paths: int = 100,
+        return_figure: bool = False
+    ):
+        """
+        Visualiza los resultados de una simulación Monte Carlo para un activo individual.
+        
+        Args:
+            simulation_results: DataFrame con los resultados de la simulación individual
+            symbol: Símbolo del activo simulado
+            title: Título del gráfico (si None, se genera automáticamente)
+            figsize: Tamaño de la figura
+            max_paths: Número máximo de caminos a mostrar en el gráfico
+            return_figure: Si True, retorna la figura en lugar de mostrarla (útil para Streamlit)
+        
+        Returns:
+            None o matplotlib.figure.Figure dependiendo de return_figure
+        
+        Example:
+            >>> sim_results = portfolio.monte_carlo_simulation_individual('AAPL')
+            >>> portfolio.visualize_monte_carlo_individual(sim_results, 'AAPL')
+        """
+        if title is None:
+            title = f"Simulación Monte Carlo Individual - {symbol} ({self.name})"
+        
+        from .monte_carlo import MonteCarloSimulation
+        return MonteCarloSimulation.plot_simulation(
+            simulation_results=simulation_results,
+            title=title,
+            figsize=figsize,
+            max_paths=max_paths,
+            return_figure=return_figure
+        )
     
     def visualize_monte_carlo(
         self,
         simulation_results: pd.DataFrame,
         title: Optional[str] = None,
         figsize: Tuple[int, int] = (12, 6),
-        max_paths: int = 100
-    ) -> None:
+        max_paths: int = 100,
+        return_figure: bool = False
+    ):
         """
         Visualiza los resultados de una simulación Monte Carlo.
         
@@ -224,16 +459,21 @@ class Portfolio:
             title: Título del gráfico
             figsize: Tamaño de la figura
             max_paths: Número máximo de caminos a mostrar
+            return_figure: Si True, retorna la figura en lugar de mostrarla
+        
+        Returns:
+            None o matplotlib.figure.Figure dependiendo de return_figure
         """
         if title is None:
             title = f"Simulación Monte Carlo - {self.name}"
         
         from .monte_carlo import MonteCarloSimulation
-        MonteCarloSimulation.plot_simulation(
+        return MonteCarloSimulation.plot_simulation(
             simulation_results=simulation_results,
             title=title,
             figsize=figsize,
-            max_paths=max_paths
+            max_paths=max_paths,
+            return_figure=return_figure
         )
     
     def _build_risk_analysis(self, stats: dict) -> str:
@@ -450,17 +690,25 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
     def plots_report(
         self,
         figsize: Tuple[int, int] = (16, 10),
-        save_path: Optional[str] = None
-    ) -> None:
+        save_path: Optional[str] = None,
+        return_figure: bool = False
+    ):
         """
         Genera y muestra visualizaciones relevantes de la cartera.
         
         Args:
             figsize: Tamaño de las figuras
             save_path: Si se proporciona, guarda las figuras en esta ruta
+            return_figure: Si True, retorna la figura en lugar de mostrarla (útil para Streamlit)
+        
+        Returns:
+            None o matplotlib.figure.Figure dependiendo de return_figure
         """
         if self.returns is None or self.prices is None:
             raise ValueError("No hay datos. Ejecuta set_prices primero.")
+        
+        # Detectar si estamos en Streamlit
+        is_streamlit = 'STREAMLIT_SERVER_PORT' in os.environ or 'streamlit' in str(type(plt))
         
         # Configurar estilo
         if HAS_SEABORN:
@@ -483,4 +731,9 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             print(f"Figura guardada en: {save_path}")
         
+        # En Streamlit o si se solicita retornar la figura, no llamar plt.show()
+        if is_streamlit or return_figure:
+            return fig
+        
         plt.show()
+        return None

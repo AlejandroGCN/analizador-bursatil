@@ -24,6 +24,12 @@ build/
 *.bak
 *.swp
 
+# Excepción: mantener .gitkeep en var/logs
+!var/logs/.gitkeep
+
+# Streamlit
+.streamlit/
+
 # Datos locales
 data/
 datasets/
@@ -43,4 +49,3 @@ venv.bat
 stop_app.bat
 
 # Docker
-*.log

@@ -23,10 +23,13 @@ class CarteraParams:
 
 @dataclass
 class MonteCarloParams:
+    """Parámetros para simulación Monte Carlo."""
     nsims: int
     horizonte: int
     vol_dinamica: bool
     valor_inicial: float
+    tipo_simulacion: str  # "cartera" o "individual"
+    symbol_individual: str  # Símbolo para simulación individual (vacío si tipo_simulacion == "cartera")
 
 
 @dataclass

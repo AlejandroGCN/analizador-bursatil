@@ -1,5 +1,11 @@
+"""
+Sidebar para la pestaña de Datos.
+
+Muestra los intervalos disponibles dinámicamente según la fuente de datos seleccionada,
+garantizando que solo se muestren los intervalos realmente soportados por cada adaptador.
+"""
 from __future__ import annotations
-from typing import Tuple
+from typing import Tuple, Dict, List
 import streamlit as st
 import pandas as pd
 from ui.app_config import SOURCE_MAP
@@ -10,6 +16,76 @@ from ui.utils import (
     render_symbol_import_controls,
     render_file_upload_controls
 )
+
+
+def _get_allowed_intervals_for_source(source_key: str) -> List[str]:
+    """
+    Obtiene los intervalos permitidos para una fuente de datos.
+    
+    Consulta directamente los adaptadores para obtener los intervalos realmente
+    soportados, garantizando que solo se muestren opciones válidas.
+    
+    Args:
+        source_key: Clave de la fuente (ej: "yahoo", "binance", "stooq")
+    
+    Returns:
+        Lista de intervalos permitidos ordenados
+    
+    """
+    try:
+        from data_extractor.core.registry import REGISTRY
+        
+        # Obtener la clase Provider desde el registro
+        provider_class = REGISTRY.get(source_key)
+        if provider_class:
+            # Instanciar temporalmente el provider para acceder al adapter
+            provider = provider_class()
+            if hasattr(provider, 'adapter') and hasattr(provider.adapter, 'allowed_intervals'):
+                intervals = list(provider.adapter.allowed_intervals)
+                
+                # Ordenar intervalos: primero diarios, luego intradía
+                daily_order = ["1d", "1wk", "1w", "1mo", "1M", "3d"]
+                intraday_order = ["1h", "2h", "4h", "6h", "8h", "12h", "30m", "15m", "5m", "3m", "1m", "60m", "90m"]
+                
+                # Separar en diarios e intradía
+                daily = [i for i in intervals if i in daily_order]
+                intraday = [i for i in intervals if i in intraday_order]
+                others = [i for i in intervals if i not in daily_order and i not in intraday_order]
+                
+                # Ordenar según el orden definido
+                daily_sorted = sorted(daily, key=lambda x: daily_order.index(x) if x in daily_order else 999)
+                intraday_sorted = sorted(intraday, key=lambda x: intraday_order.index(x) if x in intraday_order else 999)
+                
+                return daily_sorted + intraday_sorted + others
+    except Exception as e:
+        # Fallback: usar valores por defecto si no se puede obtener el adaptador
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"No se pudo obtener intervalos dinámicos para {source_key}: {e}")
+    
+    # Valores por defecto según fuente conocida (solo como fallback)
+    default_intervals = {
+        "yahoo": ["1d", "1wk", "1mo", "1h", "1m", "5m", "15m", "30m", "60m", "90m"],
+        "binance": ["1d", "3d", "1w", "1M", "1h", "2h", "4h", "6h", "8h", "12h", "30m", "15m", "5m", "3m", "1m"],
+        "stooq": ["1d", "1wk", "1mo"]
+    }
+    
+    return default_intervals.get(source_key, ["1d"])
+
+
+def _get_available_intervals_by_source() -> Dict[str, List[str]]:
+    """
+    Obtiene los intervalos disponibles para cada fuente de datos.
+    
+    Returns:
+        Diccionario con fuente (clave UI) -> lista de intervalos permitidos
+    """
+    intervals_map = {}
+    
+    for ui_label, source_key in SOURCE_MAP.items():
+        intervals_map[ui_label] = _get_allowed_intervals_for_source(source_key)
+    
+    return intervals_map
 
 
 def sidebar_datos() -> Tuple[bool, DatosParams]:
@@ -46,27 +122,39 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
         st.date_input("Fecha inicio", pd.to_datetime("2020-01-01"), key="fecha_ini_datos")
         st.date_input("Fecha fin", pd.to_datetime("2025-01-01"), key="fecha_fin_datos")
         
-        # Intervalos disponibles según la fuente seleccionada
-        intervalos_por_fuente = {
-            "Yahoo": ["1d", "1h", "1wk", "1mo", "1m", "5m", "15m", "30m"],
-            "Binance": ["1d", "1h", "1w", "1M", "1m", "3m", "5m", "15m", "30m", "2h", "4h", "6h", "8h", "12h", "3d"],
-        }
-        
-        # Añadir Stooq solo si está disponible
-        if "Stooq" in available_sources:
-            intervalos_por_fuente["Stooq"] = ["1d", "1wk", "1mo"]
+        # Obtener intervalos disponibles dinámicamente según la fuente
+        intervalos_por_fuente = _get_available_intervals_by_source()
         
         # Leer fuente actual del session state
         fuente_actual = st.session_state.get("fuente_datos", available_sources[0])
-        intervalos_disponibles = intervalos_por_fuente.get(fuente_actual, ["1d", "1h", "1wk"])
+        intervalos_disponibles = intervalos_por_fuente.get(fuente_actual, ["1d"])
+        
+        # Validar que el intervalo seleccionado sigue disponible después de cambiar de fuente
+        intervalo_actual = st.session_state.get("intervalo_datos", "1d")
+        if intervalo_actual not in intervalos_disponibles:
+            st.session_state["intervalo_datos"] = "1d"
+            intervalo_actual = "1d"
         
         # Mostrar información sobre intervalos disponibles
         if fuente_actual == "Stooq" and "Stooq" in available_sources:
             st.info("ℹ️ Stooq solo soporta datos diarios (no intradía)")
         elif fuente_actual == "Binance":
             st.info("ℹ️ Binance soporta datos intradía desde 1 minuto")
+        elif fuente_actual == "Yahoo":
+            st.info("ℹ️ Yahoo soporta datos diarios, semanales, mensuales e intradía")
         
-        st.selectbox("Intervalo", intervalos_disponibles, key="intervalo_datos")
+        # Mostrar solo intervalos realmente disponibles para esta fuente
+        index_default = 0
+        if intervalo_actual in intervalos_disponibles:
+            index_default = intervalos_disponibles.index(intervalo_actual)
+        
+        st.selectbox(
+            "Intervalo", 
+            intervalos_disponibles, 
+            key="intervalo_datos",
+            index=index_default,
+            help=f"{len(intervalos_disponibles)} intervalos disponibles para {fuente_actual}"
+        )
         st.selectbox("Tipo", ["Precios Históricos", "Retornos"], key="tipo_datos")
         
         submitted = st.form_submit_button(

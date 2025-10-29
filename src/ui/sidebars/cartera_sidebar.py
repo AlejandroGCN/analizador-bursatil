@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Tuple
 import streamlit as st
 import pandas as pd
+import logging
 from .types import CarteraParams
 from ui.utils import (
     validate_and_clean_symbols,
@@ -10,22 +11,91 @@ from ui.utils import (
     render_file_upload_controls
 )
 
+logger = logging.getLogger(__name__)
 
-def _cleanup_old_weights() -> None:
-    """Limpia los pesos de símbolos antiguos de session_state."""
-    keys_to_delete = [key for key in st.session_state.keys() if key.startswith("weight_")]
-    for key in keys_to_delete:
-        del st.session_state[key]
+# Rutas de archivos para persistencia
+PORTFOLIO_CONFIG_PATH = "var/config/portfolio.json"
+
+# Constantes
+MIN_CAPITAL_PER_STOCK = 100.0
+DEFAULT_INITIAL_VALUE = 10000.0
+LAST_SYMBOLS_PROCESSED_KEY = "_last_symbols_processed"
+
+
+def _save_portfolio_config(symbols: list[str], weights: list[float], initial_value: float) -> None:
+    """Guarda la configuración de la cartera en un archivo JSON."""
+    import json
+    import os
+    
+    config = {
+        "symbols": symbols,
+        "weights": weights,
+        "valor_inicial": initial_value,
+        "timestamp": pd.Timestamp.now().isoformat()
+    }
+    
+    os.makedirs(os.path.dirname(PORTFOLIO_CONFIG_PATH), exist_ok=True)
+    
+    with open(PORTFOLIO_CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    logger.info(f"💾 Configuración guardada en {PORTFOLIO_CONFIG_PATH}")
+
+
+def _remove_orphaned_weights(active_symbols: list[str]) -> None:
+    """Elimina los pesos de símbolos que ya no están en la lista activa."""
+    active_keys = {f"weight_{s}" for s in active_symbols}
+    orphaned_keys = [
+        key for key in st.session_state.keys()
+        if key.startswith("weight_") and key not in active_keys
+    ]
+    
+    if orphaned_keys:
+        logger.info(f"🗑️ Eliminando {len(orphaned_keys)} pesos huérfanos")
+        for key in orphaned_keys:
+            del st.session_state[key]
+
+
+def _convert_to_percentage_weights(fractions: list[float]) -> list[int]:
+    """
+    Convierte fracciones a porcentajes enteros que suman exactamente 100%.
+    Distribuye el residuo de forma determinista a los valores con mayor parte decimal.
+    """
+    raw_percentages = [f * 100.0 for f in fractions]
+    floor_percentages = [int(p) for p in raw_percentages]
+    remainder = 100 - sum(floor_percentages)
+    
+    # Asignar el residuo a los valores con mayor parte decimal
+    decimal_parts = sorted(
+        enumerate([r - f for r, f in zip(raw_percentages, floor_percentages)]),
+        key=lambda x: x[1],
+        reverse=True
+    )
+    
+    for idx, _ in decimal_parts[:remainder]:
+        floor_percentages[idx] += 1
+    
+    return floor_percentages
 
 
 def _calculate_equal_weights(n_symbols: int) -> list[float]:
     """Calcula pesos iguales para todos los símbolos que suman exactamente 1.0."""
-    base_weight = 1.0 / n_symbols
-    weights = [base_weight] * n_symbols
+    base_percent = 100 // n_symbols
+    remainder = 100 % n_symbols
+    
+    weights = []
+    for i in range(n_symbols):
+        percent = base_percent + (1 if i < remainder else 0)
+        weights.append(percent / 100.0)
+    
+    return weights
+
+
+def _normalize_weights(weights: list[float]) -> list[float]:
+    """Normaliza los pesos para que sumen exactamente 1.0."""
     total = sum(weights)
-    if total < 1.0:
-        adjustment = 1.0 - total
-        weights[0] += adjustment
+    if total > 0:
+        return [w / total for w in weights]
     return weights
 
 
@@ -37,16 +107,20 @@ def _render_weight_inputs(symbols_list: list[str]) -> None:
     st.markdown("---")
     st.markdown("**Asigna pesos a cada activo (en %):**")
     
+    initial_value = st.session_state.get("cartera_valor_inicial", DEFAULT_INITIAL_VALUE)
     n = len(symbols_list)
-    base_pct = round(100.0 / n)
-    adjustment = 100 - (base_pct * n)
+    base_pct = 100 // n
+    remainder = 100 % n
     
     for i, symbol in enumerate(symbols_list):
         weight_key = f"weight_{symbol}"
-        default_value = base_pct + adjustment if i == 0 else base_pct
+        default_value = base_pct + (1 if i < remainder else 0)
         
         if weight_key not in st.session_state:
             st.session_state[weight_key] = default_value
+        
+        weight_pct = st.session_state.get(weight_key, default_value)
+        capital = (weight_pct / 100.0) * initial_value
         
         st.number_input(
             symbol,
@@ -54,11 +128,11 @@ def _render_weight_inputs(symbols_list: list[str]) -> None:
             max_value=100,
             step=1,
             key=weight_key,
-            help="%"
+            help=f"Capital asignado: ${capital:,.2f}"
         )
 
 
-def _validate_symbols_on_submit(symbols_input: str) -> tuple[list[str], list[str]]:
+def _validate_symbols_input(symbols_input: str) -> tuple[list[str], list[str]]:
     """Valida los símbolos cuando se envía el formulario."""
     if not symbols_input or not symbols_input.strip():
         st.error("❌ Debes ingresar al menos un símbolo para configurar la cartera.")
@@ -76,69 +150,96 @@ def _validate_symbols_on_submit(symbols_input: str) -> tuple[list[str], list[str
     return valid_symbols, invalid_symbols
 
 
-def _process_and_validate_weights(validated_symbols: list[str]) -> str:
-    """Procesa y valida los pesos ingresados."""
-    if not validated_symbols:
-        return "1.0"
-    
-    weights_inputs = []
-    for symbol in validated_symbols:
-        weight_key = f"weight_{symbol}"
-        percent_value = st.session_state.get(weight_key, 0)
-        weight = percent_value / 100.0
-        weights_inputs.append(weight)
-    
-    total_weight = sum(weights_inputs)
-    
-    if 0.98 <= total_weight <= 1.02:
-        st.success(f"✅ Total: {total_weight:.1%}")
-        return ",".join([str(w) for w in weights_inputs])
-    elif total_weight == 0:
-        st.info("💡 Suma 0%. Se usarán pesos iguales.")
-        equal_weight = 1.0 / len(validated_symbols)
-        equal_weights = [equal_weight] * len(validated_symbols)
-        return ",".join([str(w) for w in equal_weights])
-    elif total_weight > 1.02:
-        st.error(f"❌ Total: {total_weight:.1%} - Los pesos suman más del 100%. Corrígelos antes de continuar.")
-        return ""
-    else:  # total_weight < 0.98
-        st.warning(f"⚠️ Total: {total_weight:.1%} (suma menos de 100%)")
-        normalized = [w / total_weight for w in weights_inputs]
-        return ",".join([str(w) for w in normalized])
-
-
-def _update_weights_if_symbols_changed():
-    """Recalcula pesos automáticamente cuando cambian los símbolos."""
+def _sync_weights_with_symbols() -> None:
+    """Actualiza automáticamente los pesos cuando cambian los símbolos."""
     current_symbols = st.session_state.get("cartera_symbols", "")
     if not current_symbols:
         return
     
     new_symbols_list = [s.strip() for s in current_symbols.split(",") if s.strip()]
-    old_symbols = st.session_state.get("portfolio_symbols", [])
+    last_symbols = st.session_state.get(LAST_SYMBOLS_PROCESSED_KEY, [])
     
-    # Limpiar cartera guardada si los símbolos cambian
-    if old_symbols and new_symbols_list != old_symbols:
-        if "portfolio_symbols" in st.session_state:
-            del st.session_state["portfolio_symbols"]
-        if "portfolio_weights" in st.session_state:
-            del st.session_state["portfolio_weights"]
-    
-    # Recalcular pesos
-    if new_symbols_list:
-        _cleanup_old_weights()
+    if new_symbols_list != last_symbols:
+        logger.info(f"Detectado cambio de símbolos: {last_symbols} -> {new_symbols_list}")
+        
+        _remove_orphaned_weights(new_symbols_list)
+        
         weights = _calculate_equal_weights(len(new_symbols_list))
-        weights_str = ",".join([str(round(w * 100)) for w in weights])
-        st.session_state.cartera_weights = weights_str
+        
+        for i, symbol in enumerate(new_symbols_list):
+            weight_key = f"weight_{symbol}"
+            st.session_state[weight_key] = round(weights[i] * 100)
+        
+        st.session_state[LAST_SYMBOLS_PROCESSED_KEY] = new_symbols_list
+
+
+def _ensure_weights_initialized(symbols_list: list[str]) -> None:
+    """Asegura que todos los símbolos tengan pesos inicializados."""
+    missing_weights = [
+        symbol for symbol in symbols_list 
+        if f"weight_{symbol}" not in st.session_state
+    ]
+    
+    if missing_weights:
+        logger.info(f"Inicializando pesos faltantes para: {missing_weights}")
+        weights = _calculate_equal_weights(len(symbols_list))
+        for i, symbol in enumerate(symbols_list):
+            weight_key = f"weight_{symbol}"
+            if weight_key not in st.session_state:
+                st.session_state[weight_key] = round(weights[i] * 100)
+
+
+def _collect_weights_from_session(symbols_list: list[str]) -> list[float]:
+    """Recolecta los pesos desde session_state y los convierte a fracciones."""
+    weights = []
+    for symbol in symbols_list:
+        weight_key = f"weight_{symbol}"
+        weight_percent = st.session_state.get(weight_key, 0)
+        weights.append(weight_percent / 100.0)
+    return weights
+
+
+def _process_weight_normalization(symbols_list: list[str]) -> list[float]:
+    """
+    Procesa y normaliza los pesos, actualizando session_state con porcentajes enteros.
+    Retorna los pesos normalizados como fracciones.
+    """
+    weights = _collect_weights_from_session(symbols_list)
+    total_weight = sum(weights)
+    
+    if total_weight > 0 and abs(total_weight - 1.0) > 0.01:
+        logger.info(f"Normalizando pesos: suma actual = {total_weight:.2f}")
+        weights = _normalize_weights(weights)
+        
+        # Actualizar session_state con porcentajes enteros que suman 100%
+        int_percentages = _convert_to_percentage_weights(weights)
+        for i, symbol in enumerate(symbols_list):
+            weight_key = f"weight_{symbol}"
+            st.session_state[weight_key] = int_percentages[i]
+        
+        # Reconverter a fracciones para retornar
+        weights = [pct / 100.0 for pct in int_percentages]
+    
+    return weights
+
+
+def _validate_capital_per_stock(symbols_list: list[str], weights: list[float], initial_value: float) -> None:
+    """Valida que cada activo tenga capital mínimo recomendado."""
+    for i, symbol in enumerate(symbols_list):
+        capital = weights[i] * initial_value
+        if capital < MIN_CAPITAL_PER_STOCK:
+            st.warning(
+                f"⚠️ {symbol}: ${capital:.2f} es muy bajo para trading. "
+                f"Mínimo recomendado: ${MIN_CAPITAL_PER_STOCK}"
+            )
 
 
 def sidebar_cartera() -> Tuple[bool, CarteraParams]:
     """Sidebar para la pestaña de Cartera."""
     st.sidebar.header("💼 Parámetros de cartera")
     
-    # Aplicar estilos del sidebar (función reutilizable)
     apply_sidebar_styles()
     
-    # Controles de importación de símbolos (función reutilizable)
     render_symbol_import_controls(
         source_key="datos_simbolos",
         target_key="cartera_symbols",
@@ -146,45 +247,66 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
         button_label="📊 Importar símbolos desde Datos"
     )
     
-    # Controles de carga de archivos (función reutilizable)
     render_file_upload_controls(
         target_key="cartera_symbols",
         button_label="📁 Cargar símbolos desde archivo",
         uploader_key="file_uploader_cartera"
     )
     
-    st.sidebar.markdown("---")
+    _sync_weights_with_symbols()
     
-    # Actualizar pesos automáticamente si cambian los símbolos
-    _update_weights_if_symbols_changed()
-    
-    # Obtener símbolos para usarlos en el form
-    symbols_input = st.session_state.get("cartera_symbols", "")
-    symbols_list = [s.strip() for s in symbols_input.split(",") if s.strip()] if symbols_input else []
-    
-    # Formulario
     with st.sidebar.form("form_cartera"):
-        valor_inicial_input = st.number_input(
-            "💰 Valor inicial de la cartera ($)", 100.0, 1_000_000.0, 10000.0, step=1000.0, key="cartera_valor_inicial"
+        current_symbols = st.session_state.get("cartera_symbols", "")
+        current_symbols_list = [
+            s.strip() for s in current_symbols.split(",") if s.strip()
+        ] if current_symbols else []
+        
+        st.markdown("💰 **Parámetros**")
+        
+        valor_inicial = st.number_input(
+            "Valor inicial de la cartera ($)",
+            100.0,
+            1_000_000.0,
+            DEFAULT_INITIAL_VALUE,
+            step=1000.0,
+            key="cartera_valor_inicial"
         )
         
-        # Renderizar inputs de pesos usando función auxiliar
-        _render_weight_inputs(symbols_list)
+        if current_symbols_list:
+            _render_weight_inputs(current_symbols_list)
         
         submitted = st.form_submit_button(
-            "💼 Aplicar pesos",
-            width='stretch'
+            "💼 Aplicar Pesos",
+            use_container_width=True,
+            disabled=not current_symbols_list
         )
     
-    # Validar símbolos y procesar pesos si se envió el formulario
-    weights_str_final = "1.0"
     if submitted:
-        valid_symbols, _ = _validate_symbols_on_submit(symbols_input)
-        if valid_symbols:
-            weights_str_final = _process_and_validate_weights(valid_symbols) or "1.0"
+        submitted_symbols = st.session_state.get("cartera_symbols", "")
+        symbols_list = [
+            s.strip() for s in submitted_symbols.split(",") if s.strip()
+        ] if submitted_symbols else []
+        
+        if not symbols_list:
+            return False, CarteraParams("", "", DEFAULT_INITIAL_VALUE)
+        
+        _ensure_weights_initialized(symbols_list)
+        valid_symbols, _ = _validate_symbols_input(submitted_symbols)
+        
+        if not valid_symbols:
+            return False, CarteraParams("", "", DEFAULT_INITIAL_VALUE)
+        
+        weights = _process_weight_normalization(valid_symbols)
+        valor_inicial = st.session_state.get("cartera_valor_inicial", DEFAULT_INITIAL_VALUE)
+        
+        _save_portfolio_config(valid_symbols, weights, valor_inicial)
+        _validate_capital_per_stock(valid_symbols, weights, valor_inicial)
+        
+        weights_str = ",".join([str(w) for w in weights])
+        
+        return True, CarteraParams(submitted_symbols, weights_str, float(valor_inicial))
     
-    # NO guardar symbols_input en session_state porque el input ya lo hace automáticamente
-    # al tener key="cartera_symbols"
+    final_symbols = st.session_state.get("cartera_symbols", "")
+    valor_inicial = st.session_state.get("cartera_valor_inicial", DEFAULT_INITIAL_VALUE)
     
-    return submitted, CarteraParams(symbols_input, weights_str_final, float(valor_inicial_input))
-
+    return False, CarteraParams(final_symbols, "", float(valor_inicial))

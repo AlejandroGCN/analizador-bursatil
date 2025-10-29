@@ -73,28 +73,41 @@ class MonteCarloReporter:
         st.subheader("📊 Visualizaciones de la cartera")
         
         try:
-            # Generar visualizaciones usando el método plots_report
-            portfolio.plots_report(figsize=(16, 10), save_path=None)
-            
-            # Guardar en memory buffer para mostrar en Streamlit
-            buffer = BytesIO()
-            plt.savefig(buffer, format='png', bbox_inches='tight', dpi=150)
-            buffer.seek(0)
-            
-            st.image(buffer, width='stretch')
+            # Cerrar todas las figuras anteriores para evitar conflictos
             plt.close('all')
             
-            st.divider()
+            # Generar visualizaciones usando el método plots_report
+            # Devolver la figura en lugar de mostrarla
+            fig = portfolio.plots_report(figsize=(16, 10), save_path=None, return_figure=True)
             
-            # Botón para descargar visualizaciones
-            st.download_button(
-                label="📥 Descargar gráficos (PNG)",
-                data=buffer.getvalue(),
-                file_name=f"visualizaciones_cartera_{portfolio.name.lower().replace(' ', '_')}.png",
-                mime="image/png"
-            )
+            if fig is not None:
+                # Guardar en memory buffer para mostrar en Streamlit
+                buffer = BytesIO()
+                fig.savefig(buffer, format='png', bbox_inches='tight', dpi=150)
+                buffer.seek(0)
+                
+                # Mostrar imagen desde el buffer
+                st.image(buffer, width='stretch')
+                
+                # Cerrar figura explícitamente
+                plt.close(fig)
+                
+                st.divider()
+                
+                # Botón para descargar visualizaciones
+                st.download_button(
+                    label="📥 Descargar gráficos (PNG)",
+                    data=buffer.getvalue(),
+                    file_name=f"visualizaciones_cartera_{portfolio.name.lower().replace(' ', '_')}.png",
+                    mime="image/png"
+                )
+            else:
+                st.error("No se pudo generar la figura.")
             
         except Exception as e:
             st.error(f"Error generando visualizaciones: {e}")
             st.code(traceback.format_exc())
+        finally:
+            # Asegurar que todas las figuras se cierren
+            plt.close('all')
 

@@ -9,6 +9,10 @@ import pandas as pd
 import numpy as np
 from numpy.random import default_rng
 import matplotlib.pyplot as plt
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -44,7 +48,7 @@ class MonteCarloSimulation:
         
         Args:
             portfolio_return: Retorno esperado de la cartera (diario)
-            portfolio_volatility: Volatilidad de la cartera (diaria)
+            portfolio_volatility: Volatilidad de la cartera (anualizada)
             n_simulations: Número de simulaciones
             time_horizon: Horizonte temporal en días
             initial_value: Valor inicial de la cartera
@@ -54,35 +58,60 @@ class MonteCarloSimulation:
         Returns:
             DataFrame con las simulaciones (filas = simulaciones, columnas = días)
         """
+        logger.debug(f"🎲 MonteCarloSimulation.simulate_portfolio")
+        logger.debug(f"  Inputs: ret={portfolio_return:.8f}, vol={portfolio_volatility:.6f}")
+        logger.debug(f"  n_sims={n_simulations}, horizon={time_horizon}, init_val={initial_value}")
+        
         # Usar generator en lugar de numpy.random legacy API
         rng = default_rng(random_seed)
         
-        dt = 1.0 / 252  # Paso temporal (un día en años)
+        # Convertir volatilidad anualizada a diaria
+        # Si volatilidad anual = σ_anual, entonces volatilidad diaria = σ_anual / √252
+        vol_daily = portfolio_volatility / np.sqrt(252)
+        logger.debug(f"  Volatilidad anualizada: {portfolio_volatility:.6f}")
+        logger.debug(f"  Volatilidad diaria: {vol_daily:.8f}")
         
         # OPTIMIZACIÓN: Generar todas las simulaciones de forma vectorizada
         # Forma: (n_simulations, time_horizon)
         if dynamic_volatility:
             # Volatilidad variable para cada paso de cada simulación
             vol_multipliers = rng.uniform(0.8, 1.2, size=(n_simulations, time_horizon))
-            vols = portfolio_volatility * vol_multipliers
+            vols_daily = vol_daily * vol_multipliers
+            logger.debug(f"  Volatilidad dinámica diaria: rango {vols_daily.min():.6f} - {vols_daily.max():.6f}")
         else:
-            vols = np.full((n_simulations, time_horizon), portfolio_volatility)
+            vols_daily = vol_daily  # Constante para todas las simulaciones
+            logger.debug(f"  Volatilidad diaria constante: {vol_daily:.6f}")
         
         # Generar shocks aleatorios para todas las simulaciones
         shocks = rng.normal(0, 1, size=(n_simulations, time_horizon))
+        logger.debug(f"  Shocks generados: media={shocks.mean():.6f}, std={shocks.std():.6f}")
         
         # Calcular retornos de forma vectorizada
-        returns = portfolio_return * dt + vols * np.sqrt(dt) * shocks
+        # portfolio_return ya es DIARIO, así que lo usamos directamente
+        # Fórmula: retorno_diario = μ_diario + σ_diaria × shock
+        # donde μ_diario es el retorno esperado diario y shock ~ N(0,1)
+        if dynamic_volatility:
+            returns = portfolio_return + vols_daily * shocks
+        else:
+            returns = portfolio_return + vol_daily * shocks
+        logger.debug(f"  Retornos simulados: media={returns.mean():.8f}, std={returns.std():.8f}")
+        logger.debug(f"  Retornos - min={returns.min():.8f}, max={returns.max():.8f}")
         
         # Calcular trayectorias usando cumprod
         # Necesitamos convertir retornos a factores de crecimiento
         growth_factors = 1 + returns
+        logger.debug(f"  Factores de crecimiento: media={growth_factors.mean():.6f}")
+        logger.debug(f"  Factores - min={growth_factors.min():.6f}, max={growth_factors.max():.6f}")
         
         # Inicializar con valor inicial
         trajectories = np.full((n_simulations, time_horizon + 1), initial_value, dtype=float)
         
         # Multiplicar acumuladamente los factores de crecimiento
         trajectories[:, 1:] = initial_value * np.cumprod(growth_factors, axis=1)
+        
+        logger.debug(f"  Trayectorias generadas: shape={trajectories.shape}")
+        logger.debug(f"  Valor final medio: ${trajectories[:, -1].mean():,.2f}")
+        logger.debug(f"  Valor final std: ${trajectories[:, -1].std():,.2f}")
         
         return pd.DataFrame(
             trajectories,
@@ -144,8 +173,9 @@ class MonteCarloSimulation:
         simulation_results: pd.DataFrame,
         title: str = "Simulación Monte Carlo",
         figsize: Tuple[int, int] = (12, 6),
-        max_paths: int = 100
-    ) -> None:
+        max_paths: int = 100,
+        return_figure: bool = False
+    ):
         """
         Visualiza los resultados de una simulación Monte Carlo.
         
@@ -154,8 +184,15 @@ class MonteCarloSimulation:
             title: Título del gráfico
             figsize: Tamaño de la figura
             max_paths: Número máximo de trayectorias a mostrar
+            return_figure: Si True, retorna la figura en lugar de mostrarla
+        
+        Returns:
+            None o matplotlib.figure.Figure dependiendo de return_figure
         """
-        _, ax = plt.subplots(figsize=figsize)
+        # Detectar si estamos en Streamlit
+        is_streamlit = 'STREAMLIT_SERVER_PORT' in os.environ
+        
+        fig, ax = plt.subplots(figsize=figsize)
         
         # Mostrar subconjunto de trayectorias
         sample_paths = min(max_paths, len(simulation_results))
@@ -205,7 +242,13 @@ class MonteCarloSimulation:
         ax.grid(True, alpha=0.3)
         
         plt.tight_layout()
+        
+        # En Streamlit o si se solicita retornar la figura, no llamar plt.show()
+        if is_streamlit or return_figure:
+            return fig
+        
         plt.show()
+        return None
     
     @staticmethod
     def get_final_statistics(simulation_results: pd.DataFrame) -> dict:

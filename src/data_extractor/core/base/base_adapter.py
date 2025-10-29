@@ -197,14 +197,32 @@ class BaseAdapter(ABC):
                     errors.append((sym, str(ex)))
                     logger.warning("Fallo descargando %s: %s", sym, ex)
 
+        # Si hay errores pero también hay resultados exitosos, registrar advertencia pero continuar
+        if errors and results:
+            logger.warning(
+                "Algunos símbolos fallaron al descargar (%d errores de %d total): %s",
+                len(errors), len(norm_symbols), [sym for sym, _ in errors]
+            )
+        
+        # Solo lanzar excepción si TODOS los símbolos fallaron
         if not results and errors:
             sym, msg = errors[0]
             # Extraer el mensaje limpio sin los metadatos [source=...]
             clean_msg = msg.split('[source=')[0].strip() if '[source=' in msg else msg
+            
+            # Determinar si es SymbolNotFound o ExtractionError genérico
+            if "No se encontraron datos" in msg or "not found" in msg.lower():
+                from data_extractor.core.errors import SymbolNotFound
+                raise SymbolNotFound(
+                    f"No se encontraron datos para '{sym}' en {self.name}\n\n{clean_msg}",
+                    source=self.name,
+                    symbol=sym
+                )
+            
             raise ExtractionError(
                 f"❌ No se pudieron descargar datos para '{sym}'\n\n{clean_msg}",
                 source=self.name,
                 symbol=sym
             )
-
+        
         return results

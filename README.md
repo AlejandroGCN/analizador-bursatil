@@ -218,6 +218,18 @@ analizador-bursatil  # Comando global
 - **Intervalos de confianza**: Percentiles 5%, 25%, 50%, 75%, 95%
 - **Parámetros configurables**: Número de simulaciones, horizonte temporal
 - **Volatilidad dinámica**: Opción de volatilidad variable en el tiempo
+- **Validación matemática**: Cálculos verificados usando movimiento browniano geométrico correcto
+- **Precisión en retornos**: Fórmula validada que garantiza coherencia entre retorno esperado y simulado
+
+### Validación Dinámica de Intervalos
+
+La interfaz valida automáticamente los intervalos disponibles según la fuente seleccionada:
+
+- **Yahoo Finance**: Soporta intervalos diarios (1d, 1wk, 1mo), horarios (1h) e intradía (1m, 5m, 15m, 30m, 60m, 90m)
+- **Binance**: Soporta intervalos desde 1 minuto hasta mensuales (1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M)
+- **Stooq**: Soporta solo datos diarios (1d, 1wk, 1mo)
+- **Validación automática**: Si cambias de fuente, el intervalo se ajusta automáticamente si no está disponible
+- **Consulta dinámica**: Los intervalos se obtienen directamente de los adaptadores para garantizar exactitud
 
 ---
 
@@ -248,7 +260,7 @@ analizador-bursatil  # Comando global
 
 ### ✨ Funcionalidades Implementadas
 - 🎨 **Interfaz Streamlit**: Panel central para inputs de símbolos con mejor visibilidad
-- 💼 **Análisis de cartera**: Sistema de pesos con validación inteligente y tolerancia a redondeos
+- 💼 **Análisis de cartera**: Sistema de pesos con validación inteligente, normalización automática y sincronización
 - 🔄 **Persistencia de datos**: Los símbolos se mantienen al cambiar de pestaña
 - 📦 **Importación flexible**: Importar símbolos entre pestañas (Datos ↔ Cartera)
 - 🎯 **Validación robusta**: Mensajes de error claros cuando faltan símbolos
@@ -258,10 +270,14 @@ analizador-bursatil  # Comando global
 
 ### 🏗️ Arquitectura Técnica
 - 🏗️ **Estructura modular**: Separación clara entre views, sidebars y utilities
-- 🔧 **Sin duplicación**: Código limpio con funciones compartidas en utils.py
-- 📝 **Nomenclatura clara**: Archivos con sufijos `_view.py` y `_sidebar.py`
-- ⚡ **Optimizado**: CSS unificado, validaciones simplificadas
+- 🔧 **Código limpio**: Funciones pequeñas con responsabilidades únicas (principio SRP)
+- 📝 **Sin duplicación**: Funciones reutilizables centralizadas en utils.py
+- ⚡ **Baja complejidad**: Funciones principales < 80 líneas, auxiliares < 50 líneas
+- 🎯 **Nomenclatura clara**: Archivos con sufijos `_view.py` y `_sidebar.py`
+- ✨ **Optimizado**: CSS unificado, validaciones simplificadas, normalización eficiente
 - 🎨 **Tema personalizado**: Sidebar con fondo azul para mejor contraste
+- 🔍 **Sistema de logging**: Debug logging integrado para validación de cálculos y depuración
+- ✅ **Validación de datos**: Verificación automática de normalización, coherencia y calidad de datos
 
 ### 📊 Documentación Completa
 - 📊 **Diagramas Mermaid**: Visualización completa de la arquitectura
@@ -355,7 +371,6 @@ BTCUSDT,Bitcoin/USDT,binance
 - **[install.bat](install.bat)**: Script de instalación automática (Windows)
 
 ### Ejemplos y Configuración
-- **[ejemplos/symbols_example.txt](ejemplos/symbols_example.txt)**: Lista detallada de símbolos recomendados
 - **[ejemplos/symbols.csv](ejemplos/symbols.csv)**: Formato CSV con símbolos, empresas y precios
 - **[ejemplos/symbols.json](ejemplos/symbols.json)**: Formato JSON estructurado con metadatos
 - **[ejemplos/symbols.txt](ejemplos/symbols.txt)**: Formato simple, solo símbolos uno por línea

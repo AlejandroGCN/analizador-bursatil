@@ -43,6 +43,8 @@ def load_symbols_from_file(uploaded_file) -> Optional[List[str]]:
 
 def _load_from_csv(uploaded_file) -> List[str]:
     """Carga símbolos desde un archivo CSV."""
+    # Resetear el stream al inicio antes de leer
+    uploaded_file.seek(0)
     df = pd.read_csv(uploaded_file)
     
     # Buscar columnas que puedan contener símbolos
@@ -63,6 +65,8 @@ def _load_from_csv(uploaded_file) -> List[str]:
 
 def _load_from_excel(uploaded_file) -> List[str]:
     """Carga símbolos desde un archivo Excel."""
+    # Resetear el stream al inicio antes de leer
+    uploaded_file.seek(0)
     df = pd.read_excel(uploaded_file)
     
     # Buscar columnas que puedan contener símbolos
@@ -83,6 +87,8 @@ def _load_from_excel(uploaded_file) -> List[str]:
 
 def _load_from_json(uploaded_file) -> List[str]:
     """Carga símbolos desde un archivo JSON."""
+    # Resetear el stream al inicio antes de leer
+    uploaded_file.seek(0)
     content = uploaded_file.read().decode('utf-8')
     data = json.loads(content)
     
@@ -107,6 +113,8 @@ def _load_from_json(uploaded_file) -> List[str]:
 
 def _load_from_txt(uploaded_file) -> List[str]:
     """Carga símbolos desde un archivo de texto."""
+    # Resetear el stream al inicio antes de leer
+    uploaded_file.seek(0)
     content = uploaded_file.read().decode('utf-8')
     lines = content.strip().split('\n')
     
