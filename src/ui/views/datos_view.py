@@ -87,6 +87,81 @@ def _get_symbol_suggestions(symbol: str, source: str) -> str:
     return "\n".join(f"- {s}" for s in suggestions)
 
 
+def _display_source_examples(source_name: str) -> None:
+    """Muestra ejemplos de símbolos válidos según la fuente."""
+    source_lower = source_name.lower()
+    if source_lower == "yahoo":
+        st.code("AAPL, MSFT, GOOGL, TSLA, AMZN  # Acciones US\nSIEMENS.DE, ASML.AS  # Acciones internacionales")
+    elif source_lower == "binance":
+        st.code("BTCUSDT, ETHUSDT, BNBBTC  # Pares de criptomonedas")
+    else:
+        st.code("AAPL.US, MSFT.US, GOOGL.US  # Formato Stooq")
+
+
+def _handle_symbol_not_found(error: SymbolNotFound, source_name: str) -> None:
+    """Maneja errores de símbolo no encontrado."""
+    symbol = getattr(error, 'symbol', 'símbolo desconocido')
+    st.error(f"🚫 **Símbolo no encontrado**: '{symbol}' no existe en {source_name}")
+    
+    suggestions = _get_symbol_suggestions(symbol, source_name)
+    with st.expander("💡 Sugerencias para resolver el problema"):
+        st.markdown(suggestions)
+        st.markdown("**Ejemplos de símbolos válidos por fuente:**")
+        _display_source_examples(source_name)
+
+
+def _extract_main_error_message(error_message: str) -> str:
+    """Extrae el mensaje principal de error sin metadatos."""
+    if "[source=" in error_message:
+        return error_message.split("[source=")[0].strip()
+    return error_message
+
+
+def _display_extraction_error_suggestions(error_message: str, params: DatosParams | None) -> None:
+    """Muestra sugerencias adicionales según el tipo de error de extracción."""
+    error_lower = error_message.lower()
+    if "timeout" in error_lower or "time" in error_lower:
+        st.info("🌐 **Problema de conexión**: Verifica tu conexión a Internet y vuelve a intentar")
+    elif "rate limit" in error_lower or "429" in error_message:
+        st.info("⏱️ **Límite de peticiones**: Espera unos minutos antes de intentar nuevamente")
+    elif params:
+        st.info(f"📅 **Verifica el rango de fechas**: {params.fecha_ini} a {params.fecha_fin}")
+
+
+def _handle_extraction_error_case(error: ExtractionError, source_name: str, params: DatosParams | None) -> None:
+    """Maneja errores genéricos de extracción."""
+    symbol = getattr(error, 'symbol', None)
+    error_message = str(error)
+    main_msg = _extract_main_error_message(error_message)
+    
+    st.error(f"❌ **Error obteniendo datos de mercado**: {main_msg}")
+    
+    if symbol:
+        st.warning(f"⚠️ **Problema con símbolo**: '{symbol}'")
+        suggestions = _get_symbol_suggestions(symbol, source_name)
+        with st.expander("💡 Sugerencias"):
+            st.markdown(suggestions)
+    
+    _display_extraction_error_suggestions(error_message, params)
+
+
+def _handle_unexpected_error(error: Exception) -> None:
+    """Maneja errores inesperados."""
+    error_message = str(error)
+    st.error(f"❌ **Error inesperado**: {error_message}")
+    
+    with st.expander("🔍 Detalles técnicos del error"):
+        st.code(traceback.format_exc())
+    
+    st.info("💡 **Posibles soluciones**:")
+    st.markdown("""
+    - Verifica tu conexión a Internet
+    - Asegúrate de que los símbolos sean válidos para la fuente seleccionada
+    - Intenta con un rango de fechas más pequeño o más reciente
+    - Si el problema persiste, reinicia la aplicación
+    """)
+
+
 def _handle_extraction_error(error: Exception, params: DatosParams | None) -> None:
     """
     Maneja errores de extracción con mensajes informativos y sugerencias.
@@ -98,61 +173,11 @@ def _handle_extraction_error(error: Exception, params: DatosParams | None) -> No
     source_name = params.fuente if params else "la fuente seleccionada"
     
     if isinstance(error, SymbolNotFound):
-        symbol = getattr(error, 'symbol', 'símbolo desconocido')
-        st.error(f"🚫 **Símbolo no encontrado**: '{symbol}' no existe en {source_name}")
-        
-        suggestions = _get_symbol_suggestions(symbol, source_name)
-        with st.expander("💡 Sugerencias para resolver el problema"):
-            st.markdown(suggestions)
-            
-            st.markdown("**Ejemplos de símbolos válidos por fuente:**")
-            if source_name.lower() == "yahoo":
-                st.code("AAPL, MSFT, GOOGL, TSLA, AMZN  # Acciones US\nSIEMENS.DE, ASML.AS  # Acciones internacionales")
-            elif source_name.lower() == "binance":
-                st.code("BTCUSDT, ETHUSDT, BNBBTC  # Pares de criptomonedas")
-            else:
-                st.code("AAPL.US, MSFT.US, GOOGL.US  # Formato Stooq")
-    
+        _handle_symbol_not_found(error, source_name)
     elif isinstance(error, ExtractionError):
-        symbol = getattr(error, 'symbol', None)
-        error_message = str(error)
-        
-        # Extraer mensaje principal sin metadatos
-        if "[source=" in error_message:
-            main_msg = error_message.split("[source=")[0].strip()
-        else:
-            main_msg = error_message
-        
-        st.error(f"❌ **Error obteniendo datos de mercado**: {main_msg}")
-        
-        if symbol:
-            st.warning(f"⚠️ **Problema con símbolo**: '{symbol}'")
-            suggestions = _get_symbol_suggestions(symbol, source_name)
-            with st.expander("💡 Sugerencias"):
-                st.markdown(suggestions)
-        
-        # Sugerencias adicionales según el tipo de error
-        if "timeout" in error_message.lower() or "time" in error_message.lower():
-            st.info("🌐 **Problema de conexión**: Verifica tu conexión a Internet y vuelve a intentar")
-        elif "rate limit" in error_message.lower() or "429" in error_message:
-            st.info("⏱️ **Límite de peticiones**: Espera unos minutos antes de intentar nuevamente")
-        elif params:
-            st.info(f"📅 **Verifica el rango de fechas**: {params.fecha_ini} a {params.fecha_fin}")
-    
+        _handle_extraction_error_case(error, source_name, params)
     else:
-        error_message = str(error)
-        st.error(f"❌ **Error inesperado**: {error_message}")
-        
-        with st.expander("🔍 Detalles técnicos del error"):
-            st.code(traceback.format_exc())
-        
-        st.info("💡 **Posibles soluciones**:")
-        st.markdown("""
-        - Verifica tu conexión a Internet
-        - Asegúrate de que los símbolos sean válidos para la fuente seleccionada
-        - Intenta con un rango de fechas más pequeño o más reciente
-        - Si el problema persiste, reinicia la aplicación
-        """)
+        _handle_unexpected_error(error)
 
 
 def _fetch_data_with_spinner(params: DatosParams, symbols_list: list[str]) -> dict:

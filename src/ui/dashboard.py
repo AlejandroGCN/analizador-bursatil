@@ -7,6 +7,8 @@ if SRC_ROOT not in sys.path:
 
 import streamlit as st
 import logging
+import logging.config
+import logging.handlers
 import os
 from pathlib import Path
 from logs.logs_handler import resolve_log_cfg
@@ -44,7 +46,6 @@ def _create_debug_handler(cfg: dict) -> logging.Handler | None:
     if 'debug_file' not in cfg.get('handlers', {}):
         return None
     
-    import logging.handlers
     debug_cfg = cfg['handlers']['debug_file']
     filename = debug_cfg.get('filename')
     
@@ -103,7 +104,6 @@ def _setup_logging() -> None:
     if not DEBUG_LOGGING_ENABLED:
         _remove_debug_handler_from_config(cfg)
     
-    import logging.config
     logging.config.dictConfig(cfg)
     
     if DEBUG_LOGGING_ENABLED:

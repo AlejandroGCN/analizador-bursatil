@@ -263,7 +263,7 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
         
         st.markdown("💰 **Parámetros**")
         
-        valor_inicial = st.number_input(
+        st.number_input(
             "Valor inicial de la cartera ($)",
             100.0,
             1_000_000.0,
