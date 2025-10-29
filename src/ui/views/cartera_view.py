@@ -78,10 +78,10 @@ def _calculate_dollar_values_cached(weights_tuple: tuple, initial_value: float) 
     total_weight = sum(weights)
     
     if abs(total_weight - 1.0) > WEIGHT_TOLERANCE:
-        normalized_weights = [w / total_weight for w in weights]
-        return tuple([w * initial_value for w in normalized_weights])
+        normalized_weights = (w / total_weight for w in weights)
+        return tuple(w * initial_value for w in normalized_weights)
     
-    return tuple([w * initial_value for w in weights])
+    return tuple(w * initial_value for w in weights)
 
 
 def _calculate_dollar_values(weights: list[float], initial_value: float) -> list[float]:
@@ -208,7 +208,7 @@ def tab_cartera(submit: bool, params: CarteraParams | None) -> None:
     symbols_text = st.session_state.get("cartera_symbols", "")
     
     if not has_portfolio and (not symbols_text or not symbols_text.strip()):
-        display_symbol_info("cartera_symbols", contexto="cartera")
+        display_symbol_info(contexto="cartera")
     
     st.divider()
 

@@ -234,7 +234,7 @@ def _get_portfolio_weights(prices_dict: dict) -> tuple[list, list]:
     portfolio_symbols = st.session_state["portfolio_symbols"]
     portfolio_weights = st.session_state["portfolio_weights"]
     
-    logger.info(f"🔍 Comparando cartera vs datos:")
+    logger.info("🔍 Comparando cartera vs datos:")
     logger.info(f"  Cartera símbolos: {portfolio_symbols}")
     logger.info(f"  Datos disponibles: {list(prices_dict.keys())}")
     logger.debug(f"  Pesos de cartera: {portfolio_weights}")

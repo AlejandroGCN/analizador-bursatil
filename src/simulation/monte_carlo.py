@@ -58,7 +58,7 @@ class MonteCarloSimulation:
         Returns:
             DataFrame con las simulaciones (filas = simulaciones, columnas = días)
         """
-        logger.debug(f"🎲 MonteCarloSimulation.simulate_portfolio")
+        logger.debug("🎲 MonteCarloSimulation.simulate_portfolio")
         logger.debug(f"  Inputs: ret={portfolio_return:.8f}, vol={portfolio_volatility:.6f}")
         logger.debug(f"  n_sims={n_simulations}, horizon={time_horizon}, init_val={initial_value}")
         
@@ -80,7 +80,7 @@ class MonteCarloSimulation:
             logger.debug(f"  Volatilidad dinámica diaria: rango {vols_daily.min():.6f} - {vols_daily.max():.6f}")
         else:
             vols_daily = vol_daily  # Constante para todas las simulaciones
-            logger.debug(f"  Volatilidad diaria constante: {vol_daily:.6f}")
+            logger.debug("  Volatilidad diaria constante: %.6f", vol_daily)
         
         # Generar shocks aleatorios para todas las simulaciones
         shocks = rng.normal(0, 1, size=(n_simulations, time_horizon))

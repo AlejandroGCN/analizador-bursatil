@@ -241,12 +241,11 @@ def render_symbol_input(key: str) -> None:
         )
 
 
-def display_symbol_info(key: str, contexto: str = "datos") -> None:
+def display_symbol_info(contexto: str = "datos") -> None:
     """
     Muestra información y ayuda sobre cómo introducir símbolos.
     
     Args:
-        key: Key del widget de símbolos
         contexto: Contexto en el que se muestra (datos, cartera, etc.)
     """
     if contexto == "datos":

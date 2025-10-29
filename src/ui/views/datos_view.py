@@ -262,7 +262,7 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
     
     # Mostrar información de símbolos si corresponde
     if _should_display_symbol_info(submit, params, simbolos_texto):
-        display_symbol_info("datos_simbolos", contexto="datos")
+        display_symbol_info(contexto="datos")
     
     st.divider()
     

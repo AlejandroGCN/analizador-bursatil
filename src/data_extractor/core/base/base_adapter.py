@@ -152,32 +152,52 @@ class BaseAdapter(ABC):
         """
         raise NotImplementedError
 
-    def get_symbols(
-            self,
-            symbols: Union[Iterable[str], str, None],
-            start: Optional[Any],
-            end: Optional[Any],
-            interval: str,
-            **options: Any
-    ) -> Dict[str, pd.DataFrame]:
+    def _normalize_symbols_input(
+        self, 
+        symbols: Union[Iterable[str], str, None]
+    ) -> List[str]:
         """
-        Descarga en paralelo múltiples símbolos. Acepta lista/tupla/conjunto o un string único.
-        Rechaza None o colecciones vacías.
+        Normaliza la entrada de símbolos a una lista.
+        
+        Args:
+            symbols: Símbolos en cualquier formato aceptable
+            
+        Returns:
+            Lista normalizada de símbolos
+            
+        Raises:
+            ExtractionError: Si la entrada es inválida
         """
-        # normaliza entrada
         if symbols is None:
             raise ExtractionError("Debes proporcionar al menos un símbolo", source=self.name)
 
         if isinstance(symbols, str):
-            norm_symbols = [symbols]
-        else:
-            try:
-                norm_symbols = [s for s in symbols if s]  # type: ignore[union-attr]
-            except TypeError as ex:
-                raise ExtractionError(f"Símbolos no iterables: {ex}", source=self.name)
-            if not norm_symbols:
-                raise ExtractionError("Lista de símbolos vacía", source=self.name)
+            return [symbols]
+        
+        try:
+            norm_symbols = [s for s in symbols if s]  # type: ignore[union-attr]
+        except TypeError as ex:
+            raise ExtractionError(f"Símbolos no iterables: {ex}", source=self.name)
+        
+        if not norm_symbols:
+            raise ExtractionError("Lista de símbolos vacía", source=self.name)
+        
+        return norm_symbols
 
+    def _download_symbols_parallel(
+        self,
+        norm_symbols: List[str],
+        start: Optional[Any],
+        end: Optional[Any],
+        interval: str,
+        **options: Any
+    ) -> Tuple[Dict[str, pd.DataFrame], List[Tuple[str, str]]]:
+        """
+        Descarga símbolos en paralelo usando ThreadPoolExecutor.
+        
+        Returns:
+            Tupla con (resultados exitosos, errores)
+        """
         results: Dict[str, pd.DataFrame] = {}
         errors: List[Tuple[str, str]] = []
 
@@ -197,6 +217,17 @@ class BaseAdapter(ABC):
                     errors.append((sym, str(ex)))
                     logger.warning("Fallo descargando %s: %s", sym, ex)
 
+        return results, errors
+
+    def _handle_download_errors(
+        self,
+        errors: List[Tuple[str, str]],
+        results: Dict[str, pd.DataFrame],
+        norm_symbols: List[str]
+    ) -> None:
+        """
+        Maneja los errores de descarga y lanza excepciones apropiadas si es necesario.
+        """
         # Si hay errores pero también hay resultados exitosos, registrar advertencia pero continuar
         if errors and results:
             logger.warning(
@@ -224,5 +255,20 @@ class BaseAdapter(ABC):
                 source=self.name,
                 symbol=sym
             )
-        
+
+    def get_symbols(
+            self,
+            symbols: Union[Iterable[str], str, None],
+            start: Optional[Any],
+            end: Optional[Any],
+            interval: str,
+            **options: Any
+    ) -> Dict[str, pd.DataFrame]:
+        """
+        Descarga en paralelo múltiples símbolos. Acepta lista/tupla/conjunto o un string único.
+        Rechaza None o colecciones vacías.
+        """
+        norm_symbols = self._normalize_symbols_input(symbols)
+        results, errors = self._download_symbols_parallel(norm_symbols, start, end, interval, **options)
+        self._handle_download_errors(errors, results, norm_symbols)
         return results

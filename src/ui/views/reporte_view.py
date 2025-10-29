@@ -172,7 +172,7 @@ def _show_portfolio_report(portfolio: Any) -> None:
     # Log de estadísticas antes de generar reporte
     try:
         stats = portfolio.get_statistics()
-        logger.debug(f"  Estadísticas de cartera:")
+        logger.debug("  Estadísticas de cartera:")
         logger.debug(f"    Retorno: {stats['return']:.6f} (diario), {stats['return']*252:.4%} (anualizado)")
         logger.debug(f"    Volatilidad: {stats['volatility']:.4%}")
         logger.debug(f"    Sharpe Ratio: {stats['sharpe_ratio']:.4f}")

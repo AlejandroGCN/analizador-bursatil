@@ -130,7 +130,7 @@ class Portfolio:
         logger.debug(f"  Retornos infinitos: {np.isinf(self.returns.values).sum()}")
         
         if not self.returns.empty:
-            logger.debug(f"  Estadísticas de retornos (primeras filas):")
+            logger.debug("  Estadísticas de retornos (primeras filas):")
             logger.debug(f"    Media por activo: {self.returns.mean().to_dict()}")
             logger.debug(f"    Std por activo: {self.returns.std().to_dict()}")
     
@@ -245,7 +245,7 @@ class Portfolio:
             raise ValueError(ERR_NO_RETURNS)
         
         logger.info(f"🎲 Iniciando simulación Monte Carlo para '{self.name}'")
-        logger.debug(f"  Parámetros de simulación:")
+        logger.debug("  Parámetros de simulación:")
         logger.debug(f"    n_simulations: {n_simulations}")
         logger.debug(f"    time_horizon: {time_horizon} días")
         logger.debug(f"    initial_value: ${initial_value:,.2f}")
@@ -257,7 +257,7 @@ class Portfolio:
         portfolio_return = self.portfolio_return()
         portfolio_volatility = self.portfolio_volatility()
         
-        logger.debug(f"  Parámetros calculados de la cartera:")
+        logger.debug("  Parámetros calculados de la cartera:")
         logger.debug(f"    Retorno esperado (diario): {portfolio_return:.8f}")
         logger.debug(f"    Volatilidad (anualizada): {portfolio_volatility:.4%}")
         logger.debug(f"    Retorno esperado (anualizado): {portfolio_return * 252:.4%}")
@@ -272,7 +272,7 @@ class Portfolio:
             random_seed=random_seed
         )
         
-        logger.debug(f"  Resultados de simulación:")
+        logger.debug("  Resultados de simulación:")
         logger.debug(f"    Shape: {results.shape}")
         logger.debug(f"    Valor inicial: ${results.iloc[0, 0]:,.2f}")
         logger.debug(f"    Valor final medio: ${results.iloc[:, -1].mean():,.2f}")
@@ -289,8 +289,7 @@ class Portfolio:
         time_horizon: int = 252,
         initial_value: Optional[float] = None,
         dynamic_volatility: bool = False,
-        random_seed: Optional[int] = None,
-        risk_free_rate: float = 0.02
+        random_seed: Optional[int] = None
     ) -> pd.DataFrame:
         """
         Simula la evolución de un activo individual de la cartera usando Monte Carlo.
@@ -307,8 +306,6 @@ class Portfolio:
                           actual del activo (último precio disponible)
             dynamic_volatility: Si True, usa volatilidad variable en el tiempo
             random_seed: Semilla para reproducibilidad de resultados
-            risk_free_rate: Tasa libre de riesgo anualizada (no usado directamente,
-                           pero útil para contexto en logs)
         
         Returns:
             DataFrame con las simulaciones (filas = simulaciones, columnas = días)
@@ -345,7 +342,7 @@ class Portfolio:
             )
         
         logger.info(f"🎲 Iniciando simulación Monte Carlo individual para '{symbol}' (de cartera '{self.name}')")
-        logger.debug(f"  Parámetros de simulación:")
+        logger.debug("  Parámetros de simulación:")
         logger.debug(f"    Símbolo: {symbol}")
         logger.debug(f"    n_simulations: {n_simulations}")
         logger.debug(f"    time_horizon: {time_horizon} días")
