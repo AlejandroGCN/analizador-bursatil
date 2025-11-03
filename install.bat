@@ -72,7 +72,7 @@ echo # Copia este archivo como 'config.yaml' y modifica segun tus necesidades
 echo.
 echo # Configuracion por defecto
 echo default:
-echo   source: "yahoo"  # yahoo, binance, stooq
+echo   source: "yahoo"  # yahoo, binance, tiingo
 echo   interval: "1d"   # 1d, 1h, 1wk, 1mo
 echo   start_date: "2023-01-01"
 echo   end_date: "2024-01-01"
@@ -93,10 +93,13 @@ echo     - "ADAUSDT"
 echo     - "SOLUSDT"
 echo     - "DOTUSDT"
 echo.
-echo   stooq:
-echo     - "AAPL.US"
-echo     - "MSFT.US"
-echo     - "GOOGL.US"
+echo   tiingo:
+echo     - "AAPL"
+echo     - "MSFT"
+echo     - "GOOGL"
+echo     - "BP"
+echo     # Nota: Requiere API key gratuita de tiingo.com
+echo     # Configura: set TIINGO_API_KEY=tu_key_aqui
 echo.
 echo # Configuracion de Monte Carlo
 echo monte_carlo:

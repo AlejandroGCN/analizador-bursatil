@@ -1,0 +1,123 @@
+classDiagram
+    %% ADAPTERS
+    class BaseAdapter {
+        <<abstract>>
+        +name: str
+        +allowed_intervals: List~str~
+        +get_symbols(symbols, ...) Dict~DataFrame~
+        #download_symbol(symbol, ...)* DataFrame
+        #_finalize_ohlcv(df) DataFrame
+        #_normalize_datetime_index(df) DataFrame
+    }
+    
+    class YahooAdapter {
+        +name: "yahoo"
+        +download_symbol(symbol, ...) DataFrame
+    }
+    
+    class BinanceAdapter {
+        +name: "binance"
+        +download_symbol(symbol, ...) DataFrame
+    }
+    
+    class TiingoAdapter {
+        +name: "tiingo"
+        +download_symbol(symbol, ...) DataFrame
+    }
+    
+    BaseAdapter <|-- YahooAdapter : hereda
+    BaseAdapter <|-- BinanceAdapter : hereda
+    BaseAdapter <|-- TiingoAdapter : hereda
+    
+    %% PROVIDERS
+    class BaseProvider {
+        <<abstract>>
+        +adapter: BaseAdapter
+        +source_name: str
+        +get_symbols(symbols, ...) Dict~Series~
+    }
+    
+    class YahooProvider {
+        +adapter: YahooAdapter
+    }
+    
+    class BinanceProvider {
+        +adapter: BinanceAdapter
+    }
+    
+    class TiingoProvider {
+        +adapter: TiingoAdapter
+    }
+    
+    BaseProvider <|-- YahooProvider : hereda
+    BaseProvider <|-- BinanceProvider : hereda
+    BaseProvider <|-- TiingoProvider : hereda
+    
+    YahooProvider --> YahooAdapter : usa
+    BinanceProvider --> BinanceAdapter : usa
+    TiingoProvider --> TiingoAdapter : usa
+    
+    %% SERIES
+    class BaseSeries {
+        <<abstract>>
+        +symbol: str
+        +source: str
+        +data: DataFrame
+        +to_dataframe() DataFrame
+    }
+    
+    class PriceSeries {
+        +data: DataFrame[OHLCV]
+    }
+    
+    class PerformanceSeries {
+        +data: Series[returns]
+        +kind: str
+    }
+    
+    class VolatilitySeries {
+        +data: Series[volatility]
+    }
+    
+    BaseSeries <|-- PriceSeries : hereda
+    BaseSeries <|-- PerformanceSeries : hereda
+    BaseSeries <|-- VolatilitySeries : hereda
+    
+    %% RELACIONES
+    class DataExtractor {
+        +config: ExtractorConfig
+        +source: BaseProvider
+        +get_market_data() Dict~Series~
+    }
+    
+    class Registry {
+        +REGISTRY: Dict
+        +get_provider() BaseProvider
+    }
+    
+    DataExtractor --> Registry : consulta
+    Registry --> BaseProvider : retorna
+    BaseProvider --> BaseSeries : produce
+    
+    class Portfolio {
+        +symbols: List~str~
+        +weights: List~float~
+        +prices: DataFrame
+        +returns: DataFrame
+        +set_prices() void
+        +portfolio_return() float
+        +portfolio_volatility() float
+        +monte_carlo_simulation() DataFrame
+    }
+    
+    class MonteCarloSimulation {
+        +simulate_portfolio()$ DataFrame
+        +calculate_percentiles()$ DataFrame
+    }
+    
+    Portfolio --> PriceSeries : usa
+    Portfolio --> MonteCarloSimulation : invoca
+    
+    style BaseAdapter fill:#EEEEEE,stroke:#424242,stroke-width:4px
+    style BaseProvider fill:#EEEEEE,stroke:#424242,stroke-width:4px
+    style BaseSeries fill:#EEEEEE,stroke:#424242,stroke-width:4px

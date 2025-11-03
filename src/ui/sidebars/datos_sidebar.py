@@ -26,7 +26,7 @@ def _get_allowed_intervals_for_source(source_key: str) -> List[str]:
     soportados, garantizando que solo se muestren opciones válidas.
     
     Args:
-        source_key: Clave de la fuente (ej: "yahoo", "binance", "stooq")
+        source_key: Clave de la fuente (ej: "yahoo", "binance", "tiingo")
     
     Returns:
         Lista de intervalos permitidos ordenados
@@ -67,7 +67,7 @@ def _get_allowed_intervals_for_source(source_key: str) -> List[str]:
     default_intervals = {
         "yahoo": ["1d", "1wk", "1mo", "1h", "1m", "5m", "15m", "30m", "60m", "90m"],
         "binance": ["1d", "3d", "1w", "1M", "1h", "2h", "4h", "6h", "8h", "12h", "30m", "15m", "5m", "3m", "1m"],
-        "stooq": ["1d", "1wk", "1mo"]
+        "tiingo": ["1d"]  # Tiingo free tier solo soporta datos diarios
     }
     
     return default_intervals.get(source_key, ["1d"])
@@ -119,8 +119,8 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
     with st.sidebar.form("form_datos"):
         st.selectbox("Fuente de datos:", available_sources, key="fuente_datos")
         
-        st.date_input("Fecha inicio", pd.to_datetime("2020-01-01"), key="fecha_ini_datos")
-        st.date_input("Fecha fin", pd.to_datetime("2025-01-01"), key="fecha_fin_datos")
+        st.date_input("Fecha inicio", pd.to_datetime("2020-01-01"), key="fecha_ini_datos", format="DD/MM/YYYY")
+        st.date_input("Fecha fin", pd.to_datetime("2025-01-01"), key="fecha_fin_datos", format="DD/MM/YYYY")
         
         # Obtener intervalos disponibles dinámicamente según la fuente
         intervalos_por_fuente = _get_available_intervals_by_source()
@@ -136,12 +136,12 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
             intervalo_actual = "1d"
         
         # Mostrar información sobre intervalos disponibles
-        if fuente_actual == "Stooq" and "Stooq" in available_sources:
-            st.info("ℹ️ Stooq solo soporta datos diarios (no intradía)")
+        if fuente_actual == "Tiingo" and "Tiingo" in available_sources:
+            st.info("ℹ️ Tiingo: Datos diarios de calidad institucional (70+ exchanges)")
         elif fuente_actual == "Binance":
-            st.info("ℹ️ Binance soporta datos intradía desde 1 minuto")
+            st.info("ℹ️ Binance: Datos intradía desde 1 minuto")
         elif fuente_actual == "Yahoo":
-            st.info("ℹ️ Yahoo soporta datos diarios, semanales, mensuales e intradía")
+            st.info("ℹ️ Yahoo: Datos diarios, semanales, mensuales e intradía")
         
         # Mostrar solo intervalos realmente disponibles para esta fuente
         index_default = 0

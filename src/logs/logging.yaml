@@ -65,7 +65,7 @@ loggers:
   # Data extractor principal - Solo archivos, no consola
   data_extractor:
     level: INFO
-    handlers: [file]
+    handlers: [file, error_file]
     propagate: false
 
   # Adapters con logging específico - Solo archivos
@@ -79,7 +79,13 @@ loggers:
     handlers: [file, performance]
     propagate: false
 
-  data_extractor.adapters.stooq_adapter:
+  # DEPRECADO: Stooq reemplazado por Tiingo
+  # data_extractor.adapters.stooq_adapter:
+  #   level: INFO
+  #   handlers: [file, performance]
+  #   propagate: false
+  
+  data_extractor.adapters.tiingo_adapter:
     level: INFO
     handlers: [file, performance]
     propagate: false
@@ -100,7 +106,13 @@ loggers:
     handlers: [file]
     propagate: false
 
-  data_extractor.providers.stooq_provider:
+  # DEPRECADO: Stooq reemplazado por Tiingo
+  # data_extractor.providers.stooq_provider:
+  #   level: INFO
+  #   handlers: [file]
+  #   propagate: false
+  
+  data_extractor.providers.tiingo_provider:
     level: INFO
     handlers: [file]
     propagate: false
@@ -124,7 +136,7 @@ loggers:
   # UI components
   ui:
     level: INFO
-    handlers: [console, file]
+    handlers: [console, file, error_file]
     propagate: false
 
   # External libraries (menos verbosos)

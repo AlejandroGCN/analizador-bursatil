@@ -77,7 +77,7 @@ def get_sample_config() -> str:
 
 # Configuracion por defecto
 default:
-  source: "yahoo"  # yahoo, binance, stooq
+  source: "yahoo"  # yahoo, binance, tiingo
   interval: "1d"   # 1d, 1h, 1wk, 1mo
   start_date: "2023-01-01"
   end_date: "2024-01-01"
@@ -98,10 +98,13 @@ symbols:
     - "SOLUSDT"
     - "DOTUSDT"
   
-  stooq:
-    - "AAPL.US"
-    - "MSFT.US"
-    - "GOOGL.US"
+  tiingo:
+    - "AAPL"
+    - "MSFT"
+    - "GOOGL"
+    - "BP"
+    # Nota: Requiere API key gratuita de tiingo.com
+    # Configura: export TIINGO_API_KEY="tu_key_aqui"
 
 # Configuracion de Monte Carlo
 monte_carlo:

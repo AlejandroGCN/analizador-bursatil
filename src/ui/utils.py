@@ -255,7 +255,7 @@ def display_symbol_info(contexto: str = "datos") -> None:
         **Ejemplos válidos:**
         - Yahoo Finance: `AAPL, MSFT, GOOGL, TSLA`
         - Binance: `BTCUSDT, ETHUSDT, BNBBTC`
-        - Stooq: `AAPL.US, MSFT.US, GOOGL.US`
+        - Tiingo: `AAPL, MSFT, GOOGL, BP` (requiere API key gratuita)
         
         **Consejos:**
         - Verifica que los símbolos sean válidos para la fuente seleccionada
@@ -270,6 +270,6 @@ def display_symbol_info(contexto: str = "datos") -> None:
         
         **Importante:**
         - Los símbolos deben coincidir con los datos descargados en la pestaña "📊 Datos"
-        - Si usas Stooq, recuerda añadir el sufijo `.US` (ej: `AAPL.US`)
+        - Si usas Tiingo, configura tu API key gratuita (ver [TIINGO_SETUP.md](TIINGO_SETUP.md))
         - Puedes importar símbolos desde la pestaña de Datos usando el botón del sidebar
         """)

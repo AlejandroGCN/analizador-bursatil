@@ -20,7 +20,7 @@ class DataExtractor:
     Fachada principal para la extracción de datos financieros desde múltiples fuentes.
     
     Esta clase actúa como punto de entrada unificado para acceder a datos bursátiles
-    desde diferentes proveedores (Yahoo Finance, Binance, Stooq). Proporciona una
+    desde diferentes proveedores (Yahoo Finance, Binance, Tiingo). Proporciona una
     interfaz consistente independientemente de la fuente de datos utilizada.
     
     Características principales:
@@ -60,7 +60,11 @@ class DataExtractor:
             raise ValueError(f"Fuente no registrada: {self.cfg.source}") from e
 
         # Instancia del provider (pasa args comunes si aplica).
-        self.source = source_cls(timeout=self.cfg.timeout)
+        # Para Tiingo, pasar también la API key si está configurada
+        if self.cfg.source == "tiingo" and self.cfg.api_key:
+            self.source = source_cls(api_key=self.cfg.api_key, timeout=self.cfg.timeout)
+        else:
+            self.source = source_cls(timeout=self.cfg.timeout)
         logger.info("Proveedor instanciado: %s", getattr(source_cls, "__name__", str(source_cls)))
 
     def get_market_data(

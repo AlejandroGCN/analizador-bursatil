@@ -49,3 +49,8 @@ venv.bat
 stop_app.bat
 
 # Docker
+
+# Variables de entorno con API keys
+.env
+.env.local
+*.env

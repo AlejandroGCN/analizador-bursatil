@@ -4,7 +4,6 @@ Componente para manejo de errores mejorado en la UI
 """
 
 import streamlit as st
-import traceback
 from typing import Any, Callable, Optional
 from data_extractor.core.errors import ExtractionError, SymbolNotFound
 
@@ -26,22 +25,25 @@ def error_boundary(func: Callable, *args, **kwargs) -> Any:
     except SymbolNotFound as e:
         st.error(f"🚫 **Símbolo no encontrado**: {e.message}")
         st.info(f"💡 **Sugerencia**: Verifica que el símbolo '{e.symbol}' existe en la fuente '{e.source}'")
-        st.code("Ejemplos válidos:\n- Yahoo: AAPL, MSFT, GOOGL\n- Binance: BTCUSDT, ETHUSDT\n- Stooq: AAPL.US, MSFT.US")
+        st.code("Ejemplos válidos:\n- Yahoo: AAPL, MSFT, GOOGL\n- Binance: BTCUSDT, ETHUSDT\n- Tiingo: AAPL, MSFT, BP (requiere API key)")
         return None
     except ExtractionError as e:
         st.error(f"⚠️ **Error de extracción**: {e.message}")
-        if "pandas_datareader" in e.message:
-            st.info("💡 **Solución**: Usa Yahoo Finance o Binance en lugar de Stooq")
-            st.code("Fuentes recomendadas:\n- Yahoo Finance: Para acciones\n- Binance: Para criptomonedas")
+        if "API key" in e.message and "Tiingo" in e.message:
+            st.info("💡 **Solución**: Configura tu API key de Tiingo (ver TIINGO_SETUP.md)")
+            st.code("Obtén tu API key gratuita en: https://www.tiingo.com/\nLuego configura: export TIINGO_API_KEY='tu_key'")
         elif "timeout" in e.message.lower():
             st.info("💡 **Solución**: Verifica tu conexión a Internet y vuelve a intentar")
         return None
     except Exception as e:
-        st.error(f"❌ **Error inesperado**: {str(e)}")
+        import logging
+        logger = logging.getLogger(__name__)
         
-        # Mostrar detalles del error en un expander
-        with st.expander("🔍 Detalles técnicos del error"):
-            st.code(traceback.format_exc())
+        # Registrar el error completo en los logs
+        logger.error(f"Error inesperado: {str(e)}", exc_info=True)
+        
+        # Mostrar solo mensaje de error al usuario (sin detalles técnicos)
+        st.error(f"❌ **Error inesperado**: {str(e)}")
         
         # Sugerencias generales
         st.info("💡 **Posibles soluciones**:")

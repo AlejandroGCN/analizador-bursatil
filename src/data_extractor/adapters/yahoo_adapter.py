@@ -11,6 +11,16 @@ ADJ_CLOSE_COL = "Adj Close"
 REQUIRED_OHLCV_COLS = ["Open","High","Low","Close",ADJ_CLOSE_COL,"Volume"]
 
 class YahooAdapter(BaseAdapter):
+    """
+    Adaptador para Yahoo Finance.
+    
+    Soporta múltiples intervalos pero con limitaciones en datos históricos:
+    - Intervalos intraday (1m, 5m, 15m, 30m, 60m, 90m): Solo ~7 días de historia
+    - Intervalo horario (1h): Solo ~60 días de historia
+    - Intervalos diarios (1d, 1wk, 1mo): Histórico completo (50+ años)
+    
+    Esta limitación es impuesta por Yahoo Finance, no por el adaptador.
+    """
     name = "yahoo"
     supports_intraday = True
     allowed_intervals = ["1d","1wk","1mo","1h","1m","5m","15m","30m","60m","90m"]

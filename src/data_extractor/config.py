@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import Optional, Literal
 
 # Definir el tipo SourceName fuera de la clase
-SourceName = Literal["yahoo", "stooq", "binance"]
+# Nota: Stooq deprecado en favor de Tiingo (mejor cobertura y calidad)
+SourceName = Literal["yahoo", "binance", "tiingo"]
 
 
 @dataclass(slots=True, frozen=True)
@@ -11,15 +12,15 @@ class ExtractorConfig:
     Configuración inmutable para el extractor de datos financieros.
 
     Esta clase centraliza todos los parámetros de configuración necesarios
-    para la extracción de datos desde diferentes fuentes (Yahoo, Binance, Stooq).
+    para la extracción de datos desde diferentes fuentes (Yahoo, Binance, Tiingo).
     Utiliza dataclass con slots=True para optimización de memoria y frozen=True
     para inmutabilidad.
 
     Attributes:
         source (SourceName): Fuente de datos a utilizar. Valores permitidos:
-            - "yahoo": Yahoo Finance (gratuito, sin API key)
-            - "binance": Binance API (requiere API key)
-            - "stooq": Stooq API (requiere API key)
+            - "yahoo": Yahoo Finance (gratuito, sin API key, cobertura global)
+            - "binance": Binance API (criptomonedas, gratuito, alto límite)
+            - "tiingo": Tiingo API (calidad institucional, 70+ exchanges, API key gratuita)
         timeout (int): Tiempo máximo de espera por petición HTTP en segundos.
             Valor por defecto: 30 segundos.
         interval (str): Intervalo temporal de los datos. Formatos soportados:

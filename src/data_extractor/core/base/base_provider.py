@@ -29,7 +29,7 @@ class BaseProvider:
 
     Subclases solo definen:
       - self.adapter      (inyectando el adapter concreto)
-      - self.source_name  (string corto: 'yahoo', 'stooq', 'binance')
+      - self.source_name  (string corto: 'yahoo', 'binance', 'tiingo')
     """
 
     def __init__(self, *, source_name: str, adapter: Any) -> None:

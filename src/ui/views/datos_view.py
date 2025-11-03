@@ -57,7 +57,7 @@ def _get_symbol_suggestions(symbol: str, source: str) -> str:
     
     Args:
         symbol: Símbolo que no se encontró
-        source: Fuente de datos (yahoo, binance, stooq)
+        source: Fuente de datos (yahoo, binance, tiingo)
     
     Returns:
         Mensaje con sugerencias
@@ -77,11 +77,12 @@ def _get_symbol_suggestions(symbol: str, source: str) -> str:
             "Los pares deben estar en formato BASEQUOTE (ej: BTCUSDT, ETHUSDT)",
             "Para stablecoins, usa USDT como quote (ej: BTCUSDT, ETHUSDT)"
         ])
-    elif source.lower() == "stooq":
+    elif source.lower() == "tiingo":
         suggestions.extend([
-            f"Verifica que '{symbol}' existe en Stooq",
-            "Para acciones de EE.UU., añade .US (ej: AAPL.US, MSFT.US, GOOGL.US)",
-            "Otros países: DE (Alemania), FR (Francia), UK (Reino Unido), JP (Japón)"
+            f"Verifica que '{symbol}' existe en Tiingo",
+            "Tiingo requiere API key gratuita (ver TIINGO_SETUP.md)",
+            "Símbolos USA: AAPL, MSFT, GOOGL (sin sufijos)",
+            "Símbolos internacionales pueden requerir sufijos (.LON para UK, .DEX para Alemania)"
         ])
     
     return "\n".join(f"- {s}" for s in suggestions)
@@ -95,7 +96,7 @@ def _display_source_examples(source_name: str) -> None:
     elif source_lower == "binance":
         st.code("BTCUSDT, ETHUSDT, BNBBTC  # Pares de criptomonedas")
     else:
-        st.code("AAPL.US, MSFT.US, GOOGL.US  # Formato Stooq")
+        st.code("AAPL, MSFT, GOOGL, BP  # Tiingo (requiere API key)")
 
 
 def _handle_symbol_not_found(error: SymbolNotFound, source_name: str) -> None:
@@ -148,10 +149,12 @@ def _handle_extraction_error_case(error: ExtractionError, source_name: str, para
 def _handle_unexpected_error(error: Exception) -> None:
     """Maneja errores inesperados."""
     error_message = str(error)
-    st.error(f"❌ **Error inesperado**: {error_message}")
     
-    with st.expander("🔍 Detalles técnicos del error"):
-        st.code(traceback.format_exc())
+    # Registrar el error completo en los logs
+    logger.error(f"Error inesperado: {error_message}", exc_info=True)
+    
+    # Mostrar solo mensaje de error al usuario (sin detalles técnicos)
+    st.error(f"❌ **Error inesperado**: {error_message}")
     
     st.info("💡 **Posibles soluciones**:")
     st.markdown("""

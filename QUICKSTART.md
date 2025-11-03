@@ -22,6 +22,28 @@ python install.py
 python run_app.py
 ```
 
+## 🔑 Configurar API Keys (Opcional - 1 minuto)
+
+**Para usar Tiingo (mejor calidad de datos):**
+
+```bash
+# 1. Copia la plantilla
+copy .env.example .env  # Windows
+cp .env.example .env    # Linux/Mac
+
+# 2. Obtén tu API key gratuita en:
+# https://www.tiingo.com/account/api/token
+
+# 3. Edita .env y pega tu API key:
+# TIINGO_API_KEY=tu_api_key_aqui
+```
+
+**Nota:** 
+- Yahoo y Binance NO requieren API key
+- Instrucciones completas en: [CONFIGURACION_API_KEYS.md](CONFIGURACION_API_KEYS.md)
+
+---
+
 ## 🎯 Primer Uso (2 minutos)
 
 1. **Abrir la app**: Se abrirá automáticamente en `http://localhost:8501`
@@ -44,6 +66,15 @@ Fuente: Yahoo Finance
 Símbolos: AAPL,MSFT,GOOGL,TSLA
 Período: 2023-01-01 a 2024-01-01
 Intervalo: 1d
+```
+
+### Trading Intraday (Datos Recientes)
+```
+Fuente: Yahoo Finance
+Símbolos: AAPL,TSLA
+Período: Últimos 5 días
+Intervalo: 5m
+Nota: Intervalos de minutos solo tienen ~7 días de historia
 ```
 
 ### Análisis de Criptomonedas
@@ -72,7 +103,13 @@ pip install -e .[dev]
 ### ❌ "Symbol not found"
 - Usa símbolos de la lista de ejemplos
 - Verifica que la fuente sea correcta
-- Yahoo: `AAPL`, Binance: `BTCUSDT`, Stooq: `AAPL.US`
+- Yahoo: `AAPL`, Binance: `BTCUSDT`, Tiingo: `AAPL`
+- Nota: Tiingo requiere API key gratuita
+
+### ⚠️ "No hay suficientes datos" con intervalos de minutos
+- **Causa:** Yahoo Finance limita datos intraday a ~7 días
+- **Solución:** Reduce el rango de fechas a los últimos 5-7 días
+- **Alternativa:** Usa intervalos diarios (1d) para análisis histórico
 
 ### ❌ App no se abre
 ```bash

@@ -24,14 +24,14 @@ graph TB
         Registry[📋 Provider Registry]
         YahooP[🌐 Yahoo Provider]
         BinanceP[💰 Binance Provider]
-        StooqP[📊 Stooq Provider]
+        TiingoP[📈 Tiingo Provider]
     end
     
     subgraph "🔌 Capa de Adaptadores"
         BaseAdapter[🔧 Base Adapter]
         YahooA[🌐 Yahoo Adapter]
         BinanceA[💰 Binance Adapter]
-        StooqA[📊 Stooq Adapter]
+        TiingoA[📈 Tiingo Adapter]
     end
     
     subgraph "📊 Capa de Series de Datos"
@@ -53,7 +53,7 @@ graph TB
     subgraph "📈 Fuentes Externas"
         YahooAPI[🌐 Yahoo Finance API]
         BinanceAPI[💰 Binance API]
-        StooqAPI[📊 Stooq API]
+        TiingoAPI[📈 Tiingo API<br/>70+ exchanges]
     end
     
     %% Conexiones principales
@@ -67,19 +67,19 @@ graph TB
     
     Registry --> YahooP
     Registry --> BinanceP
-    Registry --> StooqP
+    Registry --> TiingoP
     
     YahooP --> YahooA
     BinanceP --> BinanceA
-    StooqP --> StooqA
+    TiingoP --> TiingoA
     
     YahooA --> BaseAdapter
     BinanceA --> BaseAdapter
-    StooqA --> BaseAdapter
+    TiingoA --> BaseAdapter
     
     BaseAdapter --> YahooAPI
     BaseAdapter --> BinanceAPI
-    BaseAdapter --> StooqAPI
+    BaseAdapter --> TiingoAPI
     
     %% Flujo de datos
     Extractor --> PriceSeries
@@ -110,12 +110,12 @@ graph TB
     class UI,Views,Sidebars uiLayer
     class Backend,Config serviceLayer
     class Extractor,ConfigExt dataLayer
-    class Registry,YahooP,BinanceP,StooqP providerLayer
-    class BaseAdapter,YahooA,BinanceA,StooqA adapterLayer
+    class Registry,YahooP,BinanceP,TiingoP providerLayer
+    class BaseAdapter,YahooA,BinanceA,TiingoA adapterLayer
     class PriceSeries,PerfSeries,VolSeries,VolActSeries seriesLayer
     class Portfolio,MonteCarlo simulationLayer
     class Cleaner preprocessingLayer
-    class YahooAPI,BinanceAPI,StooqAPI externalLayer
+    class YahooAPI,BinanceAPI,TiingoAPI externalLayer
 ```
 
 ## Flujo de Datos Detallado
@@ -370,7 +370,7 @@ graph LR
 
 ### **APIs Externas**
 - yfinance >=0.2 (Yahoo Finance API)
-- pandas_datareader >=0.10 (Stooq data provider)
+- requests >=2.31 (Tiingo API HTTP client)
 
 ### **UI y Visualización**
 - Streamlit >=1.28 (framework de interfaz web interactiva)

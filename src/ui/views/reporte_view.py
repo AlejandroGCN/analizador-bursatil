@@ -90,8 +90,17 @@ def _adjust_weights_for_available_symbols(
     return symbols_in_data, weights
 
 
-def _create_portfolio_from_data():
-    """Crea un objeto Portfolio a partir de los datos disponibles."""
+@st.cache_data(ttl=300, show_spinner=False)
+def _create_portfolio_from_data_cached(
+    portfolio_symbols_tuple: tuple,
+    portfolio_weights_tuple: tuple,
+    data_map_hash: str
+) -> tuple:
+    """
+    Crea un objeto Portfolio a partir de los datos disponibles (cacheado).
+    
+    Retorna tupla serializable para el cache.
+    """
     from simulation import Portfolio
     
     logger.info("📋 Creando portfolio para reporte")
@@ -104,12 +113,11 @@ def _create_portfolio_from_data():
     
     if not prices_dict:
         logger.error("No se pudieron extraer precios de los datos")
-        st.error("No se pudieron extraer precios de los datos.")
-        return None
+        return None, None, None
     
     prices_df = pd.DataFrame(prices_dict)
-    portfolio_symbols = st.session_state["portfolio_symbols"]
-    portfolio_weights = st.session_state["portfolio_weights"]
+    portfolio_symbols = list(portfolio_symbols_tuple)
+    portfolio_weights = list(portfolio_weights_tuple)
     available_symbols = list(prices_dict.keys())
     
     logger.debug(f"  Símbolos de cartera: {portfolio_symbols}")
@@ -122,7 +130,7 @@ def _create_portfolio_from_data():
     
     if symbols is None or weights is None:
         logger.warning("No se pudo ajustar cartera - símbolos no coinciden")
-        return None
+        return None, None, None
     
     logger.debug(f"  Símbolos ajustados: {symbols}")
     logger.debug(f"  Pesos ajustados: {weights}")
@@ -132,6 +140,34 @@ def _create_portfolio_from_data():
     portfolio.set_prices(prices_df)
     
     logger.info(f"✅ Portfolio creado exitosamente con {len(symbols)} activos")
+    
+    # Retornar datos serializables para recrear el portfolio
+    return tuple(symbols), tuple(weights), prices_df.to_dict()
+
+
+def _create_portfolio_from_data():
+    """Wrapper para crear portfolio usando cache."""
+    portfolio_symbols = st.session_state.get("portfolio_symbols", [])
+    portfolio_weights = st.session_state.get("portfolio_weights", [])
+    data_map = st.session_state.get("last_data_map", {})
+    
+    # Crear hash simple para invalidar cache cuando cambian los datos
+    data_map_hash = str(hash(str(sorted(data_map.keys()))))
+    
+    symbols_tuple, weights_tuple, prices_dict = _create_portfolio_from_data_cached(
+        tuple(portfolio_symbols),
+        tuple(portfolio_weights),
+        data_map_hash
+    )
+    
+    if symbols_tuple is None:
+        st.error("No se pudieron extraer precios de los datos.")
+        return None
+    
+    # Recrear portfolio desde datos cacheados
+    from simulation import Portfolio
+    portfolio = Portfolio(name="Mi Cartera", symbols=list(symbols_tuple), weights=list(weights_tuple))
+    portfolio.set_prices(pd.DataFrame(prices_dict))
     
     return portfolio
 

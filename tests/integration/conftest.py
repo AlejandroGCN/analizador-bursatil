@@ -58,11 +58,17 @@ LOGGING_CFG = {
             "handlers": ["console", "file"],
             "propagate": False,
         },
-        "data_extractor.adapters.stooq_adapter": {
+        "data_extractor.adapters.tiingo_adapter": {
             "level": "INFO",
             "handlers": ["console", "file"],
             "propagate": False,
         },
+        # DEPRECADO: Stooq reemplazado por Tiingo
+        # "data_extractor.adapters.stooq_adapter": {
+        #     "level": "INFO",
+        #     "handlers": ["console", "file"],
+        #     "propagate": False,
+        # },
     },
     "root": {
         "level": "WARNING",
