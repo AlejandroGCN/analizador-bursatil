@@ -227,9 +227,9 @@ if not exist "var\config\portfolio.json" (
     echo [*] Creando configuracion de portfolio por defecto...
     (
         echo {
-        echo   "symbols": ["AAPL", "MSFT", "GOOGL", "TSLA", "AMZN"],
-        echo   "weights": [0.2, 0.2, 0.2, 0.2, 0.2],
-        echo   "initial_investment": 10000
+        echo   "symbols"^: ["AAPL", "MSFT", "GOOGL", "TSLA", "AMZN"],
+        echo   "weights"^: [0.2, 0.2, 0.2, 0.2, 0.2],
+        echo   "initial_investment"^: 10000
         echo }
     ) > var\config\portfolio.json
     echo [OK] Configuracion de portfolio creada
