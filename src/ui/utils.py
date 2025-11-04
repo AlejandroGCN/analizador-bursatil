@@ -249,98 +249,46 @@ def display_symbol_info(contexto: str = "datos") -> None:
         contexto: Contexto en el que se muestra (datos, cartera, etc.)
     """
     if contexto == "datos":
-        st.markdown("### 💡 Ayuda")
-        st.info("Introduce los símbolos de los activos que deseas analizar, **separados por comas**.")
+        st.info("""
+        **💡 Ayuda:** Introduce los símbolos de los activos que deseas analizar.
         
-        # Ejemplos por fuente con diseño mejorado
-        st.markdown("#### 📋 Ejemplos válidos por fuente:")
+        **📝 Formas de introducir símbolos:**
+        - **Manual**: Escribe en el campo de texto arriba, separados por comas (ej: `AAPL, MSFT, GOOGL`)
+        - **Desde archivo**: Usa el botón "📂 Cargar desde archivo" en el panel lateral (TXT, CSV, JSON)
         
-        col1, col2 = st.columns(2)
+        **📥 Para obtener los datos:**
+        1. Introduce los símbolos en el campo de texto arriba
+        2. Configura las fechas e intervalo en el **panel lateral** (izquierda)
+        3. Haz clic en el botón **"Obtener datos"** del panel lateral
         
-        with col1:
-            st.markdown("**🌐 Yahoo Finance** (Acciones)")
-            st.code("AAPL, MSFT, GOOGL, TSLA, AMZN", language="text")
-            st.caption("✅ No requiere API key")
-            
-            st.markdown("**🏦 Yahoo - Internacional**")
-            st.code("SIEMENS.DE, ASML.AS, BP.L", language="text")
-            st.caption("Agrega sufijo del país (.DE, .AS, .L)")
+        **Ejemplos válidos:**
+        - Yahoo Finance: `AAPL, MSFT, GOOGL, TSLA`
+        - Binance: `BTCUSDT, ETHUSDT, BNBBTC`
+        - Tiingo: `AAPL, MSFT, GOOGL, BP` (requiere API key gratuita)
         
-        with col2:
-            st.markdown("**₿ Binance** (Criptomonedas)")
-            st.code("BTCUSDT, ETHUSDT, BNBUSDT", language="text")
-            st.caption("✅ No requiere API key")
-            
-            st.markdown("**📈 Tiingo** (Premium)")
-            st.code("AAPL, MSFT, GOOGL, BP", language="text")
-            st.caption("⚠️ Requiere API key gratuita")
-        
-        # Consejos destacados
-        st.markdown("#### 💭 Consejos importantes:")
-        st.markdown("""
-        - 🔍 **Verifica los símbolos** en la web de la fuente antes de usarlos
-        - 🇺🇸 **Acciones USA en Yahoo**: Sin sufijo (AAPL, MSFT, GOOGL)
-        - 🌍 **Acciones internacionales**: Con sufijo de país
-          - Alemania: `.DE` (ej: SIEMENS.DE)
-          - Holanda: `.AS` (ej: ASML.AS)
-          - Reino Unido: `.L` (ej: BP.L)
-        - 📅 **Fecha de inicio**: Algunos símbolos tienen datos limitados en el pasado
-        - ⚡ **Intervalos intraday**: Yahoo limita a ~7 días de historia
+        **Consejos:**
+        - Verifica que los símbolos sean válidos para la fuente seleccionada
+        - Los símbolos de acciones de EE.UU. en Yahoo no requieren sufijo
+        - Para acciones internacionales en Yahoo, añade el sufijo del país (ej: `.DE`, `.FR`)
         """)
-        
     elif contexto == "cartera":
-        st.markdown("### 💼 Ayuda - Construcción de Cartera")
-        st.info("Introduce los símbolos de los activos que formarán tu cartera, **separados por comas**.")
+        st.info("""
+        **💡 Ayuda:** Construye tu cartera asignando pesos a cada activo.
         
-        # Pasos para construir cartera
-        st.markdown("#### 📝 Pasos para crear tu cartera:")
-        st.markdown("""
-        **1. Descarga datos primero** (pestaña 📊 Datos):
-        - Ve a la pestaña "Datos"
-        - Configura la fuente de datos (Yahoo, Binance, Tiingo)
-        - Ingresa los símbolos y descarga los datos
+        **📝 Formas de introducir símbolos:**
+        - **Manual**: Escribe en el campo de texto arriba, separados por comas (ej: `AAPL, MSFT, GOOGL, TSLA`)
+        - **Importar**: Usa el botón **"📥 Importar desde Datos"** en el panel lateral
+        - **Desde archivo**: Usa el botón "📂 Cargar desde archivo" en el panel lateral (TXT, CSV, JSON)
         
-        **2. Vuelve a Cartera**:
-        - Los símbolos deben coincidir con los datos descargados
-        - Puedes importar símbolos automáticamente desde Datos
+        **📝 Pasos para construir tu cartera:**
+        1. Introduce los símbolos en el campo de texto arriba
+        2. **Presiona Enter o Tab** para que aparezcan los campos de pesos en el panel lateral
+        3. Asigna el porcentaje de cada activo en el panel lateral (deben sumar **100%**)
+        4. Define el valor inicial de tu cartera en el panel lateral (ej: $10,000)
+        5. Haz clic en el botón **"Aplicar Pesos"** del panel lateral
         
-        **3. Asigna pesos**:
-        - Los pesos deben sumar exactamente **100%**
-        - Ejemplo: 4 activos → 25% cada uno = 100%
-        - Tolerancia permitida: ±1%
-        """)
-        
-        # Ejemplos de carteras
-        st.markdown("#### 📊 Ejemplos de carteras balanceadas:")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Cartera Conservadora**")
-            st.code("""Símbolos: AAPL, MSFT, JNJ, PG
-Pesos: 25%, 25%, 25%, 25%""", language="text")
-            st.caption("Empresas estables, bajo riesgo")
-            
-        with col2:
-            st.markdown("**Cartera Agresiva**")
-            st.code("""Símbolos: TSLA, NVDA, AMD, COIN
-Pesos: 30%, 30%, 20%, 20%""", language="text")
-            st.caption("Tech y cripto, alto riesgo")
-        
-        # Advertencias importantes
-        st.markdown("#### ⚠️ Importante:")
-        st.warning("""
-        - Los **pesos deben sumar 100%** exactamente (tolerancia: ±1%)
-        - Si la suma es diferente, verás un error y deberás ajustar manualmente
-        - El **valor inicial** se distribuye según los pesos asignados
-        - Cada activo debe tener al menos **$100** para ser viable
-        """)
-        
-        # Tips de optimización
-        st.markdown("#### 🎯 Tips de optimización:")
-        st.success("""
-        - **Diversificación**: No pongas más del 30% en un solo activo
-        - **Correlación**: Combina activos de sectores diferentes
-        - **Liquidez**: Usa activos con alto volumen de trading
-        - **Rebalanceo**: Revisa y ajusta pesos periódicamente
+        **⚠️ Importante:**
+        - Los símbolos deben existir en los datos descargados (pestaña **📊 Datos**)
+        - Los pesos **deben sumar exactamente 100%** (tolerancia: ±1%)
+        - Si la suma es diferente, verás un error y deberás ajustarlos manualmente
         """)
