@@ -37,7 +37,7 @@ cp .env.example .env
 Editar el archivo `.env` y reemplazar `tu_api_key_aqui` con tu token:
 
 ```bash
-TIINGO_API_KEY=169e8f91e952d3a2bb03f5c4f2a23f0c453237a3
+TIINGO_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### 3. Verificar Configuración
