@@ -79,9 +79,14 @@ def _get_prices_from_data_map(data_map: dict) -> dict:
             df = getattr(data_info, "data", None)
         
         if df is not None:
-            close_col = next((c for c in df.columns if c.lower() == 'close'), None)
-            if close_col:
-                prices_dict[symbol] = df[close_col]
+            # Verificar si es DataFrame o Series
+            if isinstance(df, pd.DataFrame):
+                close_col = next((c for c in df.columns if c.lower() == 'close'), None)
+                if close_col:
+                    prices_dict[symbol] = df[close_col]
+            elif isinstance(df, pd.Series):
+                # Si es Series, usarlo directamente
+                prices_dict[symbol] = df
     return prices_dict
 
 
