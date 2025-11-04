@@ -3,11 +3,13 @@
 Aplicación **Streamlit** para análisis financiero cuantitativo con descarga, normalización y visualización de datos bursátiles desde múltiples fuentes (Yahoo Finance, Binance, Tiingo).
 
 **Características principales:**
-- Extracción multi-fuente con arquitectura modular
-- Simulación Monte Carlo para análisis de riesgo
-- Sistema de logging profesional
-- Gestión segura de API keys
-- Visualizaciones interactivas
+- 📊 **Extracción multi-fuente** con arquitectura modular (Yahoo, Binance, Tiingo)
+- 🎲 **Simulación Monte Carlo** para análisis de riesgo de carteras
+- 📈 **Visualizaciones profesionales** con gráficos de barras con colores (verde/rojo para retornos)
+- 💼 **Gestión de carteras** con validación estricta de pesos (100%)
+- 🔒 **Sistema de logging** profesional con rotación automática
+- 🔐 **Gestión segura de API keys** con variables de entorno
+- 🚀 **Instalador inteligente** con detección automática de versiones de Python
 
 > 🚨 **IMPORTANTE - INSTALACIÓN EN WINDOWS**: 
 > - Si usas `install.bat`: **Ejecútalo SOLO desde CMD de Windows** (no Git Bash)
@@ -389,22 +391,28 @@ python run_app.py
 
 La interfaz se abrirá automáticamente en el navegador en **http://localhost:8501**
 
-### 📊 Visualizaciones Mejoradas
+### 📊 Visualizaciones Profesionales
 
-La aplicación incluye visualizaciones profesionales con:
+La aplicación incluye visualizaciones avanzadas con matplotlib:
 
-- **Gráficos de línea optimizados** con matplotlib
-- **Distribución equilibrada** de datos en toda el área de visualización
-- **Líneas de referencia** para retornos (línea en 0)
-- **Cuadrícula y etiquetas** para mejor legibilidad
-- **Formato responsive** que se ajusta al ancho del contenedor
-- **Títulos contextuales** según el tipo de datos mostrados
+**Gráficos de Retornos** (Barras con colores):
+- 🟢 **Verde**: Retornos positivos (ganancias)
+- 🔴 **Rojo**: Retornos negativos (pérdidas)
+- **Línea de referencia** en 0% para mejor orientación
+- **Estadísticas integradas**: Días positivos vs negativos
+- **Formato profesional**: Estándar de la industria financiera
 
-**Tipos de visualización:**
-- 📈 **OHLCV**: Evolución de precios de cierre
-- 📊 **Retornos**: Gráfico de retornos diarios con línea de referencia en 0
-- 📉 **Volatilidad**: Evolución de la volatilidad en el tiempo
-- 📊 **Volumen**: Actividad de trading
+**Gráficos de Precios** (Línea):
+- Evolución de precios de cierre con línea suave
+- Área sombreada para mejor visualización
+- Formato de fechas optimizado
+- Cuadrícula y etiquetas en negrita
+
+**Características técnicas:**
+- Figuras de 12x5 pulgadas para mejor legibilidad
+- Formato responsive que se ajusta al contenedor
+- Rotación de etiquetas de fechas (45°)
+- Márgenes ajustados automáticamente
 
 ### Fuentes de Datos
 
@@ -549,26 +557,36 @@ DEBUG_LOGGING_ENABLED = True
 
 ## Características Técnicas
 
+### Gestión de Carteras
+
+- **Validación estricta de pesos**: Deben sumar exactamente 100% (tolerancia ±1%)
+- **Mensajes de error claros**: Sin tracebacks técnicos, solo mensajes al usuario
+- **Importación flexible**: Manual, desde datos, o desde archivos (TXT, CSV, JSON)
+- **Distribución visual**: Gráficos de barras mostrando asignación de capital
+- **Validación de capital mínimo**: Cada activo debe tener al menos $100
+
 ### Métricas Financieras
 
 - **Retorno esperado**: Media anualizada
 - **Volatilidad**: Desviación estándar anualizada
 - **Ratio de Sharpe**: Retorno ajustado por riesgo
-- **Estadísticas descriptivas**: Automáticas
+- **Estadísticas descriptivas**: Automáticas por símbolo
 
 ### Simulación Monte Carlo
 
-- Trayectorias múltiples con movimiento browniano geométrico
-- Intervalos de confianza (5%, 25%, 50%, 75%, 95%)
-- Volatilidad dinámica configurable
-- Validación matemática de coherencia
+- **Trayectorias múltiples** con movimiento browniano geométrico
+- **Intervalos de confianza**: 5%, 25%, 50%, 75%, 95%
+- **Volatilidad dinámica**: Configurable por simulación
+- **Validación matemática**: Coherencia de resultados
+- **Soporte dual**: Cartera completa o activo individual
 
-### Validación de Datos
+### Validación y Normalización de Datos
 
-- Intervalos validados dinámicamente por fuente
-- Normalización automática de series
-- Detección de datos faltantes
-- Alineación temporal configurable
+- **Validación automática**: Verificación de tipos Series vs DataFrame
+- **Intervalos validados** dinámicamente por fuente
+- **Normalización automática** de series temporales
+- **Detección de datos faltantes** con manejo robusto
+- **Alineación temporal** configurable
 
 ---
 

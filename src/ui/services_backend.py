@@ -13,8 +13,8 @@ def get_extractor(cfg_dict: dict, _cache_version: str = "v2") -> DataExtractor:
     return DataExtractor(cfg)
 
 
-def resolve_backend_params():
-    """Recoge los parámetros del sidebar y los prepara para el backend."""
+def get_backend_params():
+    """Obtiene los parámetros del sidebar para el backend."""
     fuente = st.session_state.get("fuente_datos")
     tipo = st.session_state.get("tipo_datos")
     interval = st.session_state.get("intervalo_datos")

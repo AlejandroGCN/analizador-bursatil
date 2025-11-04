@@ -117,8 +117,8 @@ def _extract_main_error_message(error_message: str) -> str:
     return error_message
 
 
-def _display_extraction_error_suggestions(error_message: str, params: DatosParams | None) -> None:
-    """Muestra sugerencias adicionales según el tipo de error de extracción."""
+def _show_error_suggestions(error_message: str, params: DatosParams | None) -> None:
+    """Muestra sugerencias según el tipo de error."""
     error_lower = error_message.lower()
     if "timeout" in error_lower or "time" in error_lower:
         st.info("🌐 **Problema de conexión**: Verifica tu conexión a Internet y vuelve a intentar")
@@ -142,7 +142,7 @@ def _handle_extraction_error_case(error: ExtractionError, source_name: str, para
         with st.expander("💡 Sugerencias"):
             st.markdown(suggestions)
     
-    _display_extraction_error_suggestions(error_message, params)
+    _show_error_suggestions(error_message, params)
 
 
 def _handle_unexpected_error(error: Exception) -> None:
