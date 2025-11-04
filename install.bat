@@ -33,38 +33,166 @@ if not exist "requirements.txt" (
 echo [OK] Directorio del proyecto correcto
 
 REM ============================================================================
-REM 2. VERIFICAR PYTHON
+REM 2. VERIFICAR PYTHON Y DETECTAR VERSIONES
 REM ============================================================================
 echo.
 echo [PASO 2/8] Verificando Python...
 
+REM Intentar detectar Python en el PATH
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python no esta instalado o no esta en el PATH
     echo.
-    echo Por favor instala Python 3.9 o superior desde python.org
-    echo y asegurate de marcar "Add Python to PATH" durante la instalacion.
+    echo SOLUCION: Instalar Python 3.12 automaticamente
     echo.
-    echo Despues de instalar Python, vuelve a ejecutar este script.
-    goto :error
+    set /p AUTO_INSTALL="Deseas instalar Python 3.12 ahora con winget? (s/N): "
+    if /i "!AUTO_INSTALL!"=="s" (
+        echo.
+        echo [*] Instalando Python 3.12...
+        winget install Python.Python.3.12 -e --silent --accept-package-agreements
+        if errorlevel 1 (
+            echo [ERROR] No se pudo instalar Python automaticamente
+            echo         Instalalo manualmente desde: https://www.python.org/downloads/
+            goto :error
+        )
+        echo [OK] Python 3.12 instalado
+        echo [*] Reinicia este script para continuar
+        pause
+        exit /b 0
+    ) else (
+        echo.
+        echo Por favor instala Python 3.12 manualmente:
+        echo   winget install Python.Python.3.12
+        echo O descarga desde: https://www.python.org/downloads/
+        goto :error
+    )
 )
 
+REM Detectar version de Python en uso
 for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
 echo [OK] Python %PYTHON_VERSION% detectado
 
-REM Verificar version minima
+REM Buscar versiones alternativas de Python en el sistema
+echo [*] Buscando versiones de Python instaladas...
+set PYTHON_CMD=python
+set FOUND_312=0
+set FOUND_311=0
+
+REM Intentar encontrar python3.12
+python3.12 --version >nul 2>&1
+if not errorlevel 1 (
+    echo [*] Python 3.12 encontrado ^(python3.12^)
+    set FOUND_312=1
+)
+
+REM Intentar encontrar python3.11
+python3.11 --version >nul 2>&1
+if not errorlevel 1 (
+    echo [*] Python 3.11 encontrado ^(python3.11^)
+    set FOUND_311=1
+)
+
+REM Buscar en Program Files
+if exist "C:\Program Files\Python312\python.exe" (
+    echo [*] Python 3.12 encontrado en Program Files
+    set FOUND_312=1
+)
+
+if exist "C:\Program Files\Python311\python.exe" (
+    echo [*] Python 3.11 encontrado en Program Files
+    set FOUND_311=1
+)
+
+REM Verificar version minima y maxima recomendada
 for /f "tokens=1,2 delims=." %%a in ("%PYTHON_VERSION%") do (
     set PYTHON_MAJOR=%%a
     set PYTHON_MINOR=%%b
 )
+
+REM Verificar version minima (3.9+)
 if %PYTHON_MAJOR% LSS 3 goto :python_version_error
 if %PYTHON_MAJOR%==3 if %PYTHON_MINOR% LSS 9 goto :python_version_error
+
+REM Advertir sobre versiones muy nuevas (3.13+)
+if %PYTHON_MAJOR%==3 if %PYTHON_MINOR% GEQ 13 (
+    echo.
+    echo [WARNING] Python %PYTHON_VERSION% detectado - VERSION MUY NUEVA
+    echo.
+    echo Algunas dependencias pueden fallar al instalarse porque:
+    echo - pyarrow, numpy y otras librerias cientificas aun no tienen
+    echo   versiones precompiladas para Python 3.13+
+    echo.
+    
+    REM Ofrecer alternativas si se encontraron versiones compatibles
+    if !FOUND_312!==1 (
+        echo SOLUCION: Se encontro Python 3.12 en tu sistema
+        echo.
+        set /p USE_312="Deseas usar Python 3.12 en su lugar? (S/n): "
+        if /i not "!USE_312!"=="n" (
+            if exist "C:\Program Files\Python312\python.exe" (
+                set PYTHON_CMD="C:\Program Files\Python312\python.exe"
+            ) else (
+                set PYTHON_CMD=python3.12
+            )
+            echo [OK] Usando Python 3.12
+            goto :continue_install
+        )
+    ) else if !FOUND_311!==1 (
+        echo SOLUCION: Se encontro Python 3.11 en tu sistema
+        echo.
+        set /p USE_311="Deseas usar Python 3.11 en su lugar? (S/n): "
+        if /i not "!USE_311!"=="n" (
+            if exist "C:\Program Files\Python311\python.exe" (
+                set PYTHON_CMD="C:\Program Files\Python311\python.exe"
+            ) else (
+                set PYTHON_CMD=python3.11
+            )
+            echo [OK] Usando Python 3.11
+            goto :continue_install
+        )
+    ) else (
+        echo SOLUCION: Instalar Python 3.12 en paralelo
+        echo.
+        set /p INSTALL_312="Deseas instalar Python 3.12 ahora? (s/N): "
+        if /i "!INSTALL_312!"=="s" (
+            echo.
+            echo [*] Instalando Python 3.12 con winget...
+            winget install Python.Python.3.12 -e --silent --accept-package-agreements
+            if errorlevel 1 (
+                echo [ERROR] No se pudo instalar automaticamente
+            ) else (
+                echo [OK] Python 3.12 instalado
+                echo [*] Reinicia este script para usarlo
+                pause
+                exit /b 0
+            )
+        )
+    )
+    
+    echo.
+    echo Opciones restantes:
+    echo   1. Cancelar e instalar Python 3.12 manualmente
+    echo   2. Continuar con Python %PYTHON_VERSION% ^(PUEDE FALLAR^)
+    echo.
+    set /p CONTINUE="Deseas continuar de todos modos? (s/N): "
+    if /i not "!CONTINUE!"=="s" (
+        echo.
+        echo Instalacion cancelada.
+        echo Instala Python 3.12: winget install Python.Python.3.12
+        goto :error
+    )
+    echo.
+    echo [*] Continuando con Python %PYTHON_VERSION% ^(puede haber errores^)...
+)
+
 echo [OK] Version de Python compatible
 goto :continue_install
 
 :python_version_error
 echo [ERROR] Se requiere Python 3.9 o superior
 echo         Version actual: %PYTHON_VERSION%
+echo.
+echo Instala Python 3.12 con: winget install Python.Python.3.12
 goto :error
 
 :continue_install
@@ -74,7 +202,7 @@ REM 3. VERIFICAR PIP
 REM ============================================================================
 echo.
 echo [PASO 3/8] Verificando pip...
-python -m pip --version >nul 2>&1
+%PYTHON_CMD% -m pip --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] pip no esta disponible
     goto :error
@@ -82,7 +210,7 @@ if errorlevel 1 (
 echo [OK] pip esta disponible
 
 echo [*] Actualizando pip...
-python -m pip install --upgrade pip --quiet
+%PYTHON_CMD% -m pip install --upgrade pip --quiet
 if errorlevel 1 (
     echo [WARNING] No se pudo actualizar pip, continuando...
 ) else (
@@ -102,7 +230,7 @@ if exist "venv" (
         echo [*] Eliminando entorno virtual anterior...
         rmdir /s /q venv
         echo [*] Creando nuevo entorno virtual...
-        python -m venv venv
+        %PYTHON_CMD% -m venv venv
         if errorlevel 1 goto :error
         echo [OK] Entorno virtual recreado
     ) else (
@@ -110,7 +238,7 @@ if exist "venv" (
     )
 ) else (
     echo [*] Creando entorno virtual...
-    python -m venv venv
+    %PYTHON_CMD% -m venv venv
     if errorlevel 1 goto :error
     echo [OK] Entorno virtual creado
 )
@@ -120,6 +248,9 @@ call venv\Scripts\activate.bat
 if errorlevel 1 goto :error
 echo [OK] Entorno virtual activado
 
+REM Una vez activado el venv, usar python del venv
+set PYTHON_CMD=python
+
 REM ============================================================================
 REM 5. INSTALAR DEPENDENCIAS
 REM ============================================================================
@@ -127,17 +258,17 @@ echo.
 echo [PASO 5/8] Instalando dependencias...
 echo [*] Esto puede tomar varios minutos...
 
-python -m pip install --upgrade pip setuptools wheel --quiet
+%PYTHON_CMD% -m pip install --upgrade pip setuptools wheel --quiet
 
 echo [*] Instalando dependencias desde requirements.txt...
-python -m pip install -r requirements.txt
+%PYTHON_CMD% -m pip install -r requirements.txt
 if errorlevel 1 goto :error
 echo [OK] Dependencias principales instaladas
 
 echo [*] Instalando paquete en modo desarrollo...
-python -m pip install -e . 2>nul
+%PYTHON_CMD% -m pip install -e . 2>nul
 if errorlevel 1 (
-    python -m pip install -e .[dev] 2>nul
+    %PYTHON_CMD% -m pip install -e .[dev] 2>nul
 )
 echo [OK] Instalacion de dependencias completada
 
@@ -207,7 +338,7 @@ set /p RUN_TESTS="Deseas ejecutar los tests? (s/N): "
 if /i "!RUN_TESTS!"=="s" (
     echo.
     echo [*] Ejecutando tests...
-    python -m pytest tests/ -v --tb=short
+    %PYTHON_CMD% -m pytest tests/ -v --tb=short
     if errorlevel 1 (
         echo [WARNING] Algunos tests fallaron
     ) else (
@@ -238,7 +369,7 @@ set /p RUN_NOW="Deseas ejecutar la aplicacion ahora? (s/N): "
 if /i "!RUN_NOW!"=="s" (
     echo.
     echo [*] Iniciando aplicacion...
-    python run_app.py
+    %PYTHON_CMD% run_app.py
 )
 
 goto :end

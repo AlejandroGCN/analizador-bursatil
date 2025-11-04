@@ -30,7 +30,18 @@ Aplicación **Streamlit** para análisis financiero cuantitativo con descarga, n
 
 ## Requisitos
 
-- **Python**: 3.10 o superior
+### 🐍 Versiones de Python Soportadas
+
+| Versión Python | Estado | Recomendación |
+|----------------|--------|---------------|
+| **3.11** | ✅ Recomendado | Mejor compatibilidad y estabilidad |
+| **3.12** | ✅ Recomendado | Versión actual estable |
+| **3.10** | ✅ Soportado | Mínimo requerido |
+| **3.9** | ⚠️ Compatible | Algunas librerías pueden ser antiguas |
+| **3.13+** | ❌ No recomendado | Librerías pueden no estar actualizadas |
+
+> ⚠️ **IMPORTANTE**: Si tienes Python 3.13 o superior, algunas dependencias (como `pyarrow`) pueden fallar al instalarse. Usa Python **3.11 o 3.12** para mejor experiencia.
+
 - **Sistema operativo**: Windows, macOS, Linux
 - **Dependencias**: Ver `requirements.txt`
 
@@ -60,7 +71,7 @@ El instalador automático configura **todo lo necesario desde cero**, incluyendo
 
 ---
 
-#### 🪟 Opción A: Windows con `install.bat` (NO requiere Python previo)
+#### 🪟 Opción A: Windows con `install.bat` (Plug & Play - Totalmente Automático)
 
 ```bash
 # 1. Clonar el repositorio
@@ -70,10 +81,28 @@ cd analizador-bursatil
 # 2. Abrir CMD de Windows (NO Git Bash)
 # Busca "cmd" en el menú de Windows o presiona Win+R y escribe "cmd"
 
-# 3. Navegar al directorio y ejecutar
-cd ruta\al\proyecto\analizador-bursatil
+# 3. Ejecutar el instalador
 install.bat
 ```
+
+**🎯 El instalador hace TODO automáticamente:**
+- ✅ Detecta si Python está instalado (o ofrece instalarlo automáticamente con winget)
+- ✅ Detecta la versión de Python y advierte si es incompatible (3.13+)
+- ✅ Busca versiones compatibles de Python en tu sistema (3.10, 3.11, 3.12)
+- ✅ Te permite elegir qué versión de Python usar si tienes varias instaladas
+- ✅ Crea un entorno virtual automáticamente para aislar dependencias
+- ✅ Instala todas las dependencias necesarias
+- ✅ Configura archivos de configuración
+- ✅ Opcionalmente ejecuta tests de verificación
+
+**Escenarios comunes:**
+
+| Situación | Qué hace el instalador |
+|-----------|----------------------|
+| No tienes Python | Te pregunta si quiere instalarlo automáticamente con `winget` |
+| Tienes Python 3.14 | Busca Python 3.12/3.11 en tu sistema y te ofrece usarlo |
+| Tienes Python 3.12 | ✅ Instala todo sin preguntas |
+| Tienes múltiples versiones | Te permite elegir cuál usar |
 
 > ⚠️ **MUY IMPORTANTE para Windows**: 
 > - Ejecuta `install.bat` **SOLO desde CMD de Windows nativo**
@@ -154,24 +183,32 @@ La aplicación se abrirá automáticamente en: **http://localhost:8501**
 - ❌ **NO requiere Python instalado** (el script te dirá cómo instalarlo)
 
 #### Si usas `install.py` (Cualquier sistema):
-- ✅ Python 3.9 o superior **YA INSTALADO**
+- ✅ **Python 3.10, 3.11 o 3.12 YA INSTALADO** (recomendado 3.11 o 3.12)
    ```bash
-   python --version  # Debe mostrar 3.9 o superior
+   python --version  # Debe mostrar 3.10.x, 3.11.x o 3.12.x
    ```
 - ✅ Acceso a Internet
 - ✅ Permisos de escritura en el directorio
 
 **¿Cómo instalar Python si no lo tienes?**
 
-**Windows:**
-1. Descarga desde [python.org](https://www.python.org/downloads/)
-2. Durante la instalación, **marca "Add Python to PATH"** ⚠️
-3. O usa: `winget install Python.Python.3.12`
+**Windows (Opción Recomendada - Python 3.12):**
+```powershell
+# Opción 1: Con winget (recomendado)
+winget install Python.Python.3.12
+
+# Opción 2: Descarga manual
+# 1. Ve a: https://www.python.org/downloads/
+# 2. Descarga Python 3.12.x
+# 3. IMPORTANTE: Marca "Add Python to PATH" durante instalación
+```
 
 **Linux (Debian/Ubuntu):**
 ```bash
 sudo apt update
-sudo apt install python3 python3-pip python3-venv
+sudo apt install python3.12 python3.12-pip python3.12-venv
+# o para Python 3.11
+sudo apt install python3.11 python3.11-pip python3.11-venv
 ```
 
 **macOS:**
@@ -179,7 +216,9 @@ sudo apt install python3 python3-pip python3-venv
 brew install python@3.12
 ```
 
-> 💡 **Recomendación**: Si vas a instalar Python de todos modos, usa directamente `install.py` que es más robusto y funciona en cualquier terminal.
+> ⚠️ **EVITA Python 3.13 o superior**: Muchas librerías científicas (pyarrow, numpy) aún no tienen versiones precompiladas para Python 3.13+, lo que causará errores de instalación.
+
+> 💡 **Recomendación**: Instala Python 3.11 o 3.12 y usa `install.py` que es más robusto y funciona en cualquier terminal.
 
 ### ⚙️ Instalación Manual (Avanzado)
 
