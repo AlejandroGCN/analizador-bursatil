@@ -249,27 +249,98 @@ def display_symbol_info(contexto: str = "datos") -> None:
         contexto: Contexto en el que se muestra (datos, cartera, etc.)
     """
     if contexto == "datos":
-        st.info("""
-        **💡 Ayuda:** Introduce los símbolos de los activos que deseas analizar, separados por comas.
+        st.markdown("### 💡 Ayuda")
+        st.info("Introduce los símbolos de los activos que deseas analizar, **separados por comas**.")
         
-        **Ejemplos válidos:**
-        - Yahoo Finance: `AAPL, MSFT, GOOGL, TSLA`
-        - Binance: `BTCUSDT, ETHUSDT, BNBBTC`
-        - Tiingo: `AAPL, MSFT, GOOGL, BP` (requiere API key gratuita)
+        # Ejemplos por fuente con diseño mejorado
+        st.markdown("#### 📋 Ejemplos válidos por fuente:")
         
-        **Consejos:**
-        - Verifica que los símbolos sean válidos para la fuente seleccionada
-        - Los símbolos de acciones de EE.UU. en Yahoo no requieren sufijo
-        - Para acciones internacionales en Yahoo, añade el sufijo del país (ej: `.DE`, `.FR`)
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**🌐 Yahoo Finance** (Acciones)")
+            st.code("AAPL, MSFT, GOOGL, TSLA, AMZN", language="text")
+            st.caption("✅ No requiere API key")
+            
+            st.markdown("**🏦 Yahoo - Internacional**")
+            st.code("SIEMENS.DE, ASML.AS, BP.L", language="text")
+            st.caption("Agrega sufijo del país (.DE, .AS, .L)")
+        
+        with col2:
+            st.markdown("**₿ Binance** (Criptomonedas)")
+            st.code("BTCUSDT, ETHUSDT, BNBUSDT", language="text")
+            st.caption("✅ No requiere API key")
+            
+            st.markdown("**📈 Tiingo** (Premium)")
+            st.code("AAPL, MSFT, GOOGL, BP", language="text")
+            st.caption("⚠️ Requiere API key gratuita")
+        
+        # Consejos destacados
+        st.markdown("#### 💭 Consejos importantes:")
+        st.markdown("""
+        - 🔍 **Verifica los símbolos** en la web de la fuente antes de usarlos
+        - 🇺🇸 **Acciones USA en Yahoo**: Sin sufijo (AAPL, MSFT, GOOGL)
+        - 🌍 **Acciones internacionales**: Con sufijo de país
+          - Alemania: `.DE` (ej: SIEMENS.DE)
+          - Holanda: `.AS` (ej: ASML.AS)
+          - Reino Unido: `.L` (ej: BP.L)
+        - 📅 **Fecha de inicio**: Algunos símbolos tienen datos limitados en el pasado
+        - ⚡ **Intervalos intraday**: Yahoo limita a ~7 días de historia
         """)
+        
     elif contexto == "cartera":
-        st.info("""
-        **💡 Ayuda:** Introduce los símbolos de los activos que formarán tu cartera, separados por comas.
+        st.markdown("### 💼 Ayuda - Construcción de Cartera")
+        st.info("Introduce los símbolos de los activos que formarán tu cartera, **separados por comas**.")
         
-        **Ejemplo:** `AAPL, MSFT, GOOGL, TSLA`
+        # Pasos para construir cartera
+        st.markdown("#### 📝 Pasos para crear tu cartera:")
+        st.markdown("""
+        **1. Descarga datos primero** (pestaña 📊 Datos):
+        - Ve a la pestaña "Datos"
+        - Configura la fuente de datos (Yahoo, Binance, Tiingo)
+        - Ingresa los símbolos y descarga los datos
         
-        **Importante:**
-        - Los símbolos deben coincidir con los datos descargados en la pestaña "📊 Datos"
-        - Si usas Tiingo, configura tu API key gratuita (ver [TIINGO_SETUP.md](TIINGO_SETUP.md))
-        - Puedes importar símbolos desde la pestaña de Datos usando el botón del sidebar
+        **2. Vuelve a Cartera**:
+        - Los símbolos deben coincidir con los datos descargados
+        - Puedes importar símbolos automáticamente desde Datos
+        
+        **3. Asigna pesos**:
+        - Los pesos deben sumar exactamente **100%**
+        - Ejemplo: 4 activos → 25% cada uno = 100%
+        - Tolerancia permitida: ±1%
+        """)
+        
+        # Ejemplos de carteras
+        st.markdown("#### 📊 Ejemplos de carteras balanceadas:")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Cartera Conservadora**")
+            st.code("""Símbolos: AAPL, MSFT, JNJ, PG
+Pesos: 25%, 25%, 25%, 25%""", language="text")
+            st.caption("Empresas estables, bajo riesgo")
+            
+        with col2:
+            st.markdown("**Cartera Agresiva**")
+            st.code("""Símbolos: TSLA, NVDA, AMD, COIN
+Pesos: 30%, 30%, 20%, 20%""", language="text")
+            st.caption("Tech y cripto, alto riesgo")
+        
+        # Advertencias importantes
+        st.markdown("#### ⚠️ Importante:")
+        st.warning("""
+        - Los **pesos deben sumar 100%** exactamente (tolerancia: ±1%)
+        - Si la suma es diferente, verás un error y deberás ajustar manualmente
+        - El **valor inicial** se distribuye según los pesos asignados
+        - Cada activo debe tener al menos **$100** para ser viable
+        """)
+        
+        # Tips de optimización
+        st.markdown("#### 🎯 Tips de optimización:")
+        st.success("""
+        - **Diversificación**: No pongas más del 30% en un solo activo
+        - **Correlación**: Combina activos de sectores diferentes
+        - **Liquidez**: Usa activos con alto volumen de trading
+        - **Rebalanceo**: Revisa y ajusta pesos periódicamente
         """)
