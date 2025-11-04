@@ -199,31 +199,28 @@ def _collect_weights_from_session(symbols_list: list[str]) -> list[float]:
     return weights
 
 
-def _process_weight_normalization(symbols_list: list[str]) -> Tuple[list[float], bool, float]:
+def _process_weight_normalization(symbols_list: list[str]) -> list[float]:
     """
-    Procesa y normaliza los pesos internamente.
-    Retorna los pesos normalizados como fracciones, si se normalizaron, y el total original.
-    
-    NOTA: NO modifica los widgets (session_state) para evitar errores de Streamlit.
-    Los widgets mantienen los valores ingresados por el usuario, pero internamente
-    usamos pesos normalizados.
-    
-    Returns:
-        Tuple[list[float], bool, float]: (pesos_normalizados, fue_normalizado, total_original)
+    Procesa y normaliza los pesos, actualizando session_state con porcentajes enteros.
+    Retorna los pesos normalizados como fracciones.
     """
     weights = _collect_weights_from_session(symbols_list)
     total_weight = sum(weights)
-    was_normalized = False
     
     if total_weight > 0 and abs(total_weight - 1.0) > 0.01:
         logger.info(f"Normalizando pesos: suma actual = {total_weight:.2f}")
         weights = _normalize_weights(weights)
-        was_normalized = True
         
-        # NO actualizar session_state de los widgets - Streamlit no lo permite
-        # Los pesos normalizados se usan internamente solamente
+        # Actualizar session_state con porcentajes enteros que suman 100%
+        int_percentages = _convert_to_percentage_weights(weights)
+        for i, symbol in enumerate(symbols_list):
+            weight_key = f"weight_{symbol}"
+            st.session_state[weight_key] = int_percentages[i]
+        
+        # Reconverter a fracciones para retornar
+        weights = [pct / 100.0 for pct in int_percentages]
     
-    return weights, was_normalized, total_weight
+    return weights
 
 
 def _validate_capital_per_stock(symbols_list: list[str], weights: list[float], initial_value: float) -> None:
@@ -299,16 +296,8 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
         if not valid_symbols:
             return False, CarteraParams("", "", DEFAULT_INITIAL_VALUE)
         
-        weights, was_normalized, total_original = _process_weight_normalization(valid_symbols)
+        weights = _process_weight_normalization(valid_symbols)
         valor_inicial = st.session_state.get("cartera_valor_inicial", DEFAULT_INITIAL_VALUE)
-        
-        # Mostrar mensaje si se normalizaron los pesos
-        if was_normalized:
-            total_pct = total_original * 100
-            st.sidebar.info(
-                f"ℹ️ Los pesos fueron ajustados automáticamente.\n"
-                f"Suma ingresada: {total_pct:.1f}% → Normalizado a: 100%"
-            )
         
         _save_portfolio_config(valid_symbols, weights, valor_inicial)
         _validate_capital_per_stock(valid_symbols, weights, valor_inicial)
