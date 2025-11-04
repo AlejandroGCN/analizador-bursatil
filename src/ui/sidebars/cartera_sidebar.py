@@ -199,28 +199,34 @@ def _collect_weights_from_session(symbols_list: list[str]) -> list[float]:
     return weights
 
 
-def _process_weight_normalization(symbols_list: list[str]) -> list[float]:
+def _validate_weights_sum(symbols_list: list[str]) -> Tuple[list[float], bool]:
     """
-    Procesa y normaliza los pesos, actualizando session_state con porcentajes enteros.
-    Retorna los pesos normalizados como fracciones.
+    Valida que los pesos sumen exactamente 100%.
+    Retorna (pesos_como_fracciones, es_valido).
+    
+    NO normaliza automáticamente - el usuario DEBE ajustar manualmente.
     """
     weights = _collect_weights_from_session(symbols_list)
     total_weight = sum(weights)
     
-    if total_weight > 0 and abs(total_weight - 1.0) > 0.01:
-        logger.info(f"Normalizando pesos: suma actual = {total_weight:.2f}")
-        weights = _normalize_weights(weights)
-        
-        # Actualizar session_state con porcentajes enteros que suman 100%
-        int_percentages = _convert_to_percentage_weights(weights)
-        for i, symbol in enumerate(symbols_list):
-            weight_key = f"weight_{symbol}"
-            st.session_state[weight_key] = int_percentages[i]
-        
-        # Reconverter a fracciones para retornar
-        weights = [pct / 100.0 for pct in int_percentages]
+    # Validar que sumen 100% (tolerancia del 1%)
+    if total_weight == 0:
+        st.error("❌ **Error:** Debes asignar pesos a los activos")
+        return weights, False
     
-    return weights
+    if abs(total_weight - 1.0) > 0.01:
+        total_pct = total_weight * 100
+        logger.warning(f"Pesos no suman 100%: suma actual = {total_pct:.1f}%")
+        
+        # Mostrar error claro al usuario
+        st.error(
+            f"❌ **Los pesos deben sumar exactamente 100%**\n\n"
+            f"📊 **Suma actual:** {total_pct:.1f}%\n\n"
+            f"Por favor, ajusta los porcentajes en el sidebar."
+        )
+        return weights, False
+    
+    return weights, True
 
 
 def _validate_capital_per_stock(symbols_list: list[str], weights: list[float], initial_value: float) -> None:
@@ -296,7 +302,13 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
         if not valid_symbols:
             return False, CarteraParams("", "", DEFAULT_INITIAL_VALUE)
         
-        weights = _process_weight_normalization(valid_symbols)
+        # Validar que los pesos sumen 100%
+        weights, is_valid = _validate_weights_sum(valid_symbols)
+        
+        # Si los pesos no suman 100%, NO continuar
+        if not is_valid:
+            return False, CarteraParams("", "", DEFAULT_INITIAL_VALUE)
+        
         valor_inicial = st.session_state.get("cartera_valor_inicial", DEFAULT_INITIAL_VALUE)
         
         _save_portfolio_config(valid_symbols, weights, valor_inicial)

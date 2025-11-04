@@ -80,7 +80,6 @@ def _get_symbol_suggestions(symbol: str, source: str) -> str:
     elif source.lower() == "tiingo":
         suggestions.extend([
             f"Verifica que '{symbol}' existe en Tiingo",
-            "Tiingo requiere API key gratuita (ver TIINGO_SETUP.md)",
             "Símbolos USA: AAPL, MSFT, GOOGL (sin sufijos)",
             "Símbolos internacionales pueden requerir sufijos (.LON para UK, .DEX para Alemania)"
         ])
