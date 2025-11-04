@@ -174,6 +174,66 @@ python run_app.py
 
 La aplicación se abrirá automáticamente en: **http://localhost:8501**
 
+---
+
+### 🚀 Scripts de Ejecución
+
+#### `run_app.bat` (Windows)
+
+Script automatizado para ejecutar la aplicación en Windows con todas las verificaciones necesarias.
+
+**Qué hace automáticamente:**
+- ✅ Verifica que estás en el directorio correcto
+- ✅ Activa el entorno virtual si existe (`venv`)
+- ✅ Verifica que Python esté instalado
+- ✅ Muestra la versión de Python en uso
+- ✅ Verifica que las dependencias estén instaladas (comprueba `streamlit`)
+- ✅ Ejecuta la aplicación
+- ✅ Maneja errores y muestra mensajes claros
+
+**Uso:**
+```bash
+# Simplemente ejecuta desde CMD
+run_app.bat
+```
+
+**Ventajas:**
+- No necesitas activar manualmente el entorno virtual
+- Detecta problemas antes de ejecutar la app
+- Si falla, te indica qué hacer
+
+#### `run_app.py` (Multiplataforma)
+
+Script Python para ejecutar la aplicación en cualquier sistema operativo.
+
+**Qué hace:**
+- Inicia el servidor Streamlit
+- Configura el puerto (8501 por defecto)
+- Abre automáticamente el navegador
+
+**Uso:**
+```bash
+# Asegúrate de activar el entorno virtual primero
+# Windows:
+venv\Scripts\activate
+
+# Linux/macOS:
+source venv/bin/activate
+
+# Luego ejecuta:
+python run_app.py
+```
+
+**Cuándo usar cada uno:**
+
+| Situación | Script Recomendado |
+|-----------|-------------------|
+| Windows con venv creado | `run_app.bat` (más fácil) |
+| Windows sin venv | `python run_app.py` |
+| Linux/macOS | `python run_app.py` |
+| Desarrollo/debug | `python run_app.py` (más control) |
+| Usuario final Windows | `run_app.bat` (más simple) |
+
 ### 📋 Requisitos Previos
 
 #### Si usas `install.bat` (Windows):
