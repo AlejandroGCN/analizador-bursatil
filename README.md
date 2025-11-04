@@ -9,6 +9,11 @@ Aplicación **Streamlit** para análisis financiero cuantitativo con descarga, n
 - Gestión segura de API keys
 - Visualizaciones interactivas
 
+> 🚨 **IMPORTANTE - INSTALACIÓN EN WINDOWS**: 
+> - Si usas `install.bat`: **Ejecútalo SOLO desde CMD de Windows** (no Git Bash)
+> - Si tienes Python instalado: Usa `python install.py` que funciona en cualquier terminal
+> - [Ver instrucciones detalladas de instalación](#-instalación-automática-completa-recomendado)
+
 ---
 
 ## Tabla de Contenidos
@@ -53,28 +58,75 @@ El instalador automático configura **todo lo necesario desde cero**, incluyendo
 - ✅ Archivos de configuración y ejemplos
 - ✅ Tests de verificación (opcional)
 
-**Windows:**
+---
+
+#### 🪟 Opción A: Windows con `install.bat` (NO requiere Python previo)
+
 ```bash
-# Clonar el repositorio
+# 1. Clonar el repositorio
 git clone https://github.com/AlejandroGCN/analizador-bursatil.git
 cd analizador-bursatil
 
-# Ejecutar instalador completo
+# 2. Abrir CMD de Windows (NO Git Bash)
+# Busca "cmd" en el menú de Windows o presiona Win+R y escribe "cmd"
+
+# 3. Navegar al directorio y ejecutar
+cd ruta\al\proyecto\analizador-bursatil
 install.bat
 ```
 
-**Linux/macOS:**
+> ⚠️ **MUY IMPORTANTE para Windows**: 
+> - Ejecuta `install.bat` **SOLO desde CMD de Windows nativo**
+> - **NO funciona** en Git Bash (MINGW), PowerShell ISE, o WSL
+> - Si estás en Git Bash, escribe: `cmd.exe` para abrir CMD, luego ejecuta `install.bat`
+> - Si tienes Python instalado, puedes usar `install.py` que funciona en cualquier terminal
+
+---
+
+#### 🐍 Opción B: Multiplataforma con `install.py` (Requiere Python instalado)
+
+Esta opción funciona en **cualquier terminal** (Git Bash, PowerShell, CMD, Linux, macOS):
+
 ```bash
-# Clonar el repositorio
+# 1. Clonar el repositorio
 git clone https://github.com/AlejandroGCN/analizador-bursatil.git
 cd analizador-bursatil
 
-# Dar permisos de ejecución y ejecutar
-chmod +x install.py
+# 2. Ejecutar instalador Python (funciona en TODAS las terminales)
 python install.py
+
+# En Linux/macOS, dale permisos si es necesario:
+chmod +x install.py
+python3 install.py
 ```
 
-> **💡 Nota**: El instalador detecta automáticamente si ya existe un entorno virtual y pregunta si deseas recrearlo. Es completamente interactivo y te guía en cada paso.
+> ✅ **Ventajas de install.py**:
+> - Funciona en Git Bash, PowerShell, CMD, Terminal Linux/macOS
+> - Interfaz con colores y mejor experiencia de usuario
+> - Manejo de errores más robusto
+> - **Requiere Python 3.9+ ya instalado**
+
+---
+
+#### 📊 Comparación de Instaladores
+
+| Característica | `install.bat` | `install.py` |
+|----------------|---------------|--------------|
+| **Requiere Python previo** | ❌ NO | ✅ SÍ (Python 3.9+) |
+| **Funciona en Git Bash** | ❌ NO | ✅ SÍ |
+| **Funciona en CMD Windows** | ✅ SÍ | ✅ SÍ |
+| **Funciona en PowerShell** | ⚠️ Limitado | ✅ SÍ |
+| **Funciona en Linux/macOS** | ❌ NO | ✅ SÍ |
+| **Colores en terminal** | ❌ NO | ✅ SÍ |
+| **Mejor experiencia** | Básica | Avanzada |
+
+**¿Cuál usar?**
+- **Si NO tienes Python instalado en Windows** → Usa `install.bat` desde CMD
+- **Si ya tienes Python** → Usa `install.py` (funciona en cualquier terminal)
+- **Si estás en Linux/macOS** → Usa `install.py`
+- **Si estás en Git Bash en Windows** → Usa `install.py` o abre CMD para usar `install.bat`
+
+> **💡 Nota**: Ambos instaladores son completamente interactivos y te guían en cada paso.
 
 ### 🎯 Inicio Rápido (Post-Instalación)
 
@@ -95,23 +147,39 @@ La aplicación se abrirá automáticamente en: **http://localhost:8501**
 
 ### 📋 Requisitos Previos
 
-**Antes de ejecutar el instalador, asegúrate de tener:**
+#### Si usas `install.bat` (Windows):
+- ✅ Windows 7 o superior
+- ✅ Acceso a Internet
+- ✅ CMD de Windows (viene con Windows)
+- ❌ **NO requiere Python instalado** (el script te dirá cómo instalarlo)
 
-1. **Python 3.9 o superior** instalado
+#### Si usas `install.py` (Cualquier sistema):
+- ✅ Python 3.9 o superior **YA INSTALADO**
    ```bash
    python --version  # Debe mostrar 3.9 o superior
    ```
+- ✅ Acceso a Internet
+- ✅ Permisos de escritura en el directorio
 
-2. **Acceso a Internet** (para descargar dependencias)
+**¿Cómo instalar Python si no lo tienes?**
 
-3. **Permisos de escritura** en el directorio del proyecto
+**Windows:**
+1. Descarga desde [python.org](https://www.python.org/downloads/)
+2. Durante la instalación, **marca "Add Python to PATH"** ⚠️
+3. O usa: `winget install Python.Python.3.12`
 
-**Si Python no está instalado:**
-- **Windows**: Descarga desde [python.org](https://www.python.org/downloads/) o usa `winget install Python.Python.3.12`
-- **Linux**: `sudo apt install python3 python3-pip python3-venv` (Debian/Ubuntu)
-- **macOS**: `brew install python@3.12`
+**Linux (Debian/Ubuntu):**
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+```
 
-> ⚠️ **Importante en Windows**: Al instalar Python, marca la opción **"Add Python to PATH"**
+**macOS:**
+```bash
+brew install python@3.12
+```
+
+> 💡 **Recomendación**: Si vas a instalar Python de todos modos, usa directamente `install.py` que es más robusto y funciona en cualquier terminal.
 
 ### ⚙️ Instalación Manual (Avanzado)
 
