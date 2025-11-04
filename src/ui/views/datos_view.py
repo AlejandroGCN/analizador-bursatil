@@ -326,8 +326,56 @@ def _data_map(data_map: dict, kind: str) -> None:
             st.write(data_info)
             continue
 
+        # Formatear los datos para mejor visualización
+        df_display = df.copy()
+        
+        # Configurar el ancho y estilo de las columnas
+        column_config = {}
+        
+        # Si son retornos, formatear y configurar columnas
+        if "return" in kind.lower():
+            if isinstance(df_display, pd.Series):
+                # Para Series, convertir a DataFrame para mejor control
+                df_display = df_display.to_frame(name='Retorno (%)')
+            
+            if isinstance(df_display, pd.DataFrame):
+                # Renombrar columnas para mejor presentación
+                rename_map = {}
+                for col in df_display.columns:
+                    if col.lower() in ['close', 'value', 'return']:
+                        rename_map[col] = 'Retorno (%)'
+                
+                if rename_map:
+                    df_display = df_display.rename(columns=rename_map)
+                
+                # Configurar columnas de retorno
+                for col in df_display.columns:
+                    if 'retorno' in col.lower() or col in ['Retorno (%)', 'close', 'value', 'return']:
+                        # Formatear como porcentaje con colores
+                        def format_return(val):
+                            if pd.isna(val):
+                                return ""
+                            pct = val * 100
+                            color = "🟢" if val > 0 else ("🔴" if val < 0 else "⚪")
+                            return f"{color} {pct:+.2f}%"
+                        
+                        if pd.api.types.is_numeric_dtype(df_display[col]):
+                            df_display[col] = df_display[col].apply(format_return)
+                        
+                        column_config[col] = st.column_config.TextColumn(
+                            col,
+                            width="medium",
+                            help="Retorno diario (positivo 🟢 / negativo 🔴)"
+                        )
+        
         # Mostrar todos los datos del rango seleccionado con altura personalizada
-        st.dataframe(df, height=400, width='stretch')
+        st.dataframe(
+            df_display, 
+            height=400, 
+            width='stretch', 
+            column_config=column_config if column_config else None,
+            hide_index=False
+        )
         
         # Mostrar información del rango de fechas
         _display_date_range_info(df)
@@ -354,7 +402,7 @@ def _render_ohlcv_chart(df: pd.DataFrame) -> None:
     
     if isinstance(df, pd.Series):
         st.subheader("📈 Evolución de Precios")
-        st.line_chart(df, use_container_width=True)
+        st.line_chart(df, width='stretch')
     elif isinstance(df, pd.DataFrame):
         close_col = next((c for c in df.columns if c.lower() == "close"), None)
         
@@ -374,59 +422,75 @@ def _render_ohlcv_chart(df: pd.DataFrame) -> None:
             plt.close(fig)
         elif "Close" in df.columns:
             st.subheader("📈 Evolución del Precio de Cierre")
-            st.line_chart(df["Close"], use_container_width=True)
+            st.line_chart(df["Close"], width='stretch')
 
 
 def _render_series_chart(df: pd.DataFrame, kind: str = "series") -> None:
-    """Renderiza gráfico de series temporales mejorado."""
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
     
-    # Determinar el título según el tipo de datos
     title_map = {
         "returns": "📊 Retornos Diarios",
+        "returns_pct": "📊 Retornos Diarios",
         "volatility": "📉 Volatilidad",
         "performance": "📈 Performance",
         "volume": "📊 Volumen",
     }
     chart_title = title_map.get(kind, "📊 Serie Temporal")
+    is_returns = "return" in kind.lower()
     
     if isinstance(df, pd.Series):
         st.subheader(chart_title)
         
-        # Crear gráfico mejorado con matplotlib para Series
-        fig, ax = plt.subplots(figsize=(14, 6))
-        
-        # Usar barras para retornos (más visual)
-        if kind == "returns" or "return" in str(chart_title).lower():
-            colors = ['#d62728' if x < 0 else '#2ca02c' for x in df.values]
-            ax.bar(df.index, df.values, width=1.5, color=colors, alpha=0.7, edgecolor='none')
-            ax.axhline(y=0, color='gray', linestyle='-', linewidth=1, alpha=0.5)
+        if is_returns:
+            # Para retornos: usar gráfico de BARRAS con colores verde/rojo
+            fig, ax = plt.subplots(figsize=(12, 5))
+            
+            # Convertir a porcentaje
+            df_pct = df * 100
+            
+            # Colores: verde para positivos, rojo para negativos
+            colors = ['#2ca02c' if x >= 0 else '#d62728' for x in df_pct.values]
+            
+            # Gráfico de barras
+            ax.bar(df.index, df_pct.values, color=colors, alpha=0.7, width=1.0)
+            
+            # Línea de referencia en 0
+            ax.axhline(y=0, color='black', linewidth=1, linestyle='-', alpha=0.8)
+            
+            # Etiquetas y formato
+            ax.set_ylabel('Retorno Diario (%)', fontsize=11, fontweight='bold')
+            ax.set_xlabel('Fecha', fontsize=11, fontweight='bold')
+            ax.grid(True, alpha=0.2, linestyle='--', axis='y')
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+            
+            # Agregar estadísticas resumidas
+            pos_days = (df_pct > 0).sum()
+            neg_days = (df_pct < 0).sum()
+            stats_text = f'Días positivos: {pos_days} | Días negativos: {neg_days}'
+            ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, 
+                   fontsize=9, verticalalignment='top',
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+            
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
         else:
-            ax.plot(df.index, df.values, linewidth=1.5, color='#2ca02c', alpha=0.8)
-            ax.fill_between(df.index, df.values, alpha=0.2, color='#2ca02c')
-        
-        # Mejorar el formato del eje X
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-        
-        ax.set_xlabel('Fecha', fontsize=11, fontweight='bold')
-        ax.set_ylabel('Valor', fontsize=11, fontweight='bold')
-        ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5)
-        
-        # Rotar etiquetas del eje X
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-        
-        # Ajustar márgenes
-        plt.subplots_adjust(bottom=0.15, left=0.08, right=0.98, top=0.95)
-        
-        st.pyplot(fig)
-        plt.close(fig)
+            # Para otras series: mantener línea
+            fig, ax = plt.subplots(figsize=(12, 5))
+            ax.plot(df.index, df.values, color='#1f77b4', linewidth=1.5)
+            ax.fill_between(df.index, df.values, alpha=0.2, color='#1f77b4')
+            ax.set_ylabel('Valor', fontsize=11, fontweight='bold')
+            ax.set_xlabel('Fecha', fontsize=11, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
         
     elif isinstance(df, pd.DataFrame):
         st.subheader(chart_title)
         
-        # Determinar qué columna graficar
         if "value" in df.columns:
             col_to_plot = "value"
         elif "close" in df.columns:
@@ -437,31 +501,48 @@ def _render_series_chart(df: pd.DataFrame, kind: str = "series") -> None:
             st.warning("⚠️ No se encontró columna para graficar")
             return
         
-        # Crear gráfico mejorado con matplotlib para DataFrame
-        fig, ax = plt.subplots(figsize=(14, 6))
-        
-        # Usar barras para retornos (más visual)
-        if kind == "returns" or "return" in col_to_plot.lower():
-            colors = ['#d62728' if x < 0 else '#2ca02c' for x in df[col_to_plot].values]
-            ax.bar(df.index, df[col_to_plot], width=1.5, color=colors, alpha=0.7, edgecolor='none')
-            ax.axhline(y=0, color='gray', linestyle='-', linewidth=1, alpha=0.5)
+        if is_returns:
+            # Para retornos: usar gráfico de BARRAS con colores verde/rojo
+            fig, ax = plt.subplots(figsize=(12, 5))
+            
+            # Convertir a porcentaje
+            df_pct = df[col_to_plot] * 100
+            
+            # Colores: verde para positivos, rojo para negativos
+            colors = ['#2ca02c' if x >= 0 else '#d62728' for x in df_pct.values]
+            
+            # Gráfico de barras
+            ax.bar(df.index, df_pct.values, color=colors, alpha=0.7, width=1.0)
+            
+            # Línea de referencia en 0
+            ax.axhline(y=0, color='black', linewidth=1, linestyle='-', alpha=0.8)
+            
+            # Etiquetas y formato
+            ax.set_ylabel('Retorno Diario (%)', fontsize=11, fontweight='bold')
+            ax.set_xlabel('Fecha', fontsize=11, fontweight='bold')
+            ax.grid(True, alpha=0.2, linestyle='--', axis='y')
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+            
+            # Agregar estadísticas resumidas
+            pos_days = (df_pct > 0).sum()
+            neg_days = (df_pct < 0).sum()
+            stats_text = f'Días positivos: {pos_days} | Días negativos: {neg_days}'
+            ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, 
+                   fontsize=9, verticalalignment='top',
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+            
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
         else:
-            ax.plot(df.index, df[col_to_plot], linewidth=1.5, color='#2ca02c', alpha=0.8)
-            ax.fill_between(df.index, df[col_to_plot], alpha=0.2, color='#2ca02c')
-        
-        # Mejorar el formato del eje X
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-        
-        ax.set_xlabel('Fecha', fontsize=11, fontweight='bold')
-        ax.set_ylabel(col_to_plot.capitalize(), fontsize=11, fontweight='bold')
-        ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5)
-        
-        # Rotar etiquetas del eje X
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-        
-        # Ajustar márgenes
-        plt.subplots_adjust(bottom=0.15, left=0.08, right=0.98, top=0.95)
-        
-        st.pyplot(fig)
-        plt.close(fig)
+            # Para otras series: mantener línea
+            fig, ax = plt.subplots(figsize=(12, 5))
+            ax.plot(df.index, df[col_to_plot], color='#1f77b4', linewidth=1.5)
+            ax.fill_between(df.index, df[col_to_plot], alpha=0.2, color='#1f77b4')
+            ax.set_ylabel(col_to_plot.capitalize(), fontsize=11, fontweight='bold')
+            ax.set_xlabel('Fecha', fontsize=11, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
