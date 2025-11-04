@@ -27,7 +27,7 @@ if exist "venv\Scripts\activate.bat" (
     )
 ) else (
     echo [*] No se encontro entorno virtual, usando Python global
-    echo     Tip: Ejecuta install_completo.bat para crear un entorno virtual
+    echo     Tip^: Ejecuta install.bat para crear un entorno virtual
 )
 
 REM Verificar que Python esta instalado
@@ -35,8 +35,8 @@ echo [*] Verificando Python...
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python no esta instalado o no esta en el PATH
-    echo         Instala Python desde: https://www.python.org/downloads/
-    echo         O ejecuta: install_completo.bat
+    echo         Instala Python desde^: https^://www.python.org/downloads/
+    echo         O ejecuta^: install.bat
     pause
     exit /b 1
 )
@@ -50,8 +50,8 @@ echo [*] Verificando dependencias...
 python -c "import streamlit" 2>nul
 if errorlevel 1 (
     echo [ERROR] Las dependencias no estan instaladas
-    echo         Ejecuta: install_completo.bat
-    echo         O manualmente: pip install -r requirements.txt
+    echo         Ejecuta^: install.bat
+    echo         O manualmente^: pip install -r requirements.txt
     pause
     exit /b 1
 )
@@ -63,7 +63,7 @@ echo   Ejecutando aplicacion...
 echo ============================================
 echo.
 echo La aplicacion se abrira en tu navegador
-echo URL: http://localhost:8501
+echo URL^: http^://localhost^:8501
 echo.
 echo Presiona Ctrl+C para detener la aplicacion
 echo.

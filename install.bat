@@ -44,19 +44,19 @@ python --version >nul 2>&1
 if errorlevel 1 (
     echo [WARNING] Python no esta instalado o no esta en el PATH
     echo.
-    echo OPCIONES DE INSTALACION DE PYTHON:
+    echo OPCIONES DE INSTALACION DE PYTHON^:
     echo.
-    echo 1. Descargar Python manualmente:
-    echo    - Ve a: https://www.python.org/downloads/
+    echo 1. Descargar Python manualmente^:
+    echo    - Ve a^: https^://www.python.org/downloads/
     echo    - Descarga Python 3.10 o superior
-    echo    - IMPORTANTE: Marca "Add Python to PATH" durante la instalacion
+    echo    - IMPORTANTE^: Marca "Add Python to PATH" durante la instalacion
     echo.
-    echo 2. Instalar con winget (Windows 11):
+    echo 2. Instalar con winget ^(Windows 11^)^:
     echo    - Abre otra terminal como Administrador
-    echo    - Ejecuta: winget install Python.Python.3.12
+    echo    - Ejecuta^: winget install Python.Python.3.12
     echo.
-    echo 3. Instalar con Chocolatey:
-    echo    - Si tienes Chocolatey: choco install python
+    echo 3. Instalar con Chocolatey^:
+    echo    - Si tienes Chocolatey^: choco install python
     echo.
     echo.
     echo Despues de instalar Python, vuelve a ejecutar este script.
@@ -73,11 +73,11 @@ for /f "tokens=1,2 delims=." %%a in ("%PYTHON_VERSION%") do (
     set PYTHON_MINOR=%%b
 )
 if %PYTHON_MAJOR% LSS 3 (
-    echo [ERROR] Se requiere Python 3.9 o superior. Version actual: %PYTHON_VERSION%
+    echo [ERROR] Se requiere Python 3.9 o superior. Version actual^: %PYTHON_VERSION%
     goto :error
 )
 if %PYTHON_MAJOR%==3 if %PYTHON_MINOR% LSS 9 (
-    echo [ERROR] Se requiere Python 3.9 o superior. Version actual: %PYTHON_VERSION%
+    echo [ERROR] Se requiere Python 3.9 o superior. Version actual^: %PYTHON_VERSION%
     goto :error
 )
 echo [OK] Version de Python compatible
@@ -206,7 +206,7 @@ if not exist ".env" (
         echo # Renombra este archivo a .env y configura tus API keys
         echo.
         echo # Tiingo API Key ^(opcional - para fuente Tiingo^)
-        echo # Registrate gratis en: https://www.tiingo.com/
+        echo # Registrate gratis en^: https^://www.tiingo.com/
         echo #TIINGO_API_KEY=tu_api_key_aqui
         echo.
         echo # Configuracion de logging
@@ -282,29 +282,29 @@ echo ========================================================================
 echo     INSTALACION COMPLETADA EXITOSAMENTE
 echo ========================================================================
 echo.
-echo El entorno esta listo para usar. A continuacion:
+echo El entorno esta listo para usar. A continuacion^:
 echo.
-echo PARA EJECUTAR LA APLICACION:
-echo   1. Activar el entorno virtual:  venv\Scripts\activate
-echo   2. Ejecutar la aplicacion:      python run_app.py
-echo   3. Abrir en navegador:          http://localhost:8501
+echo PARA EJECUTAR LA APLICACION^:
+echo   1. Activar el entorno virtual^:  venv\Scripts\activate
+echo   2. Ejecutar la aplicacion^:      python run_app.py
+echo   3. Abrir en navegador^:          http^://localhost^:8501
 echo.
-echo ARCHIVOS DE INICIO RAPIDO:
-echo   - .\run_app.bat           : Ejecuta la aplicacion directamente
-echo   - .\README.md             : Documentacion completa
-echo   - .\QUICKSTART.md         : Guia de inicio rapido
-echo   - .\.env                  : Configuracion de API keys
-echo   - .\ejemplos\             : Archivos de ejemplo
+echo ARCHIVOS DE INICIO RAPIDO^:
+echo   - .\run_app.bat           ^: Ejecuta la aplicacion directamente
+echo   - .\README.md             ^: Documentacion completa
+echo   - .\QUICKSTART.md         ^: Guia de inicio rapido
+echo   - .\.env                  ^: Configuracion de API keys
+echo   - .\ejemplos\             ^: Archivos de ejemplo
 echo.
-echo FUENTES DE DATOS DISPONIBLES:
-echo   - Yahoo Finance    : Acciones, ETFs (no requiere API key)
-echo   - Binance          : Criptomonedas (no requiere API key)
-echo   - Tiingo           : Acciones (requiere API key gratuita)
+echo FUENTES DE DATOS DISPONIBLES^:
+echo   - Yahoo Finance    ^: Acciones, ETFs ^(no requiere API key^)
+echo   - Binance          ^: Criptomonedas ^(no requiere API key^)
+echo   - Tiingo           ^: Acciones ^(requiere API key gratuita^)
 echo.
-echo Para configurar Tiingo:
-echo   1. Registrate en: https://www.tiingo.com/
+echo Para configurar Tiingo^:
+echo   1. Registrate en^: https^://www.tiingo.com/
 echo   2. Edita .env y agrega tu API key
-echo   3. Ver: CONFIGURACION_API_KEYS.md para mas detalles
+echo   3. Ver^: CONFIGURACION_API_KEYS.md para mas detalles
 echo.
 echo ========================================================================
 echo.
@@ -313,7 +313,7 @@ set /p RUN_NOW=
 if /i "!RUN_NOW!"=="s" (
     echo.
     echo [*] Iniciando aplicacion...
-    echo [*] Abriendo navegador en http://localhost:8501
+    echo [*] Abriendo navegador en http^://localhost^:8501
     python run_app.py
 )
 
@@ -330,15 +330,15 @@ echo ========================================================================
 echo.
 echo La instalacion no se pudo completar.
 echo.
-echo SOLUCIONES COMUNES:
-echo   1. Verifica que Python 3.9+ este instalado:
+echo SOLUCIONES COMUNES^:
+echo   1. Verifica que Python 3.9+ este instalado^:
 echo      python --version
 echo.
 echo   2. Asegurate de tener permisos de escritura en este directorio
 echo.
-echo   3. Verifica tu conexion a Internet (necesaria para descargar paquetes)
+echo   3. Verifica tu conexion a Internet ^(necesaria para descargar paquetes^)
 echo.
-echo   4. Si el problema persiste:
+echo   4. Si el problema persiste^:
 echo      - Revisa los logs en var\logs\
 echo      - Consulta README.md
 echo      - Abre un issue en GitHub
