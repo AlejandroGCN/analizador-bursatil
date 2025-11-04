@@ -43,43 +43,141 @@ python-dotenv>=1.0.0
 
 ## Instalación
 
-### Instalación Rápida
+### 🚀 Instalación Automática Completa (Recomendado)
+
+El instalador automático configura **todo lo necesario desde cero**, incluyendo:
+- ✅ Verificación de Python 3.9+
+- ✅ Creación de entorno virtual
+- ✅ Instalación de todas las dependencias
+- ✅ Configuración de estructura de directorios
+- ✅ Archivos de configuración y ejemplos
+- ✅ Tests de verificación (opcional)
 
 **Windows:**
 ```bash
+# Clonar el repositorio
 git clone https://github.com/AlejandroGCN/analizador-bursatil.git
 cd analizador-bursatil
+
+# Ejecutar instalador completo
 install.bat
 ```
 
 **Linux/macOS:**
 ```bash
+# Clonar el repositorio
 git clone https://github.com/AlejandroGCN/analizador-bursatil.git
 cd analizador-bursatil
+
+# Dar permisos de ejecución y ejecutar
+chmod +x install.py
 python install.py
 ```
 
-### Instalación Manual
+> **💡 Nota**: El instalador detecta automáticamente si ya existe un entorno virtual y pregunta si deseas recrearlo. Es completamente interactivo y te guía en cada paso.
 
+### 🎯 Inicio Rápido (Post-Instalación)
+
+Una vez instalado, ejecuta la aplicación con:
+
+**Windows:**
 ```bash
-# Crear entorno virtual
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+run_app.bat
+```
 
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Ejecutar aplicación
+**Linux/macOS:**
+```bash
+source venv/bin/activate
 python run_app.py
 ```
 
-### Instalación con Docker
+La aplicación se abrirá automáticamente en: **http://localhost:8501**
+
+### 📋 Requisitos Previos
+
+**Antes de ejecutar el instalador, asegúrate de tener:**
+
+1. **Python 3.9 o superior** instalado
+   ```bash
+   python --version  # Debe mostrar 3.9 o superior
+   ```
+
+2. **Acceso a Internet** (para descargar dependencias)
+
+3. **Permisos de escritura** en el directorio del proyecto
+
+**Si Python no está instalado:**
+- **Windows**: Descarga desde [python.org](https://www.python.org/downloads/) o usa `winget install Python.Python.3.12`
+- **Linux**: `sudo apt install python3 python3-pip python3-venv` (Debian/Ubuntu)
+- **macOS**: `brew install python@3.12`
+
+> ⚠️ **Importante en Windows**: Al instalar Python, marca la opción **"Add Python to PATH"**
+
+### ⚙️ Instalación Manual (Avanzado)
+
+Si prefieres instalar manualmente o necesitas mayor control:
 
 ```bash
-docker-compose up --build
+# 1. Crear entorno virtual
+python -m venv venv
+
+# 2. Activar entorno virtual
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+
+# 3. Actualizar pip
+python -m pip install --upgrade pip
+
+# 4. Instalar dependencias
+pip install -r requirements.txt
+
+# 5. Instalar en modo desarrollo (opcional)
+pip install -e .
+
+# 6. Crear directorios necesarios
+mkdir -p data var/logs var/config tmp/logs
+
+# 7. Copiar archivo de configuración
+cp .env.example .env  # Editar con tus API keys si es necesario
+
+# 8. Ejecutar aplicación
+python run_app.py
 ```
 
-La aplicación estará disponible en: `http://localhost:8501`
+### 🐳 Instalación con Docker
+
+Para un entorno completamente aislado:
+
+```bash
+# Construir y ejecutar con Docker Compose
+docker-compose up --build
+
+# La aplicación estará en: http://localhost:8501
+```
+
+### 🔧 Solución de Problemas Comunes
+
+**Error: "Python no encontrado"**
+- Verifica que Python esté instalado: `python --version`
+- En Windows, asegúrate de que Python esté en el PATH
+
+**Error: "pip no disponible"**
+- Ejecuta: `python -m ensurepip --default-pip`
+
+**Error: "Permisos denegados"**
+- Linux/macOS: No uses `sudo` para instalar en el venv
+- Windows: Ejecuta la terminal como Administrador
+
+**Error en instalación de dependencias**
+- Verifica tu conexión a Internet
+- Intenta actualizar pip: `python -m pip install --upgrade pip`
+- Instala las dependencias una por una desde `requirements.txt`
+
+**La aplicación no se abre en el navegador**
+- Abre manualmente: http://localhost:8501
+- Verifica que el puerto 8501 no esté en uso
 
 ---
 
@@ -112,11 +210,34 @@ TIINGO_API_KEY=your_api_key_here
 
 ### Ejecución
 
+**Windows:**
+```bash
+run_app.bat
+```
+
+**Linux/macOS:**
 ```bash
 python run_app.py
 ```
 
-La interfaz se abrirá automáticamente en el navegador.
+La interfaz se abrirá automáticamente en el navegador en **http://localhost:8501**
+
+### 📊 Visualizaciones Mejoradas
+
+La aplicación incluye visualizaciones profesionales con:
+
+- **Gráficos de línea optimizados** con matplotlib
+- **Distribución equilibrada** de datos en toda el área de visualización
+- **Líneas de referencia** para retornos (línea en 0)
+- **Cuadrícula y etiquetas** para mejor legibilidad
+- **Formato responsive** que se ajusta al ancho del contenedor
+- **Títulos contextuales** según el tipo de datos mostrados
+
+**Tipos de visualización:**
+- 📈 **OHLCV**: Evolución de precios de cierre
+- 📊 **Retornos**: Gráfico de retornos diarios con línea de referencia en 0
+- 📉 **Volatilidad**: Evolución de la volatilidad en el tiempo
+- 📊 **Volumen**: Actividad de trading
 
 ### Fuentes de Datos
 

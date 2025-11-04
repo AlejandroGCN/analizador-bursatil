@@ -244,11 +244,15 @@ def _handle_form_submit(params: DatosParams) -> None:
             if isinstance(data_info, dict) and "data" in data_info:
                 df = data_info["data"]
                 logger.debug(f"  {symbol}: shape={df.shape}, fechas={df.index.min()} a {df.index.max()}")
-                logger.debug(f"    Columnas: {list(df.columns)}")
-                logger.debug(f"    Valores NaN: {df.isna().sum().sum()}")
-                close_col = df.get('Close') if 'Close' in df.columns else df.get('close', pd.Series())
-                if not close_col.empty:
-                    logger.debug(f"    Primeros valores Close: {close_col.head(3).tolist()}")
+                if isinstance(df, pd.DataFrame):
+                    logger.debug(f"    Columnas: {list(df.columns)}")
+                    logger.debug(f"    Valores NaN: {df.isna().sum().sum()}")
+                    close_col = df.get('Close') if 'Close' in df.columns else df.get('close', pd.Series())
+                    if not close_col.empty:
+                        logger.debug(f"    Primeros valores Close: {close_col.head(3).tolist()}")
+                else:
+                    logger.debug(f"    Tipo: Series")
+                    logger.debug(f"    Valores NaN: {df.isna().sum()}")
         
         _clear_old_cache()
         st.session_state["last_data_map"] = data_map
@@ -334,24 +338,130 @@ def _data_map(data_map: dict, kind: str) -> None:
 
 def _render_charts(df: pd.DataFrame, kind: str) -> None:
     """Renderiza gráficos según el tipo de datos."""
+    if df.empty:
+        st.warning("⚠️ No hay datos suficientes para graficar")
+        return
+    
     if kind == "ohlcv":
         _render_ohlcv_chart(df)
     else:
-        _render_series_chart(df)
+        _render_series_chart(df, kind)
 
 
 def _render_ohlcv_chart(df: pd.DataFrame) -> None:
-    """Renderiza gráfico de precios OHLCV."""
-    close_col = next((c for c in df.columns if c.lower() == "close"), None)
-    if close_col:
-        st.line_chart(df[close_col])
-    elif "Close" in df.columns:
-        st.line_chart(df["Close"])
-
-
-def _render_series_chart(df: pd.DataFrame) -> None:
-    """Renderiza gráfico de series temporales."""
+    """Renderiza gráfico de precios OHLCV mejorado."""
+    import matplotlib.pyplot as plt
+    
     if isinstance(df, pd.Series):
-        st.line_chart(df)
-    elif "value" in getattr(df, "columns", []):
-        st.line_chart(df["value"])
+        st.subheader("📈 Evolución de Precios")
+        st.line_chart(df, use_container_width=True)
+    elif isinstance(df, pd.DataFrame):
+        close_col = next((c for c in df.columns if c.lower() == "close"), None)
+        
+        if close_col:
+            st.subheader("📈 Evolución del Precio de Cierre")
+            
+            # Crear gráfico mejorado con matplotlib
+            fig, ax = plt.subplots(figsize=(12, 5))
+            ax.plot(df.index, df[close_col], linewidth=1.5, color='#1f77b4')
+            ax.set_xlabel('Fecha', fontsize=10)
+            ax.set_ylabel('Precio de Cierre', fontsize=10)
+            ax.grid(True, alpha=0.3, linestyle='--')
+            ax.tick_params(axis='x', rotation=45)
+            plt.tight_layout()
+            
+            st.pyplot(fig)
+            plt.close(fig)
+        elif "Close" in df.columns:
+            st.subheader("📈 Evolución del Precio de Cierre")
+            st.line_chart(df["Close"], use_container_width=True)
+
+
+def _render_series_chart(df: pd.DataFrame, kind: str = "series") -> None:
+    """Renderiza gráfico de series temporales mejorado."""
+    import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
+    
+    # Determinar el título según el tipo de datos
+    title_map = {
+        "returns": "📊 Retornos Diarios",
+        "volatility": "📉 Volatilidad",
+        "performance": "📈 Performance",
+        "volume": "📊 Volumen",
+    }
+    chart_title = title_map.get(kind, "📊 Serie Temporal")
+    
+    if isinstance(df, pd.Series):
+        st.subheader(chart_title)
+        
+        # Crear gráfico mejorado con matplotlib para Series
+        fig, ax = plt.subplots(figsize=(14, 6))
+        
+        # Usar barras para retornos (más visual)
+        if kind == "returns" or "return" in str(chart_title).lower():
+            colors = ['#d62728' if x < 0 else '#2ca02c' for x in df.values]
+            ax.bar(df.index, df.values, width=1.5, color=colors, alpha=0.7, edgecolor='none')
+            ax.axhline(y=0, color='gray', linestyle='-', linewidth=1, alpha=0.5)
+        else:
+            ax.plot(df.index, df.values, linewidth=1.5, color='#2ca02c', alpha=0.8)
+            ax.fill_between(df.index, df.values, alpha=0.2, color='#2ca02c')
+        
+        # Mejorar el formato del eje X
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        
+        ax.set_xlabel('Fecha', fontsize=11, fontweight='bold')
+        ax.set_ylabel('Valor', fontsize=11, fontweight='bold')
+        ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5)
+        
+        # Rotar etiquetas del eje X
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        
+        # Ajustar márgenes
+        plt.subplots_adjust(bottom=0.15, left=0.08, right=0.98, top=0.95)
+        
+        st.pyplot(fig)
+        plt.close(fig)
+        
+    elif isinstance(df, pd.DataFrame):
+        st.subheader(chart_title)
+        
+        # Determinar qué columna graficar
+        if "value" in df.columns:
+            col_to_plot = "value"
+        elif "close" in df.columns:
+            col_to_plot = "close"
+        elif len(df.columns) > 0:
+            col_to_plot = df.columns[0]
+        else:
+            st.warning("⚠️ No se encontró columna para graficar")
+            return
+        
+        # Crear gráfico mejorado con matplotlib para DataFrame
+        fig, ax = plt.subplots(figsize=(14, 6))
+        
+        # Usar barras para retornos (más visual)
+        if kind == "returns" or "return" in col_to_plot.lower():
+            colors = ['#d62728' if x < 0 else '#2ca02c' for x in df[col_to_plot].values]
+            ax.bar(df.index, df[col_to_plot], width=1.5, color=colors, alpha=0.7, edgecolor='none')
+            ax.axhline(y=0, color='gray', linestyle='-', linewidth=1, alpha=0.5)
+        else:
+            ax.plot(df.index, df[col_to_plot], linewidth=1.5, color='#2ca02c', alpha=0.8)
+            ax.fill_between(df.index, df[col_to_plot], alpha=0.2, color='#2ca02c')
+        
+        # Mejorar el formato del eje X
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        
+        ax.set_xlabel('Fecha', fontsize=11, fontweight='bold')
+        ax.set_ylabel(col_to_plot.capitalize(), fontsize=11, fontweight='bold')
+        ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5)
+        
+        # Rotar etiquetas del eje X
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        
+        # Ajustar márgenes
+        plt.subplots_adjust(bottom=0.15, left=0.08, right=0.98, top=0.95)
+        
+        st.pyplot(fig)
+        plt.close(fig)
