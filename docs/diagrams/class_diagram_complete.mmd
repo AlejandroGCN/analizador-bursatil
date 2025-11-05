@@ -1,0 +1,306 @@
+```mermaid
+classDiagram
+    %% ============================================
+    %% CAPA DE EXTRACCIÓN DE DATOS
+    %% ============================================
+    
+    class DataExtractor {
+        -ExtractorConfig cfg
+        -BaseProvider source
+        +__init__(cfg)
+        +get_market_data(tickers, start, end, interval, kind)
+    }
+    
+    class ExtractorConfig {
+        +str source
+        +str interval
+        +int timeout
+        +str api_key
+        +str align
+    }
+    
+    %% ============================================
+    %% PATRÓN ADAPTER - BASE
+    %% ============================================
+    
+    class BaseAdapter {
+        <<abstract>>
+        +str name
+        +List~str~ allowed_intervals
+        +int timeout
+        +int max_workers
+        +download_symbol(symbol, start, end, interval)*
+        +get_symbols(symbols, start, end, interval)
+        -_download_symbols_parallel()
+        -_validate_ohlcv()
+    }
+    
+    %% ============================================
+    %% ADAPTERS CONCRETOS
+    %% ============================================
+    
+    class YahooAdapter {
+        +str name = "yahoo"
+        +allowed_intervals = ["1d","1h","1m","5m"...]
+        +bool supports_intraday = True
+        +download_symbol(symbol, start, end, interval)
+        -_download_with_yfinance()
+    }
+    
+    class BinanceAdapter {
+        +str name = "binance"
+        +allowed_intervals = ["1m","3m","5m"...]
+        +bool supports_intraday = True
+        +download_symbol(symbol, start, end, interval)
+        -_build_binance_url()
+    }
+    
+    class TiingoAdapter {
+        +str name = "tiingo"
+        +allowed_intervals = ["1d"]
+        +bool supports_intraday = False
+        -str api_key
+        +download_symbol(symbol, start, end, interval)
+        -_get_auth_headers()
+    }
+    
+    class StooqAdapter {
+        +str name = "stooq"
+        +allowed_intervals = ["1d","1wk","1mo"]
+        +download_symbol(symbol, start, end, interval)
+        -_resample_by_interval()
+    }
+    
+    %% ============================================
+    %% PATRÓN PROVIDER - BASE
+    %% ============================================
+    
+    class BaseProvider {
+        <<abstract>>
+        #BaseAdapter adapter
+        +str name
+        +get_symbols(symbols, start, end, interval, kind, align)
+        +get_data(symbol, start, end, interval, kind)
+        -_normalize_data()
+    }
+    
+    %% ============================================
+    %% PROVIDERS CONCRETOS
+    %% ============================================
+    
+    class YahooProvider {
+        -YahooAdapter adapter
+        +str name = "yahoo"
+    }
+    
+    class BinanceProvider {
+        -BinanceAdapter adapter
+        +str name = "binance"
+    }
+    
+    class TiingoProvider {
+        -TiingoAdapter adapter
+        +str name = "tiingo"
+    }
+    
+    class StooqProvider {
+        -StooqAdapter adapter
+        +str name = "stooq"
+    }
+    
+    %% ============================================
+    %% JERARQUÍA DE SERIES
+    %% ============================================
+    
+    class BaseSeries {
+        <<abstract>>
+        +str symbol
+        +str source
+        +pd.Series data
+        +to_dataframe()
+        +describe()
+    }
+    
+    class PriceSeries {
+        +pd.DataFrame data
+        +columns = ["open","high","low","close","volume"]
+        +get_ohlcv()
+    }
+    
+    class PerformanceSeries {
+        +str kind
+        +pd.Series data
+        +calculate_cumulative()
+    }
+    
+    class VolatilitySeries {
+        +int window
+        +int ann_factor
+        +pd.Series data
+    }
+    
+    class VolumeActivitySeries {
+        +int window
+        +pd.Series data
+    }
+    
+    %% ============================================
+    %% NORMALIZACIÓN
+    %% ============================================
+    
+    class Normalizer {
+        <<module>>
+        +normalize_ohlcv(df)
+        +normalizer_tipology(raw_frames, kind, source, align)
+        -_align_dict(dfs, align)
+        -_apply_fill(df, ffill, bfill)
+    }
+    
+    %% ============================================
+    %% REGISTRY
+    %% ============================================
+    
+    class Registry {
+        <<singleton>>
+        +Dict~str,Type~ REGISTRY
+        +register(name, provider_class)
+        +get_provider(name)
+    }
+    
+    %% ============================================
+    %% SIMULACIÓN
+    %% ============================================
+    
+    class Portfolio {
+        +str name
+        +List~str~ symbols
+        +List~float~ weights
+        +pd.DataFrame prices
+        +pd.DataFrame returns
+        +set_prices(prices_df)
+        +portfolio_return()
+        +portfolio_volatility()
+        +sharpe_ratio(risk_free_rate)
+        +monte_carlo_simulation(n_sims, horizon, initial_value)
+        +monte_carlo_simulation_individual(symbol, n_sims)
+        +report(risk_free_rate, include_warnings)
+        +plots_report(figsize, save_path)
+    }
+    
+    class MonteCarloSimulation {
+        <<static>>
+        +simulate_portfolio(return, volatility, n_sims, horizon, initial_value)
+        +simulate_asset(mean_return, volatility, n_sims, horizon)
+        +calculate_percentiles(simulation_results)
+        +plot_simulation(results, title, figsize)
+        +get_final_statistics(results)
+    }
+    
+    class MonteCarloParams {
+        <<dataclass>>
+        +int n_simulations
+        +int time_horizon
+        +float initial_value
+        +bool dynamic_volatility
+        +Optional~int~ random_seed
+    }
+    
+    %% ============================================
+    %% LIMPIEZA DE DATOS
+    %% ============================================
+    
+    class DataCleaner {
+        +clean_dataframe(df)
+        +validate(df)
+    }
+    
+    %% ============================================
+    %% REPORTING
+    %% ============================================
+    
+    class MonteCarloReporter {
+        <<static>>
+        +show_montecarlo_summary()
+        +show_portfolio_report(portfolio)
+        -_generate_report_markdown_cache()
+        -_generate_portfolio_plots_cache()
+    }
+    
+    %% ============================================
+    %% UI - BACKEND
+    %% ============================================
+    
+    class ServicesBackend {
+        <<module>>
+        +get_extractor(cfg_dict)
+        +fetch_market_data(cfg_dict, symbols, start, end, interval, kind)
+    }
+    
+    %% ============================================
+    %% HERENCIAS
+    %% ============================================
+    
+    BaseAdapter <|-- YahooAdapter : hereda
+    BaseAdapter <|-- BinanceAdapter : hereda
+    BaseAdapter <|-- TiingoAdapter : hereda
+    BaseAdapter <|-- StooqAdapter : hereda
+    
+    BaseProvider <|-- YahooProvider : hereda
+    BaseProvider <|-- BinanceProvider : hereda
+    BaseProvider <|-- TiingoProvider : hereda
+    BaseProvider <|-- StooqProvider : hereda
+    
+    BaseSeries <|-- PriceSeries : hereda
+    BaseSeries <|-- PerformanceSeries : hereda
+    BaseSeries <|-- VolatilitySeries : hereda
+    BaseSeries <|-- VolumeActivitySeries : hereda
+    
+    %% ============================================
+    %% COMPOSICIÓN Y DEPENDENCIAS
+    %% ============================================
+    
+    DataExtractor *-- ExtractorConfig : contiene
+    DataExtractor --> Registry : usa
+    DataExtractor --> BaseProvider : usa
+    
+    Registry --> BaseProvider : registra
+    
+    BaseProvider *-- BaseAdapter : contiene
+    BaseProvider --> Normalizer : usa
+    BaseProvider --> BaseSeries : crea
+    
+    YahooProvider *-- YahooAdapter : tiene
+    BinanceProvider *-- BinanceAdapter : tiene
+    TiingoProvider *-- TiingoAdapter : tiene
+    StooqProvider *-- StooqAdapter : tiene
+    
+    Normalizer --> PriceSeries : crea
+    Normalizer --> PerformanceSeries : crea
+    Normalizer --> VolatilitySeries : crea
+    Normalizer --> VolumeActivitySeries : crea
+    
+    Portfolio --> PriceSeries : usa
+    Portfolio --> MonteCarloSimulation : usa
+    
+    MonteCarloSimulation --> MonteCarloParams : usa
+    
+    MonteCarloReporter --> Portfolio : usa
+    MonteCarloReporter --> MonteCarloSimulation : usa
+    
+    ServicesBackend --> DataExtractor : usa
+    ServicesBackend --> DataCleaner : usa
+    
+    %% ============================================
+    %% ESTILOS
+    %% ============================================
+    
+    style DataExtractor fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    style BaseAdapter fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style BaseProvider fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style BaseSeries fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    style Portfolio fill:#f1f8e9,stroke:#33691e,stroke-width:3px
+    style MonteCarloSimulation fill:#f1f8e9,stroke:#33691e,stroke-width:3px
+    style Registry fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style Normalizer fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+```
+
