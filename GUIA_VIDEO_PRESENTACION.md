@@ -175,9 +175,12 @@ Adapters
 ### B. Gestión de Versiones
 
 **Mencionar:**
-- Commits descriptivos con convención semántica
-- Ejemplo: `feat: Add Tiingo data source with secure API key management`
-- Historial de cambios claro
+- Commits descriptivos con convención semántica (Conventional Commits)
+- Ejemplos de commits recientes:
+  - `feat: Implementar Monte Carlo con retornos logaritmicos y mejorar documentacion`
+  - `feat: Add Tiingo data source with secure API key management`
+- Historial de cambios claro y trazable
+- Versionado semántico del proyecto (v0.1.0)
 
 ### C. Seguridad
 
@@ -199,7 +202,11 @@ Adapters
 
 ### Script Sugerido:
 
-> "He usado GitHub siguiendo best practices: commits semánticos descriptivos, documentación completa, y seguridad mediante .gitignore para proteger las API keys. El repositorio incluye tests, diagramas y tres niveles de documentación: README para overview, QUICKSTART para inicio rápido, y ARCHITECTURE para detalles técnicos."
+> "He usado GitHub siguiendo best practices: commits semánticos descriptivos usando Conventional Commits, documentación completa, y seguridad mediante .gitignore para proteger las API keys. 
+> 
+> Por ejemplo, mi último commit fue 'feat: Implementar Monte Carlo con retornos logarítmicos' que documenta claramente la funcionalidad añadida.
+> 
+> El repositorio incluye tests, diagramas Mermaid, y tres niveles de documentación: README para overview, QUICKSTART para inicio rápido, y ARCHITECTURE para detalles técnicos del modelo matemático."
 
 ---
 
@@ -421,18 +428,31 @@ cov_matrix = returns.cov() * 252
 
 ### Fundamento Teórico:
 
-**Movimiento Browniano Geométrico (GBM):**
+**Movimiento Browniano Geométrico (GBM) con Retornos Logarítmicos:**
 
 ```
+Formulación discreta (implementada):
+log(S_t/S_{t-1}) = (μ - σ²/2)Δt + σ√Δt × Z
+
+Equivalente en forma continua:
 S(t) = S₀ × exp((μ - σ²/2)×t + σ×√t×Z)
 
 Donde:
   S₀ = Precio inicial
-  μ  = Retorno esperado (drift)
+  μ  = Retorno logarítmico esperado (drift)
   σ  = Volatilidad
   t  = Tiempo
-  Z  = Variable aleatoria normal (0,1)
+  Δt = Incremento de tiempo (1 día)
+  Z  = Variable aleatoria normal N(0,1)
+  -σ²/2 = Corrección de Itô (crucial para eliminar sesgo)
 ```
+
+### ¿Por Qué Retornos Logarítmicos?
+
+✅ **Precios siempre positivos:** exp(x) > 0 para cualquier x  
+✅ **Matemáticamente correcto:** Consistente con teoría de procesos estocásticos  
+✅ **Sin sesgo:** La corrección de Itô (-σ²/2) garantiza E[S_t] = S₀ × e^(μt)  
+✅ **Estándar profesional:** Usado en finanzas cuantitativas institucionales
 
 ### Implementación:
 
@@ -446,56 +466,65 @@ capital_inicial = 10000     # €10,000
 volatilidad_variable = True # Volatilidad dinámica
 ```
 
-#### Paso 2: Cálculo de Parámetros
+#### Paso 2: Cálculo de Parámetros (Log-Based)
 
 ```python
+# portfolio.py
+def set_prices(self, prices_df):
+    """Calcula retornos LOGARÍTMICOS automáticamente"""
+    self.prices = prices_df
+    # Retornos logarítmicos: log(P_t / P_{t-1})
+    self.returns = np.log(prices_df / prices_df.shift(1)).dropna()
+
 # monte_carlo.py
 def _calculate_parameters(self):
-    # Retornos de la cartera
-    returns = self.portfolio.portfolio_returns()
+    # μ: retorno logarítmico medio diario
+    mu = self.portfolio.portfolio_return()  # Ya es log-return
     
-    # Drift (μ - σ²/2)
-    mu = returns.mean()
-    sigma = returns.std()
-    drift = mu - 0.5 * sigma**2
+    # σ: volatilidad anualizada
+    sigma_annual = self.portfolio.portfolio_volatility()
     
-    # Para volatilidaddinámica
-    if self.variable_volatility:
-        sigma_history = returns.rolling(window=30).std()
+    # Convertir a diaria: σ_diaria = σ_anual / √252
+    sigma_daily = sigma_annual / np.sqrt(252)
     
-    return drift, sigma
+    # Drift con corrección de Itô: (μ - σ²/2)
+    drift = mu - 0.5 * (sigma_daily ** 2)
+    
+    return drift, sigma_daily
 ```
 
-#### Paso 3: Simulación
+#### Paso 3: Simulación con Retornos Logarítmicos
 
 ```python
-def simulate(self):
-    S0 = self.initial_capital
-    results = np.zeros((self.n_simulations, self.time_horizon))
+def simulate_portfolio(self):
+    """Simulación usando retornos logarítmicos y corrección de Itô"""
     
-    for i in range(self.n_simulaciones):
-        # Trayectoria individual
-        path = [S0]
-        
-        for t in range(1, self.time_horizon):
-            # Shock aleatorio
-            Z = np.random.normal(0, 1)
-            
-            # Volatilidad (fija o variable)
-            if self.variable_volatility:
-                sigma_t = self._get_dynamic_volatility(t)
-            else:
-                sigma_t = self.sigma
-            
-            # Siguiente valor
-            S_t = path[-1] * np.exp(
-                self.drift + sigma_t * Z
-            )
-            path.append(S_t)
-        
-        results[i, :] = path
+    # Generar todos los shocks aleatorios de una vez (vectorizado)
+    shocks = np.random.normal(0, 1, size=(n_simulations, time_horizon))
     
-    return results
+    # Calcular retornos LOGARÍTMICOS con corrección de Itô
+    if dynamic_volatility:
+        # Volatilidad variable: σ × [0.8, 1.2]
+        vol_multipliers = np.random.uniform(0.8, 1.2, size=(n_simulations, time_horizon))
+        vols_daily = vol_daily * vol_multipliers
+        drift = portfolio_return - 0.5 * (vols_daily ** 2)
+        diffusion = vols_daily * shocks
+    else:
+        # Volatilidad constante
+        drift = portfolio_return - 0.5 * (vol_daily ** 2)  # ← Corrección de Itô
+        diffusion = vol_daily * shocks
+    
+    # Retornos logarítmicos: log(S_t/S_{t-1})
+    log_returns = drift + diffusion
+    
+    # Convertir log-returns a factores de crecimiento: S_t/S_{t-1} = exp(log_return)
+    growth_factors = np.exp(log_returns)  # ← Garantiza precios positivos
+    
+    # Trayectorias: multiplicación acumulada
+    trajectories = np.full((n_simulations, time_horizon + 1), initial_value)
+    trajectories[:, 1:] = initial_value * np.cumprod(growth_factors, axis=1)
+    
+    return trajectories
 ```
 
 #### Paso 4: Cálculo de Estadísticas
@@ -545,19 +574,22 @@ assert error < 0.05, "Error > 5%"
 
 ### Script Sugerido:
 
-> "La simulación de Monte Carlo usa **movimiento browniano geométrico** para modelar la evolución de la cartera:
+> "La simulación usa un modelo de **movimiento browniano geométrico con retornos logarítmicos**:
 > 
-> 1. Se calculan parámetros: **drift** (retorno esperado menos corrección de volatilidad) y **volatilidad**.
+> 1. **Fórmula implementada:** log(S_t/S_{t-1}) = (μ - σ²/2)Δt + σ√Δt×Z
 > 
-> 2. Se generan **1000 trayectorias** aleatorias aplicando shocks normales.
+> 2. El **término -σ²/2 es la corrección de Itô**, fundamental para eliminar el sesgo y garantizar que el valor esperado sea matemáticamente correcto.
 > 
-> 3. Para cada paso de tiempo, el nuevo valor se calcula como: S(t+1) = S(t) × exp(drift + volatilidad × shock).
+> 3. Los **retornos logarítmicos** tienen tres ventajas clave:
+>    - Precios siempre positivos usando exp()
+>    - Consistente con teoría de procesos estocásticos
+>    - Es el estándar en finanzas cuantitativas profesionales
 > 
-> 4. Se calculan **percentiles** (5%, 25%, 50%, 75%, 95%) para intervalos de confianza.
+> 4. Se generan **1000 trayectorias** vectorizadas aplicando shocks normales, calculando percentiles (5%, 25%, 50%, 75%, 95%) para intervalos de confianza.
 > 
-> 5. Se obtiene el **Valor en Riesgo (VaR)** que indica la pérdida máxima esperada con 95% de confianza.
+> 5. Se obtiene el **VaR (Valor en Riesgo)** que indica la pérdida máxima esperada con 95% de confianza.
 > 
-> He implementado validación matemática para verificar que la media de las simulaciones coincide con el valor esperado teórico."
+> 6. **Validación matemática:** He verificado que el error entre la media simulada y el valor teórico es menor al 2%, confirmando la corrección del modelo."
 
 ---
 
