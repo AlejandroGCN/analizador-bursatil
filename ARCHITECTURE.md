@@ -351,14 +351,25 @@ graph LR
 - Retorno esperado y volatilidad
 - Ratio de Sharpe
 
-### 🎲 **Simulación Monte Carlo**
-- Trayectorias de precios simuladas basadas en movimiento browniano geométrico
+### 🎲 **Simulación Monte Carlo (Log-Based)**
+- **Modelo de Movimiento Browniano Geométrico (GBM)** con retornos logarítmicos
+- **Fórmula matemática**: `log(S_t/S_{t-1}) = (μ - σ²/2)Δt + σ√Δt × Z`
+  - μ: retorno logarítmico medio (drift)
+  - σ: volatilidad
+  - Δt: incremento de tiempo (1 día)
+  - Z ~ N(0,1): shock aleatorio normal estándar
+- **Corrección de Itô** (-σ²/2): Ajuste de convexidad que asegura E[S_t] = S_0 × e^(μt)
+- Trayectorias de precios simuladas usando `exp(log_returns)` para garantizar precios positivos
 - Intervalos de confianza (percentiles 5%, 25%, 50%, 75%, 95%)
 - Análisis de percentiles y estadísticas finales
 - Visualización interactiva con gráficos de trayectorias
-- **Validación matemática**: Fórmula correcta que garantiza coherencia entre retorno esperado (diario) y retorno simulado
-- **Conversión correcta de unidades**: Volatilidad anualizada convertida a diaria usando √252, retornos diarios usados directamente
+- **Validación matemática**: 
+  - Retornos históricos calculados como logarítmicos: `np.log(P_t / P_{t-1})`
+  - Simulación usa los mismos retornos logarítmicos para coherencia
+  - Conversión correcta: volatilidad anualizada → diaria usando `σ_anual / √252`
 - **Precisión verificada**: Logging detallado permite validar que valor final medio coincide con retorno esperado teórico
+
+> 📘 **Documentación técnica completa**: [docs/MONTE_CARLO_LOG_RETURNS.md](docs/MONTE_CARLO_LOG_RETURNS.md)
 
 ## Tecnologías y Dependencias
 
@@ -526,10 +537,21 @@ DEBUG_LOGGING_ENABLED = True  # Activar para análisis
 
 #### Validación Matemática Implementada
 
-**Simulación Monte Carlo:**
-- **Fórmula validada**: `retorno_diario = μ_diario + σ_diaria × shock`
-  - Donde μ_diario es el retorno esperado diario calculado
-  - σ_diaria se obtiene de volatilidad anualizada: `σ_anual / √252`
-  - shock ~ N(0,1) son valores aleatorios normalmente distribuidos
-- **Garantía de coherencia**: El valor final medio de la simulación coincide con el retorno esperado teórico
+**Simulación Monte Carlo (Log-Based):**
+- **Modelo GBM con retornos logarítmicos**: `log(S_t/S_{t-1}) = (μ - σ²/2)Δt + σ√Δt × Z`
+  - **Drift ajustado**: μ - σ²/2 (corrección de Itô para eliminar sesgo)
+  - **Término de difusión**: σ√Δt × Z donde Z ~ N(0,1)
+  - **Factores de crecimiento**: S_t/S_{t-1} = exp(log_return)
+- **Conversión de unidades**:
+  - Volatilidad: σ_diaria = σ_anual / √252
+  - Retornos: Se usan retornos logarítmicos diarios directamente
+- **Garantía de coherencia**: 
+  - E[S_t] = S_0 × e^(μt) gracias a la corrección de Itô
+  - El valor final medio de la simulación coincide con el retorno esperado teórico
+- **Ventajas del modelo log-based**:
+  - Precios siempre positivos (exp(x) > 0 ∀x)
+  - Matemáticamente consistente con procesos estocásticos continuos
+  - Elimina posibilidad de precios negativos con alta volatilidad
 - **Verificación automática**: Los logs permiten comparar valores esperados vs observados
+
+> 📘 Ver explicación completa del modelo en [docs/MONTE_CARLO_LOG_RETURNS.md](docs/MONTE_CARLO_LOG_RETURNS.md)

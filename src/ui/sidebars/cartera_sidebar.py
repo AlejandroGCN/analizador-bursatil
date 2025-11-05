@@ -222,7 +222,7 @@ def _validate_weights_sum(symbols_list: list[str]) -> Tuple[list[float], bool]:
         st.error(
             f"❌ **Los pesos deben sumar exactamente 100%**\n\n"
             f"📊 **Suma actual:** {total_pct:.1f}%\n\n"
-            f"Por favor, ajusta los porcentajes en el sidebar."
+            f"Por favor, ajusta los porcentajes en el panel lateral."
         )
         return weights, False
     

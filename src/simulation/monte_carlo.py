@@ -29,8 +29,19 @@ class MonteCarloSimulation:
     """
     Clase para realizar simulaciones Monte Carlo de evolución de carteras.
     
-    Usa el modelo de movimiento browniano geométrico para simular 
-    trayectorias de precios.
+    Implementa el modelo de Movimiento Browniano Geométrico (GBM) usando
+    retornos logarítmicos para simular trayectorias de precios.
+    
+    El modelo matemático es:
+        log(S_t/S_{t-1}) = (μ - σ²/2)Δt + σ√Δt × Z
+    
+    donde:
+        - μ: retorno logarítmico medio (drift)
+        - σ: volatilidad
+        - Δt: incremento de tiempo (1 día)
+        - Z ~ N(0,1): shock aleatorio normal estándar
+    
+    El término -σ²/2 es la corrección de Itô que asegura que E[S_t] = S_0 * e^(μt).
     """
     
     @staticmethod
@@ -44,19 +55,27 @@ class MonteCarloSimulation:
         random_seed: Optional[int] = None
     ) -> pd.DataFrame:
         """
-        Simula la evolución de una cartera usando Monte Carlo (OPTIMIZADO con vectorización).
+        Simula la evolución de una cartera usando Monte Carlo con retornos logarítmicos.
+        
+        Implementa el modelo de Movimiento Browniano Geométrico (GBM):
+            log(S_t/S_{t-1}) = (μ - σ²/2)Δt + σ√Δt × Z
+        
+        donde el término -σ²/2 es la corrección de Itô que asegura que la media
+        de los precios simulados sea consistente con el drift esperado.
         
         Args:
-            portfolio_return: Retorno esperado de la cartera (diario)
+            portfolio_return: Retorno logarítmico medio diario de la cartera (drift μ)
             portfolio_volatility: Volatilidad de la cartera (anualizada)
-            n_simulations: Número de simulaciones
+            n_simulations: Número de simulaciones a realizar
             time_horizon: Horizonte temporal en días
             initial_value: Valor inicial de la cartera
-            dynamic_volatility: Si True, usa volatilidad variable
-            random_seed: Semilla para reproducibilidad
+            dynamic_volatility: Si True, usa volatilidad variable entre [0.8σ, 1.2σ]
+            random_seed: Semilla para reproducibilidad de resultados
         
         Returns:
             DataFrame con las simulaciones (filas = simulaciones, columnas = días)
+            La columna 0 contiene el valor inicial, las columnas 1 a time_horizon
+            contienen los valores simulados para cada día.
         """
         logger.debug("🎲 MonteCarloSimulation.simulate_portfolio")
         logger.debug(f"  Inputs: ret={portfolio_return:.8f}, vol={portfolio_volatility:.6f}")
@@ -86,20 +105,35 @@ class MonteCarloSimulation:
         shocks = rng.normal(0, 1, size=(n_simulations, time_horizon))
         logger.debug(f"  Shocks generados: media={shocks.mean():.6f}, std={shocks.std():.6f}")
         
-        # Calcular retornos de forma vectorizada
-        # portfolio_return ya es DIARIO, así que lo usamos directamente
-        # Fórmula: retorno_diario = μ_diario + σ_diaria × shock
-        # donde μ_diario es el retorno esperado diario y shock ~ N(0,1)
-        if dynamic_volatility:
-            returns = portfolio_return + vols_daily * shocks
-        else:
-            returns = portfolio_return + vol_daily * shocks
-        logger.debug(f"  Retornos simulados: media={returns.mean():.8f}, std={returns.std():.8f}")
-        logger.debug(f"  Retornos - min={returns.min():.8f}, max={returns.max():.8f}")
+        # Calcular retornos LOGARÍTMICOS de forma vectorizada
+        # Modelo de Movimiento Browniano Geométrico (GBM):
+        # log(S_t/S_{t-1}) = (μ - σ²/2)Δt + σ√Δt × Z
+        # donde Δt = 1 día, μ es el drift, σ es volatilidad, Z ~ N(0,1)
+        #
+        # Nota: portfolio_return ya es el retorno logarítmico medio diario calculado
+        # de los datos históricos, así que representa el drift estimado μ
         
-        # Calcular trayectorias usando cumprod
-        # Necesitamos convertir retornos a factores de crecimiento
-        growth_factors = 1 + returns
+        if dynamic_volatility:
+            # Término de drift ajustado por volatilidad (corrección de Itô)
+            drift = portfolio_return - 0.5 * (vols_daily ** 2)
+            # Término de difusión (shock estocástico)
+            diffusion = vols_daily * shocks
+            # Retorno logarítmico total
+            log_returns = drift + diffusion
+        else:
+            # Término de drift ajustado por volatilidad (corrección de Itô)
+            drift = portfolio_return - 0.5 * (vol_daily ** 2)
+            # Término de difusión (shock estocástico)
+            diffusion = vol_daily * shocks
+            # Retorno logarítmico total
+            log_returns = drift + diffusion
+        
+        logger.debug(f"  Retornos logarítmicos simulados: media={log_returns.mean():.8f}, std={log_returns.std():.8f}")
+        logger.debug(f"  Retornos log - min={log_returns.min():.8f}, max={log_returns.max():.8f}")
+        
+        # Convertir retornos logarítmicos a factores de crecimiento
+        # S_t / S_{t-1} = exp(log_return)
+        growth_factors = np.exp(log_returns)
         logger.debug(f"  Factores de crecimiento: media={growth_factors.mean():.6f}")
         logger.debug(f"  Factores - min={growth_factors.min():.6f}, max={growth_factors.max():.6f}")
         

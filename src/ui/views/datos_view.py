@@ -264,8 +264,17 @@ def _handle_form_submit(params: DatosParams) -> None:
         
         st.success(f"✅ **Datos descargados exitosamente**: {len(data_map)} símbolo(s) disponible(s)")
         
+    except SymbolNotFound as e:
+        # Error esperado: símbolo no existe - solo log simple sin traceback
+        logger.warning(f"❌ Símbolo no encontrado: {e.symbol} en {e.source}")
+        _handle_extraction_error(e, params)
+    except ExtractionError as e:
+        # Error esperado: problema de extracción - log simple
+        logger.warning(f"⚠️ Error de extracción: {str(e)}")
+        _handle_extraction_error(e, params)
     except Exception as e:
-        logger.error(f"Error obteniendo datos: {e}", exc_info=True)
+        # Error inesperado: log con traceback completo
+        logger.error(f"💥 Error inesperado obteniendo datos: {e}", exc_info=True)
         _handle_extraction_error(e, params)
 
 

@@ -117,7 +117,7 @@ def sidebar_montecarlo() -> Tuple[bool, MonteCarloParams]:
         submitted = st.form_submit_button(
             "💼 Lanzar simulación (Cartera)" if tipo_simulacion == "cartera" 
             else "📊 Lanzar simulación (Individual)",
-            use_container_width=True
+            width='stretch'
         )
         
         # Validar que si es individual, haya un símbolo seleccionado

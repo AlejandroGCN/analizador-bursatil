@@ -30,7 +30,7 @@ def error_boundary(func: Callable, *args, **kwargs) -> Any:
     except ExtractionError as e:
         st.error(f"⚠️ **Error de extracción**: {e.message}")
         if "API key" in e.message and "Tiingo" in e.message:
-            st.info("💡 **Solución**: Configura tu API key de Tiingo (ver TIINGO_SETUP.md)")
+            st.info("💡 **Solución**: Configura tu API key de Tiingo")
             st.code("Obtén tu API key gratuita en: https://www.tiingo.com/\nLuego configura: export TIINGO_API_KEY='tu_key'")
         elif "timeout" in e.message.lower():
             st.info("💡 **Solución**: Verifica tu conexión a Internet y vuelve a intentar")
