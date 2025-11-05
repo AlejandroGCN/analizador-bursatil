@@ -1,0 +1,163 @@
+classDiagram
+    %% ============================================
+    %% DIAGRAMA SIMPLIFICADO - HERENCIAS Y DEPENDENCIAS CLAVE
+    %% ============================================
+    
+    %% CAPA DE FACHADA
+    class DataExtractor {
+        -config: ExtractorConfig
+        -provider: BaseProvider
+        +get_market_data(symbols, start, end, interval)
+    }
+    
+    %% PATRÓN ADAPTER - JERARQUÍA PRINCIPAL
+    class BaseAdapter {
+        <<abstract>>
+        +name: str
+        +allowed_intervals: List
+        +download_symbol()*
+        +get_symbols()
+    }
+    
+    class YahooAdapter {
+        +download_symbol()
+    }
+    
+    class BinanceAdapter {
+        +download_symbol()
+    }
+    
+    class TiingoAdapter {
+        -api_key: str
+        +download_symbol()
+    }
+    
+    %% PATRÓN PROVIDER - JERARQUÍA PRINCIPAL
+    class BaseProvider {
+        <<abstract>>
+        #adapter: BaseAdapter
+        +get_symbols()
+        +get_data()
+    }
+    
+    class YahooProvider {
+        -adapter: YahooAdapter
+    }
+    
+    class BinanceProvider {
+        -adapter: BinanceAdapter
+    }
+    
+    class TiingoProvider {
+        -adapter: TiingoAdapter
+    }
+    
+    %% JERARQUÍA DE SERIES
+    class BaseSeries {
+        <<abstract>>
+        +symbol: str
+        +source: str
+        +data: DataFrame
+    }
+    
+    class PriceSeries {
+        +get_ohlcv()
+    }
+    
+    class PerformanceSeries {
+        +calculate_cumulative()
+    }
+    
+    class VolatilitySeries {
+        +rolling_volatility()
+    }
+    
+    %% NORMALIZACIÓN
+    class Normalizer {
+        <<module>>
+        +normalize_ohlcv()
+        +align_series()
+    }
+    
+    %% SIMULACIÓN
+    class Portfolio {
+        +symbols: List
+        +weights: List
+        +prices: DataFrame
+        +returns: DataFrame
+        +set_prices()
+        +portfolio_return()
+        +portfolio_volatility()
+        +monte_carlo_simulation()
+    }
+    
+    class MonteCarloSimulation {
+        <<static>>
+        +simulate_portfolio()
+        +calculate_percentiles()
+        +plot_simulation()
+    }
+    
+    %% ============================================
+    %% HERENCIAS (Líneas gruesas hacia arriba)
+    %% ============================================
+    
+    BaseAdapter <|-- YahooAdapter
+    BaseAdapter <|-- BinanceAdapter
+    BaseAdapter <|-- TiingoAdapter
+    
+    BaseProvider <|-- YahooProvider
+    BaseProvider <|-- BinanceProvider
+    BaseProvider <|-- TiingoProvider
+    
+    BaseSeries <|-- PriceSeries
+    BaseSeries <|-- PerformanceSeries
+    BaseSeries <|-- VolatilitySeries
+    
+    %% ============================================
+    %% COMPOSICIÓN (Diamantes llenos)
+    %% ============================================
+    
+    DataExtractor *-- BaseProvider
+    
+    YahooProvider *-- YahooAdapter
+    BinanceProvider *-- BinanceAdapter
+    TiingoProvider *-- TiingoAdapter
+    
+    %% ============================================
+    %% DEPENDENCIAS (Flechas punteadas)
+    %% ============================================
+    
+    DataExtractor ..> Normalizer : usa
+    BaseProvider ..> Normalizer : usa
+    BaseProvider ..> BaseSeries : crea
+    
+    Portfolio ..> PriceSeries : usa
+    Portfolio ..> MonteCarloSimulation : usa
+    
+    %% ============================================
+    %% ESTILOS - COLORES POR CAPA
+    %% ============================================
+    
+    style DataExtractor fill:#4fc3f7,stroke:#01579b,stroke-width:4px,color:#000
+    
+    style BaseAdapter fill:#ffb74d,stroke:#e65100,stroke-width:3px,color:#000
+    style YahooAdapter fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000
+    style BinanceAdapter fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000
+    style TiingoAdapter fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000
+    
+    style BaseProvider fill:#ba68c8,stroke:#4a148c,stroke-width:3px,color:#000
+    style YahooProvider fill:#e1bee7,stroke:#4a148c,stroke-width:2px,color:#000
+    style BinanceProvider fill:#e1bee7,stroke:#4a148c,stroke-width:2px,color:#000
+    style TiingoProvider fill:#e1bee7,stroke:#4a148c,stroke-width:2px,color:#000
+    
+    style BaseSeries fill:#4db6ac,stroke:#004d40,stroke-width:3px,color:#000
+    style PriceSeries fill:#b2dfdb,stroke:#004d40,stroke-width:2px,color:#000
+    style PerformanceSeries fill:#b2dfdb,stroke:#004d40,stroke-width:2px,color:#000
+    style VolatilitySeries fill:#b2dfdb,stroke:#004d40,stroke-width:2px,color:#000
+    
+    style Portfolio fill:#aed581,stroke:#33691e,stroke-width:4px,color:#000
+    style MonteCarloSimulation fill:#c5e1a5,stroke:#33691e,stroke-width:3px,color:#000
+    
+    style Normalizer fill:#81c784,stroke:#1b5e20,stroke-width:3px,color:#000
+
