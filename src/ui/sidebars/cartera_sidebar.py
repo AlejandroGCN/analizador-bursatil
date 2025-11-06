@@ -272,7 +272,7 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
         st.number_input(
             "Valor inicial de la cartera ($)",
             100.0,
-            1_000_000.0,
+            100_000_000.0,  # Límite: 100 millones (cubre individual + institucional)
             DEFAULT_INITIAL_VALUE,
             step=1000.0,
             key="cartera_valor_inicial"
