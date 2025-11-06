@@ -391,15 +391,17 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """Contenido central de la pestaña 📊 Datos."""
     st.subheader("📊 Vista de datos")
     
-    # CSS para ocultar elementos del formulario
+    # CSS para quitar bordes del formulario y ocultar botón Submit del panel central
     st.markdown("""
         <style>
-        div[data-testid="stFormSubmitButton"] {
-            display: none !important;
-        }
+        /* Quitar bordes de todos los formularios */
         div[data-testid="stForm"] {
             border: none !important;
             padding: 0 !important;
+        }
+        /* Ocultar solo el botón del formulario central (no los del sidebar) */
+        section[data-testid="stMain"] div[data-testid="stFormSubmitButton"] {
+            display: none !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -412,14 +414,14 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
             help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Tras escribir, pulsa **Enter** para descargar los datos automáticamente.",
             placeholder="AAPL, MSFT, GOOGL"
         )
-        # Botón oculto (necesario para que Enter funcione)
+        # Botón oculto con CSS (necesario para que Enter funcione)
         form_submitted = st.form_submit_button("Submit")
     
     # Si se pulsa Enter, construir params y activar descarga
     if form_submitted:
         simbolos_texto = st.session_state.get("datos_simbolos", "")
         if simbolos_texto and simbolos_texto.strip():
-            # Construir params desde session_state
+            # Construir params desde session_state (lee parámetros actuales del sidebar)
             from ui.sidebars import DatosParams
             import pandas as pd
             params = DatosParams(
@@ -430,7 +432,9 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
                 intervalo=st.session_state.get("intervalo_datos", "1d"),
                 tipo=st.session_state.get("tipo_datos", "Precios Históricos")
             )
-            submit = True
+            # Activar descarga directamente
+            _handle_form_submit(params)
+            return  # Salir para evitar procesamiento adicional
         else:
             st.error("❌ **Error:** Debes ingresar al menos un símbolo antes de descargar datos.")
     

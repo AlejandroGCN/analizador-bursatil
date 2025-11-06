@@ -258,8 +258,8 @@ def display_symbol_info(contexto: str = "datos") -> None:
         
         **📥 Para obtener los datos:**
         1. Introduce los símbolos en el campo de texto arriba
-        2. Configura las fechas e intervalo en el **panel lateral** si es necesario
-        3. Tras escribir los símbolos, pulsa **Enter** para descargar automáticamente
+        2. Opcionalmente, ajusta fechas e intervalo en el **panel lateral**
+        3. Tras escribir los símbolos, pulsa **Enter** para descargar
         
         **Ejemplos válidos:**
         - Yahoo Finance: `AAPL, MSFT, GOOGL, TSLA`

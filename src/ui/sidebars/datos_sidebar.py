@@ -43,30 +43,44 @@ def _get_allowed_intervals_for_source(source_key: str) -> List[str]:
             if hasattr(provider, 'adapter') and hasattr(provider.adapter, 'allowed_intervals'):
                 intervals = list(provider.adapter.allowed_intervals)
                 
-                # Ordenar intervalos: primero diarios, luego intradía
-                daily_order = ["1d", "1wk", "1w", "1mo", "1M", "3d"]
-                intraday_order = ["1h", "2h", "4h", "6h", "8h", "12h", "30m", "15m", "5m", "3m", "1m", "60m", "90m"]
+                # Ordenar intervalos de MAYOR a MENOR
+                interval_order = [
+                    "1mo", "1M",           # Mensual
+                    "1wk", "1w",           # Semanal
+                    "3d",                  # 3 días
+                    "1d",                  # Diario
+                    "12h",                 # 12 horas
+                    "8h",                  # 8 horas
+                    "6h",                  # 6 horas
+                    "4h",                  # 4 horas
+                    "2h",                  # 2 horas
+                    "90m",                 # 90 minutos
+                    "1h",                  # 1 hora
+                    "60m",                 # 60 minutos
+                    "30m",                 # 30 minutos
+                    "15m",                 # 15 minutos
+                    "5m",                  # 5 minutos
+                    "3m",                  # 3 minutos
+                    "1m"                   # 1 minuto
+                ]
                 
-                # Separar en diarios e intradía
-                daily = [i for i in intervals if i in daily_order]
-                intraday = [i for i in intervals if i in intraday_order]
-                others = [i for i in intervals if i not in daily_order and i not in intraday_order]
+                # Ordenar según el orden definido (mayor a menor)
+                sorted_intervals = sorted(
+                    intervals, 
+                    key=lambda x: interval_order.index(x) if x in interval_order else 999
+                )
                 
-                # Ordenar según el orden definido
-                daily_sorted = sorted(daily, key=lambda x: daily_order.index(x) if x in daily_order else 999)
-                intraday_sorted = sorted(intraday, key=lambda x: intraday_order.index(x) if x in intraday_order else 999)
-                
-                return daily_sorted + intraday_sorted + others
+                return sorted_intervals
     except Exception as e:
         # Fallback: usar valores por defecto si no se puede obtener el adaptador
         import logging
         logger = logging.getLogger(__name__)
         logger.debug(f"No se pudo obtener intervalos dinámicos para {source_key}: {e}")
     
-    # Valores por defecto según fuente conocida (solo como fallback)
+    # Valores por defecto según fuente conocida (ordenados de mayor a menor)
     default_intervals = {
-        "yahoo": ["1d", "1wk", "1mo", "1h", "1m", "5m", "15m", "30m", "60m", "90m"],
-        "binance": ["1d", "3d", "1w", "1M", "1h", "2h", "4h", "6h", "8h", "12h", "30m", "15m", "5m", "3m", "1m"],
+        "yahoo": ["1mo", "1wk", "1d", "90m", "1h", "60m", "30m", "15m", "5m", "1m"],
+        "binance": ["1M", "1w", "3d", "1d", "12h", "8h", "6h", "4h", "2h", "1h", "30m", "15m", "5m", "3m", "1m"],
         "tiingo": ["1d"]  # Tiingo free tier solo soporta datos diarios
     }
     
@@ -115,6 +129,21 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
     
     st.sidebar.markdown("---")
     
+    # Mensajes informativos FUERA del formulario para no ocupar espacio
+    fuente_actual = st.session_state.get("fuente_datos", available_sources[0])
+    intervalo_actual = st.session_state.get("intervalo_datos", "1d")
+    is_intraday = intervalo_actual in ["1m", "5m", "15m", "30m", "1h", "2h", "4h", "60m", "90m"]
+    
+    if fuente_actual == "Tiingo" and "Tiingo" in available_sources:
+        st.sidebar.info("ℹ️ Tiingo: Datos diarios de calidad institucional")
+    elif fuente_actual == "Binance":
+        st.sidebar.info("ℹ️ Binance: Datos intradía desde 1 minuto")
+    elif fuente_actual == "Yahoo":
+        if is_intraday:
+            st.sidebar.warning("⚠️ **Intradía**: Máximo 7 días")
+        else:
+            st.sidebar.info("ℹ️ Yahoo: Datos históricos sin límite")
+    
     # Formulario principal (SIDEBAR - widgets dentro del form NO usan .sidebar)
     with st.sidebar.form("form_datos"):
         st.selectbox("Fuente de datos:", available_sources, key="fuente_datos")
@@ -126,40 +155,26 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
         intervalos_por_fuente = _get_available_intervals_by_source()
         
         # Leer fuente actual del session state
-        fuente_actual = st.session_state.get("fuente_datos", available_sources[0])
-        intervalos_disponibles = intervalos_por_fuente.get(fuente_actual, ["1d"])
+        fuente_form = st.session_state.get("fuente_datos", available_sources[0])
+        intervalos_disponibles = intervalos_por_fuente.get(fuente_form, ["1d"])
         
         # Validar que el intervalo seleccionado sigue disponible después de cambiar de fuente
-        intervalo_actual = st.session_state.get("intervalo_datos", "1d")
-        if intervalo_actual not in intervalos_disponibles:
+        intervalo_form = st.session_state.get("intervalo_datos", "1d")
+        if intervalo_form not in intervalos_disponibles:
             st.session_state["intervalo_datos"] = "1d"
-            intervalo_actual = "1d"
-        
-        # Detectar si es intervalo intradiario
-        is_intraday = intervalo_actual in ["1m", "5m", "15m", "30m", "1h", "2h", "4h", "60m", "90m"]
-        
-        if fuente_actual == "Tiingo" and "Tiingo" in available_sources:
-            st.info("ℹ️ Tiingo: Datos diarios de calidad institucional (70+ exchanges)")
-        elif fuente_actual == "Binance":
-            st.info("ℹ️ Binance: Datos intradía desde 1 minuto")
-        elif fuente_actual == "Yahoo":
-            if is_intraday:
-                st.warning("⚠️ **Intradía (Yahoo)**: Limita las fechas a **máximo 7 días** para obtener datos.")
-                st.info("💡 Ejemplo: Desde hoy menos 7 días hasta hoy")
-            else:
-                st.info("ℹ️ Yahoo: Datos diarios, semanales y mensuales sin límite de fechas")
+            intervalo_form = "1d"
         
         # Mostrar solo intervalos realmente disponibles para esta fuente
         index_default = 0
-        if intervalo_actual in intervalos_disponibles:
-            index_default = intervalos_disponibles.index(intervalo_actual)
+        if intervalo_form in intervalos_disponibles:
+            index_default = intervalos_disponibles.index(intervalo_form)
         
         st.selectbox(
             "Intervalo", 
             intervalos_disponibles, 
             key="intervalo_datos",
             index=index_default,
-            help=f"{len(intervalos_disponibles)} intervalos disponibles para {fuente_actual}. 1d=diario, 1h=horario, 1m=minuto."
+            help=f"{len(intervalos_disponibles)} intervalos disponibles. 1d=diario, 1h=horario."
         )
         st.selectbox(
             "Tipo", 
