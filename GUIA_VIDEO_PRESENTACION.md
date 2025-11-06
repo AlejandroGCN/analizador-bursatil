@@ -4,17 +4,31 @@ Esta guía te ayudará a responder todas las preguntas del proyecto de forma cla
 
 ---
 
-## 📋 Estructura del Vídeo (Minutaje)
+## 📋 Estructura del Vídeo (Minutaje Optimizado)
+
+### Distribución por Preguntas Requeridas:
 
 ```
-00:00 - 00:30  Introducción y demostración rápida
-00:30 - 01:30  Estructura del proyecto y arquitectura
-01:30 - 02:00  Uso de GitHub
-02:00 - 02:30  Unificación de datos de APIs
-02:30 - 03:30  Construcción de cartera y Monte Carlo
-03:30 - 04:30  Sistema de reportes
-04:30 - 05:00  Conclusión y tecnologías
+00:00 - 00:20  Introducción rápida
+00:20 - 01:00  ❶ Estructura: Herencias y dependencias (40s)
+01:00 - 01:30  ❷ Uso de GitHub (30s)
+01:30 - 02:00  ❸ Unificación de formatos de APIs (30s)
+02:00 - 02:30  ❹ Construcción de cartera (30s)
+02:30 - 03:30  ❺ Implementación Monte Carlo (60s)
+03:30 - 04:30  ❻ Contenido del reporte y criterios (60s)
+04:30 - 05:00  Conclusión y tecnologías (30s)
 ```
+
+### Prioridades:
+
+| Pregunta | Tiempo | Importancia | Diagramas a Mostrar |
+|----------|--------|-------------|---------------------|
+| ❶ Herencias y dependencias | 40s | ⭐⭐⭐⭐⭐ | Diagrama 1 + Diagrama 2 |
+| ❺ Monte Carlo | 60s | ⭐⭐⭐⭐⭐ | Pantalla de simulación |
+| ❻ Reporte | 60s | ⭐⭐⭐⭐⭐ | Pantalla de reporte |
+| ❸ Unificación APIs | 30s | ⭐⭐⭐⭐ | Código normalizer |
+| ❹ Construcción cartera | 30s | ⭐⭐⭐⭐ | Pantalla cartera |
+| ❷ GitHub | 30s | ⭐⭐⭐ | Repositorio GitHub |
 
 ---
 
@@ -36,122 +50,42 @@ Esta guía te ayudará a responder todas las preguntas del proyecto de forma cla
 
 ---
 
-## 2️⃣ ESTRUCTURA DEL PROYECTO (1 minuto)
+## 2️⃣ ESTRUCTURA: HERENCIAS Y DEPENDENCIAS (40 segundos)
 
 ### Qué Explicar:
 
-> "El proyecto sigue una **arquitectura modular** basada en **patrones de diseño** que garantizan escalabilidad y mantenibilidad."
+> "El proyecto sigue una **arquitectura modular** con **tres jerarquías de herencia principales** y un flujo de datos claro."
 
-### A. Diagrama de Arquitectura
+### A. PRIMERO: Mostrar Diagrama de Jerarquías (20s)
 
-**Mostrar:** `docs/diagrams/1_arquitectura_completa.mmd` o captura del diagrama
+**Mostrar:** `docs/diagrams/1_jerarquias_herencia.mmd` (o PNG exportado)
 
-```
-UI (Streamlit)
-    ↓
-DataExtractor (Facade)
-    ↓
-Provider (Orquestación)
-    ↓
-Adapter (Cliente API)
-    ↓
-API Externa
-```
+**Decir mientras lo muestras:**
 
-### B. Herencias y Dependencias
-
-**Explicar con el diagrama de clases:**
-
-#### 1. **Patrón Adapter** (Abstracción de APIs)
-
-```python
-BaseAdapter (Clase abstracta)
-    ↓
-├── YahooAdapter
-├── BinanceAdapter
-└── TiingoAdapter
-```
-
-**Por qué:** Cada fuente tiene su propia API y formato. El patrón Adapter permite:
-- Interfaz unificada
-- Fácil extensión (añadir nuevas fuentes)
-- Cada adapter conoce los detalles de su API
-
-#### 2. **Patrón Provider** (Orquestación)
-
-```python
-BaseProvider (Clase base)
-    ↓
-├── YahooProvider
-├── BinanceProvider
-└── TiingoProvider
-```
-
-**Por qué:** Encapsula lógica común:
-- Descarga paralela de múltiples símbolos
-- Manejo de errores
-- Normalización de datos
-
-#### 3. **Patrón Facade** (Punto de entrada único)
-
-```python
-DataExtractor
-    ↓
-Usa Provider
-    ↓
-Usa Adapter
-```
-
-**Por qué:** Simplifica la interfaz para el usuario:
-- Un solo punto de entrada
-- Oculta complejidad interna
-- Fácil de usar desde la UI
-
-#### 4. **Jerarquía de Series**
-
-```python
-BaseSeries (Clase base)
-    ↓
-├── PriceSeries (Precios OHLCV)
-├── ReturnsSeries (Retornos)
-├── VolatilitySeries (Volatilidad)
-└── PerformanceSeries (Rendimiento)
-```
-
-**Por qué:** Diferentes tipos de datos financieros con comportamientos específicos.
-
-### C. Dependencias Principales
-
-```
-UI Layer
-  ↓ depende de
-Backend Services
-  ↓ depende de
-DataExtractor
-  ↓ depende de
-Providers
-  ↓ depende de
-Adapters
-```
-
-**Bajo acoplamiento:** Cada capa solo conoce la capa inmediatamente inferior.
-
-### Qué Mostrar:
-- Diagrama de arquitectura completa
-- Diagrama de jerarquía de clases
-- Árbol de directorios del proyecto
-
-### Script Sugerido:
-
-> "La estructura se basa en tres patrones clave:
+> "Como ven en este diagrama, tengo **tres jerarquías de herencia**:
 > 
-> 1. **Adapter Pattern** para abstraer las diferentes APIs. Cada fuente (Yahoo, Binance, Tiingo) tiene su propio adapter que implementa una interfaz común.
+> 1. **BaseAdapter** del que heredan YahooAdapter, BinanceAdapter y TiingoAdapter - son las clases que se conectan directamente a cada API.
 > 
-> 2. **Provider Pattern** que orquesta los adapters y añade funcionalidad común como descarga paralela y normalización.
+> 2. **BaseProvider** del que heredan los tres providers - orquestan la descarga y normalización.
 > 
-> 3. **Facade Pattern** en DataExtractor que ofrece una interfaz simple para la UI.
-> 
-> Esta arquitectura permite añadir nuevas fuentes de datos simplemente creando un nuevo adapter, sin modificar el código existente."
+> 3. **BaseSeries** del que heredan PriceSeries, PerformanceSeries y VolatilitySeries - representan diferentes tipos de datos financieros."
+
+### B. SEGUNDO: Mostrar Flujo de Arquitectura (20s)
+
+**Mostrar:** `docs/diagrams/2_flujo_arquitectura.mmd` (o PNG exportado)
+
+**Decir mientras lo muestras:**
+
+> "El flujo de datos es directo: la UI solicita datos al DataExtractor que actúa como **Facade Pattern**, este delega a los Providers que usan sus Adapters para consultar las APIs. Los datos se normalizan en el Normalizer, se crean las Series, se construye el Portfolio y se ejecuta Monte Carlo."
+
+### Patrones de Diseño Aplicados:
+
+**Mencionar brevemente (ya mostrados en los diagramas):**
+
+✅ **Facade Pattern** - DataExtractor como punto de entrada único  
+✅ **Adapter Pattern** - Abstrae las diferentes APIs  
+✅ **Provider Pattern** - Orquesta descarga y normalización  
+✅ **Template Method** - BaseSeries define comportamiento común
 
 ---
 
@@ -812,16 +746,18 @@ def generate_report(self):
 
 ---
 
-## ⏱️ DISTRIBUCIÓN DE TIEMPO SUGERIDA
+## ⏱️ DISTRIBUCIÓN FINAL DE TIEMPO
 
-| Tema | Tiempo | Importancia |
-|------|--------|-------------|
-| Estructura y patrones | 1:30 | ⭐⭐⭐⭐⭐ |
-| Monte Carlo | 1:00 | ⭐⭐⭐⭐⭐ |
-| Unificación datos | 0:30 | ⭐⭐⭐⭐ |
-| Reporte | 1:00 | ⭐⭐⭐⭐ |
-| GitHub | 0:30 | ⭐⭐⭐ |
-| Cartera | 0:30 | ⭐⭐⭐ |
+| Pregunta Requerida | Tiempo | Prioridad | Qué Mostrar |
+|-------------------|--------|-----------|-------------|
+| ❶ Herencias y dependencias | 40s | ⭐⭐⭐⭐⭐ | 2 diagramas en docs/DIAGRAMAS.md |
+| ❷ Uso de GitHub | 30s | ⭐⭐⭐ | Repo + commits + docs |
+| ❸ Unificación APIs | 30s | ⭐⭐⭐⭐ | Código normalizer.py |
+| ❹ Construcción cartera | 30s | ⭐⭐⭐⭐ | Pantalla Cartera |
+| ❺ Monte Carlo | 60s | ⭐⭐⭐⭐⭐ | Pantalla simulación + fórmula |
+| ❻ Reporte y criterios | 60s | ⭐⭐⭐⭐⭐ | Pantalla reporte + secciones |
+| **Intro + Conclusión** | 50s | - | Demo rápida + cierre |
+| **Total** | **5:00** | - | - |
 
 ---
 

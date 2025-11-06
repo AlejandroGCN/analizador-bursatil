@@ -621,13 +621,20 @@ pytest tests/integration/
 
 ### Diagramas
 
-Los diagramas Mermaid están disponibles en: `docs/diagrams/`
+**Diagramas principales del proyecto:**
 
-- Arquitectura completa
-- Patrones de diseño
-- Flujo de secuencia
-- Jerarquía de clases
-- Stack tecnológico
+📊 **[Ver todos los diagramas renderizados](docs/DIAGRAMAS.md)**
+
+Los diagramas Mermaid incluyen:
+
+- **Jerarquías de Herencia**: Muestra las 3 jerarquías principales (Adapters, Providers, Series)
+- **Flujo de Arquitectura**: Flujo de datos completo del sistema (paso a paso)
+- **Arquitectura Completa**: Vista general de todas las capas
+- **Patrones de Diseño**: Facade, Adapter, Provider, Template Method
+- **Flujo de Secuencia**: Interacciones entre componentes
+- **Stack Tecnológico**: Tecnologías y librerías utilizadas
+
+**Archivos:** `docs/diagrams/*.mmd` (editables) | **Visualización:** [docs/DIAGRAMAS.md](docs/DIAGRAMAS.md)
 
 ---
 
