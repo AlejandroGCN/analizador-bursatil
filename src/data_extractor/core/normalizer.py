@@ -33,8 +33,14 @@ def normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame(columns=OHLCV_COLUMNS, dtype=float)
 
-    # Solo procesar si es necesario
-    if not isinstance(df.index, pd.DatetimeIndex) or df.index.tz is not None or df.index.has_duplicates:
+    # Determinar si necesitamos copiar y modificar el DataFrame
+    needs_copy = (
+        not isinstance(df.index, pd.DatetimeIndex) or 
+        df.index.tz is not None or 
+        df.index.has_duplicates
+    )
+    
+    if needs_copy:
         df = df.copy()
         try:
             df.index = pd.to_datetime(df.index)
@@ -42,11 +48,10 @@ def normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
             raise NormalizationError(f"Índice no convertible a fecha: {e}")
         
         if getattr(df.index, "tz", None):
-            df.index = df.index.tz_convert(None)
+            df.index = df.index.tz_localize(None)
         df = df[~df.index.duplicated(keep="last")]
-        idx = df.index.sort_values()
-    else:
-        idx = df.index
+    
+    idx = df.index.sort_values() if needs_copy else df.index
 
     return pd.DataFrame({
         "open": _safe_col(df, "Open", idx),

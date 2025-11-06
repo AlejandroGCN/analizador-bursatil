@@ -59,13 +59,13 @@ class DataExtractor:
             logger.error("Fuente no registrada en REGISTRY: %s", self.cfg.source)
             raise ValueError(f"Fuente no registrada: {self.cfg.source}") from e
 
-        # Instancia del provider (pasa args comunes si aplica).
-        # Para Tiingo, pasar también la API key si está configurada
-        if self.cfg.source == "tiingo" and self.cfg.api_key:
-            self.source = source_cls(api_key=self.cfg.api_key, timeout=self.cfg.timeout)
-        else:
-            self.source = source_cls(timeout=self.cfg.timeout)
-        logger.info("Proveedor instanciado: %s", getattr(source_cls, "__name__", str(source_cls)))
+        # Construir kwargs dinámicamente según configuración
+        provider_kwargs = {"timeout": self.cfg.timeout}
+        if self.cfg.api_key:
+            provider_kwargs["api_key"] = self.cfg.api_key
+        
+        self.source = source_cls(**provider_kwargs)
+        logger.info("Proveedor instanciado: %s", source_cls.__name__)
 
     def get_market_data(
             self,

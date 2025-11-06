@@ -12,7 +12,8 @@ class YahooProvider(BaseProvider):
     """
     Provider de Yahoo Finance basado en BaseProvider.
     """
-    def __init__(self, timeout: int = 30, max_workers: int = 8) -> None:
+    def __init__(self, timeout: int = 30, max_workers: int = 8, **kwargs) -> None:
+        # Ignorar kwargs adicionales (como api_key que no necesitamos)
         adapter = YahooAdapter(timeout=timeout, max_workers=max_workers)
         super().__init__(source_name="yahoo", adapter=adapter)
         logger.info("YahooProvider init (timeout=%s, max_workers=%s)", timeout, max_workers)

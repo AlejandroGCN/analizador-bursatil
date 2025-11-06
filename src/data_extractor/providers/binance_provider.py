@@ -13,8 +13,10 @@ class BinanceProvider(BaseProvider):
     def __init__(
             self,
             timeout: int = 30,
-            max_workers: int = 8
+            max_workers: int = 8,
+            **kwargs
     ) -> None:
+        # Ignorar kwargs adicionales (como api_key que no necesitamos)
         adapter = BinanceAdapter(timeout=timeout, max_workers=max_workers)
         super().__init__(source_name="binance", adapter=adapter)
         logger.info(

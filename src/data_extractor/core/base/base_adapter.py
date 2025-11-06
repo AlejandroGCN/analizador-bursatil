@@ -82,30 +82,30 @@ class BaseAdapter(ABC):
 
     @staticmethod
     def _finalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
-        """Normaliza y valida un DataFrame OHLCV."""
+        """Normaliza y valida un DataFrame OHLCV de forma eficiente."""
         if df is None or df.empty:
             raise ExtractionError("DataFrame vacío", source="base")
         
         # Solo copiar si necesitamos modificar
-        if BaseAdapter._should_copy_dataframe(df):
+        should_copy = BaseAdapter._should_copy_dataframe(df)
+        if should_copy:
             df = df.copy()
 
-        # Aplicar normalizaciones usando funciones auxiliares
+        # Pipeline de normalización
         df = BaseAdapter._normalize_column_names(df)
         df = BaseAdapter._ensure_ohlcv_structure(df)
         df = BaseAdapter._normalize_datetime_index(df)
         
-        # Tipos numéricos + limpieza de no-finitos
-        for c in REQUIRED_ALL_COLS:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
+        # Conversión numérica eficiente (vectorizada por columna)
+        for col in REQUIRED_ALL_COLS:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
         
-        # Ordenar y limpiar duplicados
+        # Limpieza final
         df = BaseAdapter._clean_and_sort_index(df)
         
-        # Reordena columnas
-        df = df[REQUIRED_ALL_COLS]
-
-        return df
+        # Reordenar columnas
+        return df[REQUIRED_ALL_COLS]
 
 
     @staticmethod

@@ -32,18 +32,20 @@ class TiingoProvider(BaseProvider):
     
     def __init__(
         self, 
-        api_key: Optional[str] = None,
         timeout: int = 30, 
-        max_workers: int = 8
+        max_workers: int = 8,
+        api_key: Optional[str] = None,
+        **kwargs
     ) -> None:
         """
         Inicializa TiingoProvider.
         
         Args:
-            api_key: API key de Tiingo (obtener gratis en tiingo.com)
-                     Si no se proporciona, se busca en variable de entorno TIINGO_API_KEY
             timeout: Timeout para requests en segundos
             max_workers: Número de workers para descarga paralela
+            api_key: API key de Tiingo (obtener gratis en tiingo.com)
+                     Si no se proporciona, se busca en variable de entorno TIINGO_API_KEY
+            **kwargs: Argumentos adicionales (ignorados)
         """
         adapter = TiingoAdapter(
             api_key=api_key,
