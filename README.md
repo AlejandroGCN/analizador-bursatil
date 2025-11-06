@@ -97,15 +97,6 @@ install.bat
 - ✅ Configura archivos de configuración
 - ✅ Opcionalmente ejecuta tests de verificación
 
-**Escenarios comunes:**
-
-| Situación | Qué hace el instalador |
-|-----------|----------------------|
-| No tienes Python | Te pregunta si quiere instalarlo automáticamente con `winget` |
-| Tienes Python 3.14 | Busca Python 3.12/3.11 en tu sistema y te ofrece usarlo |
-| Tienes Python 3.12 | ✅ Instala todo sin preguntas |
-| Tienes múltiples versiones | Te permite elegir cuál usar |
-
 > ⚠️ **MUY IMPORTANTE para Windows**: 
 > - Ejecuta `install.bat` **SOLO desde CMD de Windows nativo**
 > - **NO funciona** en Git Bash (MINGW), PowerShell ISE, o WSL
@@ -130,34 +121,6 @@ python install.py
 chmod +x install.py
 python3 install.py
 ```
-
-> ✅ **Ventajas de install.py**:
-> - Funciona en Git Bash, PowerShell, CMD, Terminal Linux/macOS
-> - Interfaz con colores y mejor experiencia de usuario
-> - Manejo de errores más robusto
-> - **Requiere Python 3.9+ ya instalado**
-
----
-
-#### 📊 Comparación de Instaladores
-
-| Característica | `install.bat` | `install.py` |
-|----------------|---------------|--------------|
-| **Requiere Python previo** | ❌ NO | ✅ SÍ (Python 3.9+) |
-| **Funciona en Git Bash** | ❌ NO | ✅ SÍ |
-| **Funciona en CMD Windows** | ✅ SÍ | ✅ SÍ |
-| **Funciona en PowerShell** | ⚠️ Limitado | ✅ SÍ |
-| **Funciona en Linux/macOS** | ❌ NO | ✅ SÍ |
-| **Colores en terminal** | ❌ NO | ✅ SÍ |
-| **Mejor experiencia** | Básica | Avanzada |
-
-**¿Cuál usar?**
-- **Si NO tienes Python instalado en Windows** → Usa `install.bat` desde CMD
-- **Si ya tienes Python** → Usa `install.py` (funciona en cualquier terminal)
-- **Si estás en Linux/macOS** → Usa `install.py`
-- **Si estás en Git Bash en Windows** → Usa `install.py` o abre CMD para usar `install.bat`
-
-> **💡 Nota**: Ambos instaladores son completamente interactivos y te guían en cada paso.
 
 ### 🎯 Inicio Rápido (Post-Instalación)
 
@@ -199,11 +162,6 @@ Script automatizado para ejecutar la aplicación en Windows con todas las verifi
 run_app.bat
 ```
 
-**Ventajas:**
-- No necesitas activar manualmente el entorno virtual
-- Detecta problemas antes de ejecutar la app
-- Si falla, te indica qué hacer
-
 #### `run_app.py` (Multiplataforma)
 
 Script Python para ejecutar la aplicación en cualquier sistema operativo.
@@ -225,16 +183,6 @@ source venv/bin/activate
 # Luego ejecuta:
 python run_app.py
 ```
-
-**Cuándo usar cada uno:**
-
-| Situación | Script Recomendado |
-|-----------|-------------------|
-| Windows con venv creado | `run_app.bat` (más fácil) |
-| Windows sin venv | `python run_app.py` |
-| Linux/macOS | `python run_app.py` |
-| Desarrollo/debug | `python run_app.py` (más control) |
-| Usuario final Windows | `run_app.bat` (más simple) |
 
 ### 📋 Requisitos Previos
 
@@ -635,15 +583,3 @@ Los diagramas Mermaid incluyen:
 - **Stack Tecnológico**: Tecnologías y librerías utilizadas
 
 **Archivos:** `docs/diagrams/*.mmd` (editables) | **Visualización:** [docs/DIAGRAMAS.md](docs/DIAGRAMAS.md)
-
----
-
-## Licencia
-
-MIT License - Ver archivo `LICENSE` para detalles.
-
----
-
-## Contacto
-
-Para consultas técnicas o colaboraciones, ver información en el perfil de GitHub.
