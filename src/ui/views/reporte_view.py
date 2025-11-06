@@ -19,6 +19,11 @@ def _check_prerequisites() -> bool:
     if "last_data_map" not in st.session_state:
         missing_steps.append("📊 Descarga datos en la pestaña 'Datos'")
     
+    # Validar que los datos sean precios históricos (no retornos)
+    last_kind = st.session_state.get("last_kind", "ohlcv")
+    if last_kind != "ohlcv":
+        missing_steps.append(f"📊 Cambia el tipo de datos a 'Precios Históricos' (actualmente: '{last_kind}')")
+    
     if missing_steps:
         st.warning("⚠️ **Faltan pasos previos para generar el reporte:**")
         for step in missing_steps:
@@ -192,10 +197,10 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
         try:
             with st.spinner("📊 Generando reporte completo de la cartera..."):
                 portfolio = _create_portfolio_from_data()
-            if portfolio:
-                st.session_state["reporte_portfolio"] = portfolio
-                num_symbols = len(portfolio.symbols)
-                st.success(f"✅ **Reporte generado exitosamente** para cartera con {num_symbols} activo(s)")
+                if portfolio:
+                    st.session_state["reporte_portfolio"] = portfolio
+                    num_symbols = len(portfolio.symbols)
+                    st.success(f"✅ **Reporte generado exitosamente** para cartera con {num_symbols} activo(s)")
         except Exception as e:
             st.error(f"❌ Error generando reporte: {e}")
             import traceback

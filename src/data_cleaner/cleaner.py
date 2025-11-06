@@ -48,13 +48,13 @@ class DataCleaner:
             return df
         
         # Necesitamos modificar, hacer copia
-        df = df.copy()
+            df = df.copy()
         
         if has_duplicates:
             df = df.drop_duplicates()
         
         if needs_sorting:
-            df = df.sort_index()
+                df = df.sort_index()
         
         if has_nans:
             df = df.ffill().bfill()

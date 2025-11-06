@@ -217,7 +217,21 @@ def _process_and_download_data(params: DatosParams) -> dict:
 
 
 def _should_display_symbol_info(submit: bool, params: DatosParams | None, simbolos_texto: str) -> bool:
-    """Determina si se debe mostrar la información de símbolos."""
+    """
+    Determina si se debe mostrar la información de símbolos.
+    
+    NO mostrar ayuda si:
+    - Hay datos en cache (ya se descargó algo)
+    - Se está submiteando el formulario
+    
+    SÍ mostrar ayuda si:
+    - No hay datos en cache Y no hay símbolos escritos
+    """
+    # Si hay datos en cache, no mostrar ayuda (mostrar los datos)
+    if "last_data_map" in st.session_state and st.session_state["last_data_map"]:
+        return False
+    
+    # Si no hay cache, mostrar ayuda solo si no hay submit o no hay símbolos
     return not submit or not params or not simbolos_texto or not simbolos_texto.strip()
 
 

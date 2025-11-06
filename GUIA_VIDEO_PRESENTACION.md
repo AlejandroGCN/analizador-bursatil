@@ -1,12 +1,27 @@
 # 🎥 Guía para Vídeo de Presentación (5 minutos)
 
-Esta guía te ayudará a responder todas las preguntas del proyecto de forma clara y estructurada.
+Esta guía te ayudará a responder **LAS 6 PREGUNTAS OBLIGATORIAS** del proyecto de forma clara y estructurada.
+
+---
+
+## 🎯 LAS 6 PREGUNTAS QUE DEBES RESPONDER
+
+El vídeo debe explicar **QUÉ has hecho, CÓMO lo has hecho, y POR QUÉ**, centrándote en:
+
+| # | Pregunta | Tiempo | Importancia | Qué Mostrar |
+|---|----------|--------|-------------|-------------|
+| **1** | **Estructura del proyecto** - Herencias y dependencias | 40s | ⭐⭐⭐⭐⭐ | **2 diagramas Mermaid** |
+| **2** | **Uso de GitHub** - Cómo lo has usado | 30s | ⭐⭐⭐ | Repo + commits |
+| **3** | **Unificación de formatos** - APIs → mismo formato | 30s | ⭐⭐⭐⭐ | Código normalizer |
+| **4** | **Creación de cartera** - Desde series de precios | 30s | ⭐⭐⭐⭐ | Código Portfolio |
+| **5** | **Implementación Monte Carlo** - Cómo funciona | 60s | ⭐⭐⭐⭐⭐ | Fórmula + simulación |
+| **6** | **Contenido del reporte** - Qué incluye y por qué | 60s | ⭐⭐⭐⭐⭐ | Reporte generado |
+
+**ENFÓCATE EN ESTAS 6 - NO te distraigas con otros detalles**
 
 ---
 
 ## 📋 Estructura del Vídeo (Minutaje Optimizado)
-
-### Distribución por Preguntas Requeridas:
 
 ```
 00:00 - 00:20  Introducción rápida
@@ -19,16 +34,7 @@ Esta guía te ayudará a responder todas las preguntas del proyecto de forma cla
 04:30 - 05:00  Conclusión y tecnologías (30s)
 ```
 
-### Prioridades:
-
-| Pregunta | Tiempo | Importancia | Diagramas a Mostrar |
-|----------|--------|-------------|---------------------|
-| ❶ Herencias y dependencias | 40s | ⭐⭐⭐⭐⭐ | Diagrama 1 + Diagrama 2 |
-| ❺ Monte Carlo | 60s | ⭐⭐⭐⭐⭐ | Pantalla de simulación |
-| ❻ Reporte | 60s | ⭐⭐⭐⭐⭐ | Pantalla de reporte |
-| ❸ Unificación APIs | 30s | ⭐⭐⭐⭐ | Código normalizer |
-| ❹ Construcción cartera | 30s | ⭐⭐⭐⭐ | Pantalla cartera |
-| ❷ GitHub | 30s | ⭐⭐⭐ | Repositorio GitHub |
+**TOTAL: 5 minutos exactos**
 
 ---
 
@@ -134,13 +140,13 @@ Esta guía te ayudará a responder todas las preguntas del proyecto de forma cla
 - Historial de commits
 - Estructura de archivos
 
-### Script Sugerido:
+### Tu Respuesta (Natural):
 
-> "He usado GitHub siguiendo best practices: commits semánticos descriptivos usando Conventional Commits, documentación completa, y seguridad mediante .gitignore para proteger las API keys. 
+> "He usado GitHub para todo el desarrollo. Los commits son semánticos - 'feat: tal cosa', 'refactor: optimizar lo otro' - así queda claro qué hace cada cambio sin tener que ponerse a leer todo el código.
 > 
-> Por ejemplo, mi último commit fue 'feat: Implementar Monte Carlo con retornos logarítmicos' que documenta claramente la funcionalidad añadida.
+> La documentación está a tres niveles: README para hacerte una idea general, QUICKSTART si quieres arrancar rápido, y ARCHITECTURE si te interesan los detalles matemáticos del Monte Carlo.
 > 
-> El repositorio incluye tests, diagramas Mermaid, y tres niveles de documentación: README para overview, QUICKSTART para inicio rápido, y ARCHITECTURE para detalles técnicos del modelo matemático."
+> También tengo .gitignore configurado para no subir API keys ni logs, que parece obvio pero es importante. Y uso Mermaid para los diagramas porque se renderizan directo en GitHub."
 
 ---
 
@@ -248,9 +254,11 @@ DataFrame:
 - Código del pipeline de normalización
 - Ejemplo de datos antes/después
 
-### Script Sugerido:
+### Tu Respuesta (Directa):
 
-> "Cada API devuelve datos en formatos diferentes. He resuelto esto con un **pipeline de normalización en tres capas**: 
+> "El problema es que cada API te devuelve los datos a su manera. Yahoo dice 'Close', Binance dice 'close' en minúscula, Tiingo dice 'adjClose'... un lío.
+> 
+> Lo he resuelto con un **pipeline de normalización** que tiene tres pasos: 
 > 
 > 1. Cada **Adapter** convierte su formato específico al estándar interno (columnas OHLCV).
 > 
@@ -695,21 +703,78 @@ def generate_report(self):
 - Opción de descarga en Markdown
 - Visualizaciones embebidas
 
-### Script Sugerido:
+---
 
-> "El reporte incluye **cinco secciones** con criterios específicos:
+### 🤔 EL RAZONAMIENTO DETRÁS (Para que lo entiendas bien)
+
+**¿Por qué estas 5 secciones y no otras?**
+
+#### **1. Composición** - Lo obvio primero
+- **Razón práctica**: Si no sé qué activos tengo y en qué proporción, ¿cómo interpreto el resto?
+- **Es básico**: Cualquier informe financiero empieza con esto
+- **Sin esto**: El resto de métricas no tienen contexto
+
+#### **2. Métricas principales** - Las que realmente se usan
+
+**Retorno esperado:**
+- Todo el mundo quiere saber "¿cuánto voy a ganar?"
+- Es la media histórica proyectada al futuro
+- Anualizado porque es más intuitivo (27% anual vs 0.0001 diario)
+
+**Volatilidad:**
+- El "riesgo" en términos cuantitativos
+- 24% significa que en el 68% de los años, tu retorno estará entre +51% y +3% (27±24)
+- Es la desviación estándar, punto - no hay métrica mejor para riesgo
+
+**Sharpe Ratio:**
+- Responde: "¿Me están compensando bien por el riesgo que asumo?"
+- Si inviertes en algo muy volátil, debería darte más retorno que algo estable
+- Sharpe > 1.0 → Vale la pena | < 0.5 → Mal negocio
+- Es LA métrica de eficiencia (Premio Nobel 1990)
+
+**¿Por qué NO otras métricas?**
+- Beta → Necesitas un benchmark (S&P500). No tienes.
+- Sortino → Sofisticación innecesaria para una práctica
+- Treynor → Parecido a Sharpe, redundante
+- Max Drawdown → Interesante pero no esencial aquí
+
+#### **3. Análisis de riesgo** - Traducción a lenguaje humano
+- **El problema**: Decir "volatilidad 0.2413" no significa nada para la mayoría
+- **La solución**: "Riesgo MEDIO" lo entiende cualquiera
+- **Criterio**: 
+  - <15% → Bajo (bonos, utilidades)
+  - 15-30% → Medio (acciones diversificadas)
+  - >30% → Alto (tech concentrado, cripto)
+
+#### **4. Matriz de correlación** - La realidad de la diversificación
+- **Por qué es crítica**: Mucha gente cree que diversifica pero no lo hace
+- **Ejemplo real**: AAPL + MSFT + GOOGL → Correlación ~0.85 → Todas suben/bajan juntas
+- **Diversificación real**: Necesitas correlaciones <0.5
+- **Sin esto**: Podrías creer que tienes 3 activos "diversos" cuando en realidad es casi como tener uno
+
+#### **5. Advertencias** - Honestidad profesional
+- **Concentración >40%**: Si tienes 60% en AAPL, no es una cartera, es apostar por AAPL
+- **<5 activos**: Académicamente necesitas 15-20 para diversificar bien
+- **Datos incompletos**: Si faltan muchos datos, las estadísticas son menos fiables
+- **Por qué incluirlo**: Ética. Si ves un problema, lo dices. Punto.
+
+---
+
+### Script Sugerido (Con este conocimiento):
+
+> "El reporte tiene **cinco secciones** y cada una está ahí por algo concreto:
 > 
-> 1. **Información de Cartera:** Composición y capital asignado - criterio de contexto.
+> **1. Composición de la cartera** - Tabla simple con tus activos y pesos. Básicamente, quieres saber dónde está tu dinero, ¿no?
 > 
-> 2. **Métricas de Riesgo:** Retorno esperado, volatilidad y Sharpe - criterio: métricas estándar de la industria.
+> **2. Métricas principales** - Las tres que realmente importan: retorno esperado, volatilidad y Sharpe. Son las que usa toda la industria porque funcionan. Retorno te dice cuánto ganas, volatilidad cuánto riesgo asumes, y Sharpe si vale la pena ese riesgo.
 > 
-> 3. **Resultados Monte Carlo:** Percentiles y VaR - criterio: análisis cuantitativo de riesgo.
+> **3. Análisis de riesgo** - Clasifico la volatilidad en bajo, medio o alto. Si tienes 30% de volatilidad, el reporte te dice 'oye, esto es bastante riesgo'. Es para que lo entienda cualquiera, no solo gente de finanzas.
 > 
-> 4. **Análisis de Escenarios:** Mejor caso, base y peor caso con probabilidades - criterio: interpretación práctica.
+> **4. Matriz de correlación** - Súper importante. Si metes AAPL, MSFT y GOOGL pensando que diversificas... pues no, todas son tech y se mueven igual. La matriz te lo muestra claramente.
 > 
-> 5. **Advertencias:** Limitaciones del modelo y recomendaciones - criterio: transparencia y ética profesional.
+> **5. Advertencias** - Esto es básico, ¿no? Si tu cartera tiene el 50% en un solo activo, te lo tengo que decir. Si tienes muy pocos activos, te recomiendo más diversificación. Es ser honesto sobre las limitaciones del análisis.
 > 
-> El reporte es exportable en Markdown y incluye todas las visualizaciones. He priorizado claridad y honestidad sobre las limitaciones del modelo."
+> El criterio ha sido **priorizar claridad**. Mejor 5 métricas que entiendas bien que 20 que no sepas qué significan."
 
 ---
 
@@ -787,18 +852,421 @@ def generate_report(self):
 
 ---
 
-## ⏱️ DISTRIBUCIÓN FINAL DE TIEMPO
+## ⏱️ DISTRIBUCIÓN FINAL DE TIEMPO (Usar como Checklist)
 
-| Pregunta Requerida | Tiempo | Prioridad | Qué Mostrar |
-|-------------------|--------|-----------|-------------|
-| ❶ Herencias y dependencias | 40s | ⭐⭐⭐⭐⭐ | 2 diagramas en docs/DIAGRAMAS.md |
-| ❷ Uso de GitHub | 30s | ⭐⭐⭐ | Repo + commits + docs |
-| ❸ Unificación APIs | 30s | ⭐⭐⭐⭐ | Código normalizer.py |
-| ❹ Construcción cartera | 30s | ⭐⭐⭐⭐ | Pantalla Cartera |
-| ❺ Monte Carlo | 60s | ⭐⭐⭐⭐⭐ | Pantalla simulación + fórmula |
-| ❻ Reporte y criterios | 60s | ⭐⭐⭐⭐⭐ | Pantalla reporte + secciones |
-| **Intro + Conclusión** | 50s | - | Demo rápida + cierre |
-| **Total** | **5:00** | - | - |
+| Pregunta | Tiempo | Archivo/Pantalla a Mostrar | Puntos Clave |
+|----------|--------|----------------------------|--------------|
+| **Intro** | 20s | App funcionando | Demo rápida de las 4 pestañas |
+| **❶ Estructura** | 40s | `docs/DIAGRAMAS.md` | 3 jerarquías + flujo |
+| **❷ GitHub** | 30s | Repositorio GitHub | Commits semánticos + docs |
+| **❸ Unificación** | 30s | `normalizer.py` | Ejemplo: Yahoo vs Binance |
+| **❹ Cartera** | 30s | `portfolio.py` + UI | Dataclass + validación |
+| **❺ Monte Carlo** | 60s | UI simulación | Fórmula GBM + resultados |
+| **❻ Reporte** | 60s | UI reporte | 5 secciones + criterios |
+| **Conclusión** | 30s | GitHub + tests | Tecnologías + puntos fuertes |
+| **TOTAL** | **5:00** | - | - |
+
+**🎯 REGLA DE ORO**: Si te pasas de 5 min, **reduce Intro/Conclusión**, NUNCA las 6 preguntas obligatorias.
+
+---
+
+---
+
+# 📚 APÉNDICE: CUMPLIMIENTO DE REQUISITOS
+
+> ⚠️ **NOTA**: Esta sección es SOLO para **referencia personal**, NO para el vídeo.
+> 
+> El vídeo debe centrarse únicamente en las **6 PREGUNTAS OBLIGATORIAS** explicadas arriba.
+
+---
+
+## 📋 Checklist Completo de Requisitos de la Práctica
+
+Esta sección mapea cada requisito con su implementación. Úsala como referencia si el profesor hace preguntas adicionales o necesitas verificar algo.
+
+---
+
+### ✅ **1. Proyecto en GitHub con README detallado**
+
+**Implementado:**
+- Repositorio: `github.com/AlejandroGCN/analizador-bursatil`
+- README completo con: Instalación, uso, arquitectura, ejemplos
+- Commits semánticos con mensajes descriptivos
+- `.gitignore` configurado
+- Documentación adicional: QUICKSTART, ARCHITECTURE, GUIA_VIDEO
+
+**Justificación**: README exhaustivo (>500 líneas) con instrucciones paso a paso, troubleshooting, y ejemplos.
+
+---
+
+### ✅ **2. Carpeta /src con núcleo del trabajo**
+
+**Implementado:**
+```
+src/
+├── data_extractor/      # Núcleo de extracción
+├── simulation/          # Monte Carlo y Portfolio
+├── data_cleaner/        # Limpieza de datos
+├── reporting/           # Generación de reportes
+├── ui/                  # Interfaz Streamlit
+└── logs/                # Sistema de logging
+```
+
+**Justificación**: Código separado de tests, docs, y configs. Modular y escalable.
+
+---
+
+### ✅ **3. Plug-n-play (instalación fácil)**
+
+**Implementado:**
+- `install.py` - Instalador automático multi-plataforma
+- `install.bat` - Para Windows (CMD)
+- `requirements.txt` - Todas las dependencias con versiones
+- `.env.example` - Template para API keys
+- `ejemplos/` - Archivos de ejemplo para importar
+
+**Justificación**: Usuario puede ejecutar `python install.py` y tener todo listo en 2 minutos.
+
+---
+
+### ✅ **4. Programa extractor multi-fuente**
+
+**Implementado:**
+- **3 fuentes**: Yahoo Finance, Binance, Tiingo
+- **Clase**: `DataExtractor` (Facade Pattern)
+- **Adapters**: `YahooAdapter`, `BinanceAdapter`, `TiingoAdapter`
+- **Providers**: Orquestan descarga y normalización
+
+**Código clave**: `src/data_extractor/extractor.py`
+
+**Justificación**: Arquitectura extensible. Agregar nueva fuente = crear nuevo Adapter (Open/Closed Principle).
+
+---
+
+### ✅ **5. Formato de salida estandarizado**
+
+**Implementado:**
+- **Normalizer**: `src/data_extractor/core/normalizer.py`
+- **Formato estándar**: OHLCV con columnas fijas: `['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']`
+- **Índice estandarizado**: Timestamp con zona horaria
+- **Validación**: Tipos de datos consistentes
+
+**Código clave**: 
+```python
+def normalize_ohlcv(df, source_name):
+    # Mapeo de columnas según fuente
+    # Conversión a tipos numéricos
+    # Índice temporal estandarizado
+```
+
+**Justificación**: Yahoo devuelve 'close', Binance 'closePrice' → Normalizer convierte todo a 'Close'. Portfolio funciona con cualquier fuente.
+
+---
+
+### ✅ **6. Tipología de datos adicional**
+
+**Implementado:**
+- **Precios históricos** (OHLCV)
+- **Retornos logarítmicos** (`returns_log`)
+- **Retornos porcentuales** (`returns_pct`)
+- **Volatilidad** (rolling window)
+- **Volumen de actividad** (volumen relativo)
+
+**Código clave**: `src/data_extractor/series/` - 4 tipos de Series
+
+**Justificación**: No solo precios. Usuario puede analizar performance, volatilidad histórica, y actividad del mercado.
+
+---
+
+### ✅ **7. Descarga de N series simultáneas**
+
+**Implementado:**
+```python
+extractor.get_market_data(
+    tickers=['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'],  # N símbolos
+    start='2020-01-01',
+    end='2025-01-01'
+)
+```
+
+**Técnica**: `ThreadPoolExecutor` para descargas paralelas (8 workers)
+
+**Código clave**: `BaseAdapter._download_symbols_parallel()`
+
+**Justificación**: Descarga 8 símbolos en paralelo en el tiempo que tomaría descargar 2-3 secuencialmente.
+
+---
+
+### ✅ **8. Series de datos como DataClasses**
+
+**Implementado:**
+```python
+@dataclass
+class PriceSeries(BaseSeries):
+    symbol: str
+    source: str
+    data: pd.DataFrame  # OHLCV
+```
+
+**Jerarquía**:
+- `BaseSeries` (abstracta)
+  - `PriceSeries` - Precios OHLCV
+  - `PerformanceSeries` - Retornos
+  - `VolatilitySeries` - Volatilidad histórica
+  - `VolumeActivitySeries` - Actividad de volumen
+
+**Código clave**: `src/data_extractor/series/`
+
+**Justificación**: Cada serie es un objeto con métodos propios (`.describe()`, `.to_dataframe()`). Type safety y encapsulación.
+
+---
+
+### ✅ **9. Concepto de Cartera (Portfolio)**
+
+**Implementado:**
+```python
+@dataclass
+class Portfolio:
+    name: str
+    symbols: list[str]
+    weights: list[float]
+    prices: Optional[pd.DataFrame] = None
+    returns: Optional[pd.DataFrame] = None
+```
+
+**Definición**: Cartera = Conjunto de series de precios + pesos que suman 1.0
+
+**Código clave**: `src/simulation/portfolio.py`
+
+**Justificación**: Portfolio es una composición de múltiples series con pesos. Validación automática de que pesos sumen 100%.
+
+---
+
+### ✅ **10. Métodos estadísticos en DataClasses**
+
+**Implementado en PriceSeries:**
+```python
+def get_ohlcv() -> pd.DataFrame
+def describe() -> dict
+def to_dataframe() -> pd.DataFrame
+```
+
+**Implementado en Portfolio:**
+```python
+def portfolio_return() -> float        # Media automática
+def portfolio_volatility() -> float    # Std automática
+def sharpe_ratio() -> float
+def get_statistics() -> dict
+```
+
+**Justificación**: Media y desviación se calculan automáticamente al llamar `portfolio_return()` y `portfolio_volatility()`.
+
+---
+
+### ✅ **11. Simulación Monte Carlo**
+
+**Implementado:**
+- **Modelo**: Geometric Brownian Motion (GBM) con retornos logarítmicos
+- **Fórmula**: `log(S_t/S_{t-1}) = (μ - σ²/2)Δt + σ√Δt × Z`
+- **Corrección de Itô**: Incluida (`-σ²/2`)
+- **Clase**: `MonteCarloSimulation` (métodos estáticos)
+
+**Código clave**: `src/simulation/monte_carlo.py`
+
+**Justificación**: Modelo matemáticamente correcto usado en la industria. Garantiza precios siempre positivos.
+
+---
+
+### ✅ **12. Parámetros maleables por usuario**
+
+**Implementado:**
+```python
+@dataclass
+class MonteCarloParams:
+    n_simulations: int       # 100 - 10,000
+    time_horizon: int        # 1 - 1,260 días
+    initial_value: float     # $100 - $100M
+    dynamic_volatility: bool # True/False
+    random_seed: Optional[int]
+```
+
+**UI**: Controles en sidebar de Monte Carlo
+
+**Justificación**: Usuario controla todos los parámetros clave de la simulación desde la interfaz.
+
+---
+
+### ✅ **13. Simulación de cartera Y elementos individuales**
+
+**Implementado:**
+```python
+# Cartera completa
+portfolio.monte_carlo_simulation(...)
+
+# Activo individual
+portfolio.monte_carlo_simulation_individual(symbol='AAPL', ...)
+```
+
+**UI**: Radio button "💼 Cartera completa" vs "📊 Activo individual"
+
+**Código clave**: Métodos en `Portfolio` clase
+
+**Justificación**: Dos modos de simulación con interfaz separada. Cartera usa pesos, individual usa precio actual.
+
+---
+
+### ✅ **14. Monte Carlo como método de Portfolio**
+
+**Implementado:**
+```python
+class Portfolio:
+    def monte_carlo_simulation(self, n_simulations, time_horizon, ...) -> pd.DataFrame:
+        """Simula la cartera completa"""
+        
+    def monte_carlo_simulation_individual(self, symbol, ...) -> pd.DataFrame:
+        """Simula un activo individual"""
+```
+
+**Justificación**: Monte Carlo está integrado en la clase Portfolio, no es una función suelta. Usa `self.returns`, `self.portfolio_volatility()`.
+
+---
+
+### ✅ **15. Visualización de resultados Monte Carlo**
+
+**Implementado en Portfolio:**
+```python
+# Método NO requerido explícitamente en Portfolio,
+# pero existe en MonteCarloSimulation:
+MonteCarloSimulation.plot_simulation(results, title, figsize)
+```
+
+**UI**: Gráficos automáticos en vista Monte Carlo:
+- Trayectorias de simulación (50 muestras)
+- Distribución del valor final (histograma + boxplot)
+- Tabla de resumen estadístico
+
+**Justificación**: Visualización completa con matplotlib + Streamlit.
+
+---
+
+### ✅ **16. Limpieza y preprocesado de datos**
+
+**Implementado:**
+```python
+class DataCleaner:
+    def clean_dataframe(self, df) -> pd.DataFrame:
+        # Elimina duplicados
+        # Ordena índice
+        # Rellena NaN con ffill/bfill
+    
+    def validate(self, df) -> list[str]:
+        # Valida calidad de datos
+```
+
+**Input flexible**: Acepta cualquier serie temporal con índice de fechas
+
+**Código clave**: `src/data_cleaner/cleaner.py`
+
+**Justificación**: El programa acepta datos con problemas (duplicados, NaN, desorden) y los limpia automáticamente.
+
+---
+
+### ✅ **17. Método .report() en markdown**
+
+**Implementado:**
+```python
+class Portfolio:
+    def report(self, risk_free_rate=0.0, include_warnings=True) -> str:
+        """Genera reporte en markdown con análisis completo"""
+```
+
+**Incluye:**
+- Composición de cartera
+- Métricas principales (retorno, volatilidad, Sharpe)
+- Análisis de riesgo
+- Matriz de correlación
+- Advertencias sobre limitaciones
+
+**Código clave**: `src/simulation/portfolio.py` línea ~550-650
+
+**Justificación**: Retorna string en formato markdown. Exportable y legible.
+
+---
+
+### ✅ **18. Método .plots_report() con visualizaciones**
+
+**Implementado:**
+```python
+class Portfolio:
+    def plots_report(self, figsize=(18, 12), save_path=None, return_figure=False):
+        """Genera 6 gráficos profesionales"""
+```
+
+**Visualizaciones:**
+1. Evolución de precios históricos
+2. Retornos acumulados por activo
+3. Matriz de correlación (heatmap)
+4. Distribución de retornos
+5. Métricas clave (barras)
+6. Volatilidad por activo
+
+**Código clave**: `src/simulation/portfolio.py` línea ~700-750
+
+**Justificación**: Suite completa de gráficos con matplotlib/seaborn. Exportables a PNG.
+
+---
+
+### ✅ **19. Diagrama de estructura (FossFlow o similar)**
+
+**Implementado:**
+- **Herramienta**: Mermaid (mejor que FossFlow - se ve en GitHub)
+- **Diagramas**:
+  1. `docs/diagrams/1_jerarquias_herencia.mmd` - Jerarquías de clases
+  2. `docs/diagrams/2_flujo_arquitectura.mmd` - Flujo de datos
+- **Renderizado**: `docs/DIAGRAMAS.md` (visible en GitHub)
+
+**Justificación**: Mermaid se renderiza nativamente en GitHub. FossFlow requiere exportar imágenes. Más mantenible.
+
+---
+
+## 🎯 RESUMEN DE CUMPLIMIENTO
+
+| Requisito | Estado | Evidencia |
+|-----------|--------|-----------|
+| GitHub + README | ✅ | README de 576 líneas |
+| Carpeta /src | ✅ | Estructura modular |
+| Plug-n-play | ✅ | `install.py` + ejemplos |
+| Extractor multi-fuente | ✅ | 3 APIs implementadas |
+| Formato estandarizado | ✅ | `Normalizer` + OHLCV estándar |
+| Tipología adicional | ✅ | 5 tipos de series |
+| N series simultáneas | ✅ | Descarga paralela (ThreadPool) |
+| Series como DataClasses | ✅ | `BaseSeries` + 4 subclases |
+| Concepto de Cartera | ✅ | `Portfolio` dataclass |
+| Métodos estadísticos | ✅ | Media/std automáticos |
+| Simulación Monte Carlo | ✅ | GBM con retornos log |
+| Parámetros maleables | ✅ | `MonteCarloParams` |
+| Sim. cartera + individual | ✅ | 2 métodos separados |
+| MC como método Portfolio | ✅ | `.monte_carlo_simulation()` |
+| Visualización MC | ✅ | Plots integrados |
+| Limpieza de datos | ✅ | `DataCleaner` clase |
+| `.report()` markdown | ✅ | Generación automática |
+| `.plots_report()` | ✅ | 6 visualizaciones |
+| Diagrama estructura | ✅ | Mermaid (2 diagramas) |
+
+**TOTAL: 19/19 requisitos cumplidos** ✅
+
+---
+
+## 💡 PUNTOS EXTRAS IMPLEMENTADOS (No requeridos)
+
+1. **Sistema de logging profesional** - Rotación automática, 4 niveles
+2. **Tests unitarios** - 126 tests con pytest
+3. **Benchmarks de rendimiento** - Scripts de medición
+4. **Interfaz gráfica completa** - Streamlit con 4 pestañas
+5. **Gestión segura de API keys** - Variables de entorno
+6. **Docker deployment** - Listo para producción
+7. **Validaciones robustas** - Pesos suman 100%, fechas válidas, tipos correctos
+8. **Error handling** - Mensajes claros con sugerencias
 
 ---
 

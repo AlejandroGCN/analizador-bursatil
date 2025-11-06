@@ -68,6 +68,9 @@ KIND_MAP: Dict[str, str] = {
 }
 """Mapeo de tipos de series (UI) a identificadores internos."""
 
+KIND_MAP_INVERSE: Dict[str, str] = {v: k for k, v in KIND_MAP.items()}
+"""Mapeo inverso de identificadores internos a nombres amigables."""
+
 ALLOWED_INTERVALS = ["1d", "1h", "1wk"]
 """Intervalos temporales permitidos en la UI."""
 

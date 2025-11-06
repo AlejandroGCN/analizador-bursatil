@@ -12,6 +12,7 @@ from numpy.random import default_rng
 import matplotlib.pyplot as plt
 from typing import Any, Optional
 from ui.sidebars import MonteCarloParams
+from ui.app_config import KIND_MAP_INVERSE
 import sys
 import os
 from io import BytesIO
@@ -24,6 +25,21 @@ logger = logging.getLogger(__name__)
 def _create_distribution_charts(final_values_tuple: tuple) -> bytes:
     """Crea gráficos de distribución (histograma y box plot) cacheados."""
     final_values = pd.Series(final_values_tuple)
+    
+    # Eliminar NaN si existen
+    final_values = final_values.dropna()
+    
+    if len(final_values) == 0:
+        # Si no hay valores válidos, retornar imagen vacía
+        fig, ax = plt.subplots(figsize=(14, 5))
+        ax.text(0.5, 0.5, 'No hay datos válidos para graficar', 
+                ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        buf = BytesIO()
+        fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        plt.close(fig)
+        return buf.getvalue()
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
     
@@ -428,6 +444,14 @@ def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
         st.info("💡 Primero descarga datos en la pestaña '📊 Datos' para poder simular.")
         return
     
+    # Validar que los datos sean del tipo correcto (PRECIOS, no retornos)
+    last_kind = st.session_state.get("last_kind", "ohlcv")
+    if last_kind != "ohlcv":
+        kind_friendly = KIND_MAP_INVERSE.get(last_kind, last_kind)
+        st.warning(f"⚠️ **No se puede ejecutar la simulación Monte Carlo**\n\nLos datos actuales son de tipo **'{kind_friendly}'**, pero la simulación requiere **'Precios Históricos'** para calcular correctamente los rendimientos y volatilidades.")
+        st.info("💡 **Solución**: Ve a la pestaña '📊 Datos', selecciona **'Precios Históricos'** en el tipo de datos y descarga nuevamente.")
+        return
+    
     if submit and params is not None:
         try:
             tipo_sim = "cartera completa" if params.tipo_simulacion == "cartera" else f"activo {params.symbol_individual}"
@@ -442,6 +466,18 @@ def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
                     return
                 
                 prices_df = pd.DataFrame(prices_dict)
+                
+                # Validar y limpiar NaN automáticamente
+                if prices_df.isna().any().any():
+                    nan_count = prices_df.isna().sum().sum()
+                    nan_cols = prices_df.columns[prices_df.isna().any()].tolist()
+                    st.warning(f"⚠️ Datos con valores faltantes en {', '.join(nan_cols)} ({nan_count} NaN detectados). Limpiando automáticamente...")
+                    
+                    # Limpiar NaN con forward-fill y backward-fill
+                    from data_cleaner import DataCleaner
+                    cleaner = DataCleaner()
+                    prices_df = cleaner.clean_dataframe(prices_df)
+                    logger.info(f"Datos limpiados: {nan_count} NaN eliminados de {nan_cols}")
                 
                 # Ejecutar simulación según tipo
                 if params.tipo_simulacion == "individual":
