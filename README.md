@@ -447,7 +447,7 @@ analizador-bursatil/
 └─────────────────┘
 ```
 
-**Documentación detallada**: [ARCHITECTURE.md](ARCHITECTURE.md)
+**Documentación detallada**: [ARCHITECTURE.md](ARCHITECTURE.md) | **Benchmarks**: [`benchmarks/`](./benchmarks/README.md)
 
 ---
 

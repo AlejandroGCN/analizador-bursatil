@@ -728,10 +728,22 @@ def generate_report(self):
 🔐 python-dotenv (Seguridad)
 ```
 
+### 🚀 Rendimiento (Opcional - si te queda tiempo):
+
+**Puedes mencionar brevemente:**
+
+> "El sistema está optimizado: extrae datos en menos de 1 segundo, y ejecuta 10,000 simulaciones Monte Carlo completas en solo 0.2 segundos, equivalente a casi 50,000 simulaciones por segundo gracias a la vectorización de NumPy."
+
+**Datos de benchmarks** (disponibles en `benchmarks/`):
+- Extracción: ~0.9s (3 símbolos, 1 año)
+- Monte Carlo: ~0.2s (10K simulaciones × 252 días)
+- **Throughput**: ~48,000 simulaciones/segundo
+
 ### Puntos Fuertes del Proyecto:
 
 ✅ **Arquitectura modular:** Fácil de extender y mantener  
 ✅ **Múltiples fuentes:** Yahoo, Binance, Tiingo  
+✅ **Alto rendimiento:** 48K simulaciones/segundo  
 ✅ **Validación matemática:** Simulación coherente  
 ✅ **Documentación completa:** README, QUICKSTART, ARCHITECTURE  
 ✅ **Tests implementados:** Unitarios e integración  
