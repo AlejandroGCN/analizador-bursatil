@@ -332,6 +332,18 @@ def _display_portfolio_stats(portfolio: Any) -> None:
     Args:
         portfolio: Objeto Portfolio con datos de la cartera
     """
+    # Mostrar activos y pesos simulados
+    st.info(f"💼 **Cartera simulada:** {len(portfolio.symbols)} activo(s)")
+    
+    # Crear tabla con activos y pesos
+    portfolio_composition = pd.DataFrame({
+        "Activo": portfolio.symbols,
+        "Peso": [f"{w*100:.2f}%" for w in portfolio.weights]
+    })
+    st.dataframe(portfolio_composition, hide_index=True, width='stretch')
+    
+    st.markdown("---")
+    
     stats = portfolio.get_statistics()
     
     col1, col2, col3, col4 = st.columns(4)
@@ -509,7 +521,7 @@ def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
             st.session_state.get("montecarlo_portfolio")
         )
     else:
-        st.info("💡 Configura los parámetros de simulación en el panel lateral y ejecuta la simulación.")
+        st.info("💡 Configura los parámetros de simulación en el panel lateral y **pulsa Enter o haz clic en el botón '🎲 Ejecutar simulación'** situado **al final del panel lateral** (haz scroll hacia abajo si es necesario).")
 
 
 def _show_montecarlo_results(results: pd.DataFrame, portfolio: Any) -> None:

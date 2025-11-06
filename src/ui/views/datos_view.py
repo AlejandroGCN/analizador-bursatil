@@ -391,14 +391,12 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """Contenido central de la pestaña 📊 Datos."""
     st.subheader("📊 Vista de datos")
     
-    # CSS para ocultar elementos del formulario (botón, bordes, texto)
+    # CSS para ocultar elementos del formulario
     st.markdown("""
         <style>
-        /* Ocultar botón submit completamente */
         div[data-testid="stFormSubmitButton"] {
             display: none !important;
         }
-        /* Ocultar bordes del formulario */
         div[data-testid="stForm"] {
             border: none !important;
             padding: 0 !important;
@@ -407,24 +405,34 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """, unsafe_allow_html=True)
     
     # Formulario para capturar Enter en el input de símbolos
-    with st.form("form_simbolos_central", clear_on_submit=False, border=False):
+    with st.form("form_simbolos_datos", clear_on_submit=False):
         st.text_input(
             "Símbolos (separados por comas)",
             key="datos_simbolos",
-            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). **Pulsa Enter para descargar automáticamente** los datos y calcular pesos en la cartera.",
+            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Tras escribir, pulsa **Enter** para descargar los datos automáticamente.",
             placeholder="AAPL, MSFT, GOOGL"
         )
-        # Botón oculto con CSS (necesario para que Enter funcione)
-        enter_submitted = st.form_submit_button("Submit")
+        # Botón oculto (necesario para que Enter funcione)
+        form_submitted = st.form_submit_button("Submit")
     
-    # Si se pulsa Enter → descargar automáticamente
-    if enter_submitted and params is not None:
+    # Si se pulsa Enter, construir params y activar descarga
+    if form_submitted:
         simbolos_texto = st.session_state.get("datos_simbolos", "")
         if simbolos_texto and simbolos_texto.strip():
+            # Construir params desde session_state
+            from ui.sidebars import DatosParams
+            import pandas as pd
+            params = DatosParams(
+                fuente=st.session_state.get("fuente_datos", "Yahoo"),
+                simbolos=simbolos_texto,
+                fecha_ini=st.session_state.get("fecha_ini_datos", pd.to_datetime("2020-01-01")),
+                fecha_fin=st.session_state.get("fecha_fin_datos", pd.to_datetime("2025-01-01")),
+                intervalo=st.session_state.get("intervalo_datos", "1d"),
+                tipo=st.session_state.get("tipo_datos", "Precios Históricos")
+            )
             submit = True
         else:
             st.error("❌ **Error:** Debes ingresar al menos un símbolo antes de descargar datos.")
-            submit = False
     
     # Validar que haya símbolos si se está pulsando el botón del sidebar
     simbolos_texto = st.session_state.get("datos_simbolos", "")
@@ -433,7 +441,7 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
         st.divider()
     
     # Mostrar información de símbolos si corresponde
-    if _should_display_symbol_info(submit or enter_submitted, params, simbolos_texto):
+    if _should_display_symbol_info(submit, params, simbolos_texto):
         display_symbol_info(contexto="datos")
     
     st.divider()

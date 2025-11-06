@@ -258,8 +258,8 @@ def display_symbol_info(contexto: str = "datos") -> None:
         
         **📥 Para obtener los datos:**
         1. Introduce los símbolos en el campo de texto arriba
-        2. Configura las fechas e intervalo en el **panel lateral** (izquierda)
-        3. Haz clic en el botón **"Obtener datos"** del panel lateral
+        2. Configura las fechas e intervalo en el **panel lateral** si es necesario
+        3. Tras escribir los símbolos, pulsa **Enter** para descargar automáticamente
         
         **Ejemplos válidos:**
         - Yahoo Finance: `AAPL, MSFT, GOOGL, TSLA`
@@ -282,10 +282,10 @@ def display_symbol_info(contexto: str = "datos") -> None:
         
         **📝 Pasos para construir tu cartera:**
         1. Introduce los símbolos en el campo de texto arriba
-        2. **Presiona Enter o Tab** para que aparezcan los campos de pesos en el panel lateral
-        3. Asigna el porcentaje de cada activo en el panel lateral (deben sumar **100%**)
+        2. Tras escribir los símbolos, pulsa **Enter** para aplicar pesos iguales automáticamente
+        3. Opcionalmente, personaliza los pesos en el **panel lateral** (deben sumar **100%**)
         4. Define el valor inicial de tu cartera en el panel lateral (ej: $10,000)
-        5. Haz clic en el botón **"Aplicar Pesos"** del panel lateral
+        5. Si ajustaste pesos manualmente, haz clic en **"Aplicar Pesos"** del panel lateral
         
         **⚠️ Importante:**
         - Los símbolos deben existir en los datos descargados (pestaña **📊 Datos**)

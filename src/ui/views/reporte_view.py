@@ -13,11 +13,21 @@ def _check_prerequisites() -> bool:
     """Verifica que existan los prerrequisitos para generar el reporte."""
     missing_steps = []
     
-    if "portfolio_symbols" not in st.session_state or "portfolio_weights" not in st.session_state:
-        missing_steps.append("💼 Configura una cartera en la pestaña 'Cartera'")
+    # Verificar si hay una simulación individual activa
+    sim_type = st.session_state.get("montecarlo_sim_type")
+    individual_symbol = st.session_state.get("montecarlo_symbol")
     
-    if "last_data_map" not in st.session_state:
-        missing_steps.append("📊 Descarga datos en la pestaña 'Datos'")
+    # Si es simulación individual, solo verificar datos
+    if sim_type == "individual" and individual_symbol:
+        if "last_data_map" not in st.session_state:
+            missing_steps.append("📊 Descarga datos en la pestaña 'Datos'")
+    else:
+        # Para cartera completa, verificar cartera configurada
+        if "portfolio_symbols" not in st.session_state or "portfolio_weights" not in st.session_state:
+            missing_steps.append("💼 Configura una cartera en la pestaña 'Cartera'")
+        
+        if "last_data_map" not in st.session_state:
+            missing_steps.append("📊 Descarga datos en la pestaña 'Datos'")
     
     # Validar que los datos sean precios históricos (no retornos)
     last_kind = st.session_state.get("last_kind", "ohlcv")
@@ -163,8 +173,20 @@ def _create_portfolio_from_data_cached(
 
 def _create_portfolio_from_data():
     """Wrapper para crear portfolio usando cache."""
-    portfolio_symbols = st.session_state.get("portfolio_symbols", [])
-    portfolio_weights = st.session_state.get("portfolio_weights", [])
+    # Verificar si la última simulación fue de un activo individual
+    sim_type = st.session_state.get("montecarlo_sim_type")
+    individual_symbol = st.session_state.get("montecarlo_symbol")
+    
+    if sim_type == "individual" and individual_symbol:
+        # Usar el activo individual simulado
+        logger.info(f"📊 Generando reporte para activo individual: {individual_symbol}")
+        portfolio_symbols = [individual_symbol]
+        portfolio_weights = [1.0]
+    else:
+        # Usar la cartera configurada
+        portfolio_symbols = st.session_state.get("portfolio_symbols", [])
+        portfolio_weights = st.session_state.get("portfolio_weights", [])
+    
     data_map = st.session_state.get("last_data_map", {})
     
     # Crear hash simple para invalidar cache cuando cambian los datos
@@ -182,7 +204,8 @@ def _create_portfolio_from_data():
     
     # Recrear portfolio desde datos cacheados
     from simulation import Portfolio
-    portfolio = Portfolio(name="Mi Cartera", symbols=list(symbols_tuple), weights=list(weights_tuple))
+    name = f"Activo: {individual_symbol}" if sim_type == "individual" else "Mi Cartera"
+    portfolio = Portfolio(name=name, symbols=list(symbols_tuple), weights=list(weights_tuple))
     portfolio.set_prices(pd.DataFrame(prices_dict))
     
     return portfolio
@@ -197,12 +220,25 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
     
     if submit and params is not None:
         try:
-            with st.spinner("📊 Generando reporte completo de la cartera..."):
+            # Verificar si es simulación individual
+            sim_type = st.session_state.get("montecarlo_sim_type")
+            individual_symbol = st.session_state.get("montecarlo_symbol")
+            
+            if sim_type == "individual" and individual_symbol:
+                spinner_text = f"📊 Generando reporte para {individual_symbol}..."
+            else:
+                spinner_text = "📊 Generando reporte completo de la cartera..."
+            
+            with st.spinner(spinner_text):
                 portfolio = _create_portfolio_from_data()
                 if portfolio:
                     st.session_state["reporte_portfolio"] = portfolio
-                    num_symbols = len(portfolio.symbols)
-                    st.success(f"✅ **Reporte generado exitosamente** para cartera con {num_symbols} activo(s)")
+                    
+                    if sim_type == "individual" and individual_symbol:
+                        st.success(f"✅ **Reporte generado exitosamente** para el activo **{individual_symbol}**")
+                    else:
+                        num_symbols = len(portfolio.symbols)
+                        st.success(f"✅ **Reporte generado exitosamente** para cartera con {num_symbols} activo(s)")
         except Exception as e:
             st.error(f"❌ Error generando reporte: {e}")
             import traceback
@@ -211,7 +247,7 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
     if "reporte_portfolio" in st.session_state:
         _show_portfolio_report(st.session_state["reporte_portfolio"])
     else:
-        st.info("💡 Configura los parámetros del reporte en el panel lateral y genera el reporte.")
+        st.info("💡 Configura los parámetros del reporte en el panel lateral y **haz clic en el botón '📄 Generar reporte'** situado **al final del panel lateral** (haz scroll hacia abajo si es necesario).")
 
 
 def _show_portfolio_report(portfolio: Any) -> None:
