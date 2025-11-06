@@ -627,10 +627,13 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
         """Grafica la distribución de pesos."""
         ax2 = fig.add_subplot(gs[1, 0])
         colors = plt.cm.tab10(range(len(self.symbols)))
-        bars = ax2.bar(self.symbols, [w*100 for w in self.weights], color=colors)
+        weights_pct = [w*100 for w in self.weights]
+        bars = ax2.bar(self.symbols, weights_pct, color=colors)
         ax2.set_title("Distribución de Pesos", fontsize=12, fontweight='bold')
         ax2.set_ylabel("Peso (%)")
         ax2.tick_params(axis='x', rotation=45)
+        # Ajustar límites del eje Y para que no se corten las etiquetas
+        ax2.set_ylim(0, max(weights_pct) * 1.15)
         for bar in bars:
             height = bar.get_height()
             ax2.text(bar.get_x() + bar.get_width()/2., height,
@@ -682,6 +685,8 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
         ax5.set_title("Métricas Clave", fontsize=12, fontweight='bold')
         ax5.set_ylabel("Valor")
         ax5.grid(True, alpha=0.3, axis='y')
+        # Ajustar límites del eje Y para que no se corten las etiquetas
+        ax5.set_ylim(0, max(values) * 1.15)
         
         # Añadir valores en las barras
         for bar, val in zip(bars, values):

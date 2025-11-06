@@ -407,7 +407,7 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """, unsafe_allow_html=True)
     
     # Formulario para capturar Enter en el input de símbolos
-    with st.form("form_simbolos_central", clear_on_submit=False):
+    with st.form("form_simbolos_central", clear_on_submit=False, border=False):
         st.text_input(
             "Símbolos (separados por comas)",
             key="datos_simbolos",
