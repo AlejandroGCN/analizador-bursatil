@@ -21,33 +21,6 @@ logger = logging.getLogger(__name__)
 
 
 @st.cache_data(ttl=300, max_entries=5)
-def _create_trajectories_chart(sample_results_tuple: tuple, num_days: int) -> bytes:
-    """Crea gráfico de trayectorias cacheado para mejor rendimiento."""
-    sample_results = pd.DataFrame(sample_results_tuple)
-    
-    fig, ax = plt.subplots(figsize=(12, 6))
-    
-    # Graficar cada trayectoria
-    for idx in range(len(sample_results)):
-        ax.plot(sample_results.iloc[idx], alpha=0.3, linewidth=0.8, color='steelblue')
-    
-    ax.set_xlabel('Día', fontsize=11, fontweight='bold')
-    ax.set_ylabel('Valor ($)', fontsize=11, fontweight='bold')
-    ax.set_title(f'{len(sample_results)} trayectorias simuladas (muestra)', fontsize=12, fontweight='bold')
-    ax.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    
-    # Convertir a bytes para cache
-    buf = BytesIO()
-    fig.savefig(buf, format='png', dpi=80, bbox_inches='tight')  # DPI reducido para mayor velocidad
-    buf.seek(0)
-    plt.close(fig)
-    
-    return buf.getvalue()
-
-
-@st.cache_data(ttl=300, max_entries=5)
 def _create_distribution_charts(final_values_tuple: tuple) -> bytes:
     """Crea gráficos de distribución (histograma y box plot) cacheados."""
     final_values = pd.Series(final_values_tuple)
@@ -563,18 +536,16 @@ def _show_montecarlo_results(results: pd.DataFrame, portfolio: Any) -> None:
     
     st.divider()
     
-    # Gráfico de trayectorias (optimizado con cache y expander para lazy loading)
-    with st.expander("📈 Ver trayectorias de simulación (50 muestras)", expanded=False):
-        with st.spinner("Generando gráfico de trayectorias..."):
-            sample_size = min(50, len(results))
-            rng = default_rng(seed=42)
-            sample_indices = rng.choice(len(results), sample_size, replace=False)
-            sample_results = results.iloc[sample_indices]
-            
-            # Convertir a tupla para cache
-            sample_tuple = tuple(sample_results.values.tolist())
-            trajectories_chart = _create_trajectories_chart(sample_tuple, results.shape[1])
-            st.image(trajectories_chart, use_container_width=True)
+    # Gráfico de trayectorias (con expander para lazy loading - mantiene interactividad)
+    with st.expander("📈 Ver trayectorias de simulación", expanded=False):
+        sample_size = min(50, len(results))
+        rng = default_rng(seed=42)
+        sample_indices = rng.choice(len(results), sample_size, replace=False)
+        sample_results = results.iloc[sample_indices]
+        
+        # Usar st.line_chart nativo de Streamlit (más bonito e interactivo)
+        st.line_chart(sample_results.T, height=400)
+        st.caption(f"ℹ️ Se ejecutaron **{len(results):,} simulaciones**. El gráfico muestra **{sample_size} muestras representativas** para claridad visual.")
     
     # Tabla de resumen en expander (solo columnas clave para reducir carga)
     with st.expander("📋 Ver tabla de resumen estadístico", expanded=False):
@@ -582,7 +553,7 @@ def _show_montecarlo_results(results: pd.DataFrame, portfolio: Any) -> None:
         if num_cols > 30:
             # Para horizonte largo, mostrar subconjunto
             key_cols = [0, num_cols//4, num_cols//2, 3*num_cols//4, num_cols-1]
-            st.dataframe(results.iloc[:, key_cols].describe(), use_container_width=True)
+            st.dataframe(results.iloc[:, key_cols].describe(), width='stretch')
             st.caption(f"ℹ️ Mostrando 5 días clave de {num_cols} días simulados (día 0, {num_cols//4}, {num_cols//2}, {3*num_cols//4}, {num_cols-1})")
         else:
-            st.dataframe(results.describe(), use_container_width=True)
+            st.dataframe(results.describe(), width='stretch')
