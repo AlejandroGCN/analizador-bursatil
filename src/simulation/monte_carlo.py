@@ -113,21 +113,18 @@ class MonteCarloSimulation:
         #
         # Nota: portfolio_return ya es el retorno logarítmico medio diario calculado
         # de los datos históricos, así que representa el drift estimado μ
+        #
+        # El cálculo es idéntico para volatilidad dinámica o constante:
+        # - Si dynamic_volatility=True: vols_daily es array (n_simulations, time_horizon)
+        # - Si dynamic_volatility=False: vols_daily es escalar
+        # NumPy maneja ambos casos automáticamente gracias a broadcasting
         
-        if dynamic_volatility:
-            # Término de drift ajustado por volatilidad (corrección de Itô)
-            drift = portfolio_return - 0.5 * (vols_daily ** 2)
-            # Término de difusión (shock estocástico)
-            diffusion = vols_daily * shocks
-            # Retorno logarítmico total
-            log_returns = drift + diffusion
-        else:
-            # Término de drift ajustado por volatilidad (corrección de Itô)
-            drift = portfolio_return - 0.5 * (vol_daily ** 2)
-            # Término de difusión (shock estocástico)
-            diffusion = vol_daily * shocks
-            # Retorno logarítmico total
-            log_returns = drift + diffusion
+        # Término de drift ajustado por volatilidad (corrección de Itô)
+        drift = portfolio_return - 0.5 * (vols_daily ** 2)
+        # Término de difusión (shock estocástico)
+        diffusion = vols_daily * shocks
+        # Retorno logarítmico total
+        log_returns = drift + diffusion
         
         logger.debug(f"  Retornos logarítmicos simulados: media={log_returns.mean():.8f}, std={log_returns.std():.8f}")
         logger.debug(f"  Retornos log - min={log_returns.min():.8f}, max={log_returns.max():.8f}")
@@ -224,7 +221,7 @@ class MonteCarloSimulation:
         Returns:
             None o matplotlib.figure.Figure dependiendo de return_figure
         """
-        # Detectar si estamos en Streamlit
+        # Detectar si estamos en Streamlit (usar variable de entorno estándar)
         is_streamlit = 'STREAMLIT_SERVER_PORT' in os.environ
         
         fig, ax = plt.subplots(figsize=figsize)

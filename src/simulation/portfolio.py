@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Constantes
 ERR_NO_RETURNS = "No hay datos de retornos. Ejecuta set_prices primero."
+TRADING_DAYS_PER_YEAR = 252  # Días de trading típicos en un año
 
 try:
     import seaborn as sns
@@ -94,6 +95,16 @@ class Portfolio:
     prices: Optional[pd.DataFrame] = None
     returns: Optional[pd.DataFrame] = None
     
+    @staticmethod
+    def _is_streamlit_context() -> bool:
+        """
+        Detecta si estamos ejecutando en un contexto de Streamlit.
+        
+        Returns:
+            True si estamos en Streamlit, False en caso contrario
+        """
+        return 'STREAMLIT_SERVER_PORT' in os.environ
+    
     def __post_init__(self) -> None:
         """Validar los pesos y asegurarse de que sumen 1.0"""
         if len(self.symbols) != len(self.weights):
@@ -156,7 +167,7 @@ class Portfolio:
         portfolio_ret = np.dot(self.weights, mean_returns)
         
         logger.debug(f"  Retorno cartera (diario): {portfolio_ret:.6f}")
-        logger.debug(f"  Retorno cartera (anualizado): {portfolio_ret * 252:.4%}")
+        logger.debug(f"  Retorno cartera (anualizado): {portfolio_ret * TRADING_DAYS_PER_YEAR:.4%}")
         
         return portfolio_ret
     
@@ -182,8 +193,8 @@ class Portfolio:
         
         logger.debug(f"  Varianza cartera (diaria): {portfolio_variance:.8f}")
         
-        # Anualizar (asumiendo 252 días de trading)
-        portfolio_vol = np.sqrt(portfolio_variance * 252)
+        # Anualizar usando días de trading estándar
+        portfolio_vol = np.sqrt(portfolio_variance * TRADING_DAYS_PER_YEAR)
         
         logger.debug(f"  Volatilidad cartera (anualizada): {portfolio_vol:.4%}")
         
@@ -199,7 +210,7 @@ class Portfolio:
         Returns:
             Ratio de Sharpe
         """
-        ret = self.portfolio_return() * 252  # Anualizar
+        ret = self.portfolio_return() * TRADING_DAYS_PER_YEAR  # Anualizar
         vol = self.portfolio_volatility()
         
         if vol == 0:
@@ -261,7 +272,7 @@ class Portfolio:
         logger.debug("  Parámetros calculados de la cartera:")
         logger.debug(f"    Retorno esperado (diario): {portfolio_return:.8f}")
         logger.debug(f"    Volatilidad (anualizada): {portfolio_volatility:.4%}")
-        logger.debug(f"    Retorno esperado (anualizado): {portfolio_return * 252:.4%}")
+        logger.debug(f"    Retorno esperado (anualizado): {portfolio_return * TRADING_DAYS_PER_YEAR:.4%}")
         
         results = MonteCarloSimulation.simulate_portfolio(
             portfolio_return=portfolio_return,
@@ -361,12 +372,12 @@ class Portfolio:
         # Calcular volatilidad anualizada del activo
         # Volatilidad diaria = std de retornos diarios
         asset_volatility_daily = asset_returns.std()
-        # Convertir a anualizada: σ_anual = σ_diaria * √252
-        asset_volatility_annualized = asset_volatility_daily * np.sqrt(252)
+        # Convertir a anualizada: σ_anual = σ_diaria * √TRADING_DAYS_PER_YEAR
+        asset_volatility_annualized = asset_volatility_daily * np.sqrt(TRADING_DAYS_PER_YEAR)
         
         logger.debug(f"  Parámetros calculados del activo '{symbol}':")
         logger.debug(f"    Retorno medio (diario): {asset_return_daily:.8f}")
-        logger.debug(f"    Retorno esperado (anualizado): {asset_return_daily * 252:.4%}")
+        logger.debug(f"    Retorno esperado (anualizado): {asset_return_daily * TRADING_DAYS_PER_YEAR:.4%}")
         logger.debug(f"    Volatilidad (diaria): {asset_volatility_daily:.8f}")
         logger.debug(f"    Volatilidad (anualizada): {asset_volatility_annualized:.4%}")
         
@@ -564,7 +575,7 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
         # Métricas principales
         md += f"""## 📈 Métricas Principales
 
-- **Retorno esperado (anualizado)**: {stats['return'] * 252:.2%}
+- **Retorno esperado (anualizado)**: {stats['return'] * TRADING_DAYS_PER_YEAR:.2%}
 - **Volatilidad (anualizada)**: {stats['volatility']:.2%}
 - **Ratio de Sharpe**: {stats['sharpe_ratio']:.2f}
 - **Número de activos**: {stats['num_assets']}
@@ -649,8 +660,8 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
         """Grafica la distribución de retornos."""
         ax4 = fig.add_subplot(gs[2, 0])
         portfolio_returns = self.returns @ self.weights
-        ax4.hist(portfolio_returns * 252, bins=50, edgecolor='black', alpha=0.7, color='steelblue')
-        ax4.axvline(portfolio_returns.mean() * 252, color='red', linestyle='--', linewidth=2, label='Media')
+        ax4.hist(portfolio_returns * TRADING_DAYS_PER_YEAR, bins=50, edgecolor='black', alpha=0.7, color='steelblue')
+        ax4.axvline(portfolio_returns.mean() * TRADING_DAYS_PER_YEAR, color='red', linestyle='--', linewidth=2, label='Media')
         ax4.set_title("Distribución de Retornos Anualizados", fontsize=12, fontweight='bold')
         ax4.set_xlabel("Retorno Anualizado")
         ax4.set_ylabel("Frecuencia")
@@ -663,7 +674,7 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
         stats = self.get_statistics()
         metrics = ['Retorno\n(anual)', 'Volatilidad\n(anual)', 'Sharpe\nRatio']
         values = [
-            stats['return'] * 252,
+            stats['return'] * TRADING_DAYS_PER_YEAR,
             stats['volatility'],
             stats['sharpe_ratio']
         ]
@@ -706,7 +717,7 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
             raise ValueError("No hay datos. Ejecuta set_prices primero.")
         
         # Detectar si estamos en Streamlit
-        is_streamlit = 'STREAMLIT_SERVER_PORT' in os.environ or 'streamlit' in str(type(plt))
+        is_streamlit = Portfolio._is_streamlit_context()
         
         # Configurar estilo
         if HAS_SEABORN:

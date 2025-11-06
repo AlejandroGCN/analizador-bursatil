@@ -24,29 +24,39 @@ class DataCleaner:
         """
         Limpia un DataFrame de series temporales aplicando correcciones estándar.
         
-        Operaciones realizadas:
+        Operaciones realizadas (solo si es necesario):
         - Elimina filas duplicadas
-        - Ordena índice cronológicamente (si es necesario)
+        - Ordena índice cronológicamente
         - Rellena valores faltantes usando forward-fill y backward-fill
         
         Args:
             df: DataFrame con índice temporal a limpiar
         
         Returns:
-            DataFrame limpio con duplicados eliminados, índice ordenado
-            y valores faltantes rellenados
+            DataFrame limpio. Si no hay problemas, devuelve el mismo objeto.
         
         Note:
-            Solo realiza cambios si detecta problemas. Si el DataFrame
-            ya está limpio, se devuelve sin modificaciones.
+            Optimizado para evitar copias innecesarias. Solo modifica si detecta problemas.
         """
-        if (df.index.has_duplicates or 
-            not df.index.is_monotonic_increasing or
-            df.isna().any().any()):
-            df = df.copy()
+        # Detectar si necesitamos hacer cambios
+        has_duplicates = df.index.has_duplicates
+        needs_sorting = not df.index.is_monotonic_increasing
+        has_nans = df.isna().any().any()
+        
+        if not (has_duplicates or needs_sorting or has_nans):
+            # DataFrame ya está limpio, no hacer copia
+            return df
+        
+        # Necesitamos modificar, hacer copia
+        df = df.copy()
+        
+        if has_duplicates:
             df = df.drop_duplicates()
-            if not df.index.is_monotonic_increasing:
-                df = df.sort_index()
+        
+        if needs_sorting:
+            df = df.sort_index()
+        
+        if has_nans:
             df = df.ffill().bfill()
         
         return df
