@@ -190,7 +190,10 @@ def _fetch_data_with_spinner(params: DatosParams, symbols_list: list[str]) -> di
         params.intervalo,
     )
     
-    with st.spinner("Descargando datos de mercado..."):
+    num_symbols = len(symbols_list)
+    symbol_text = f"{num_symbols} símbolo" if num_symbols == 1 else f"{num_symbols} símbolos"
+    
+    with st.spinner(f"📥 Descargando {symbol_text} desde {params.fuente}... Esto puede tomar unos segundos."):
         data_map = fetch_market_data(
             cfg_dict=cfg_dict,
             symbols=symbols_list,
@@ -218,10 +221,43 @@ def _should_display_symbol_info(submit: bool, params: DatosParams | None, simbol
     return not submit or not params or not simbolos_texto or not simbolos_texto.strip()
 
 
+def _validate_intraday_date_range(params: DatosParams) -> bool:
+    """
+    Valida que el rango de fechas sea apropiado para intervalos intradiarios.
+    
+    Returns:
+        True si la validación pasa, False si hay advertencias bloqueantes
+    """
+    # Detectar si es intervalo intradiario
+    is_intraday = params.intervalo in ["1m", "5m", "15m", "30m", "1h", "2h", "4h", "60m", "90m"]
+    
+    if not is_intraday:
+        return True  # No es intradía, no validar
+    
+    # Calcular días entre fechas
+    date_diff = (params.fecha_fin - params.fecha_ini).days
+    
+    # Yahoo Finance limita datos intradiarios a ~7 días
+    if params.fuente.lower() == "yahoo" and date_diff > 7:
+        st.error(f"❌ **Intradía en Yahoo**: Rango demasiado extenso ({date_diff} días). Máximo permitido: **7 días**")
+        st.info("💡 Reduce las fechas a 7 días o menos, o usa intervalo diario (1d)")
+        return False
+    
+    # Advertencia si el rango es largo (aunque no bloqueante para otras fuentes)
+    if date_diff > 30:
+        st.warning(f"⚠️ Rango extenso ({date_diff} días) con intervalo intradiario. La descarga puede ser lenta o fallar.")
+    
+    return True
+
+
 def _handle_form_submit(params: DatosParams) -> None:
     """Maneja el envío del formulario."""
     if not params.simbolos or not params.simbolos.strip():
         return
+    
+    # Validar rangos de fechas para intradía
+    if not _validate_intraday_date_range(params):
+        return  # Validación falló, no continuar
     
     try:
         logger.info(f"📥 Descargando datos - fuente: {params.fuente}, tipo: {params.tipo}")
@@ -262,19 +298,30 @@ def _handle_form_submit(params: DatosParams) -> None:
         
         _data_map(data_map, kind)
         
-        st.success(f"✅ **Datos descargados exitosamente**: {len(data_map)} símbolo(s) disponible(s)")
+        # Calcular rango de fechas del primer símbolo para mostrar en mensaje
+        first_symbol_data = next(iter(data_map.values()))
+        if isinstance(first_symbol_data, dict) and "data" in first_symbol_data:
+            df_sample = first_symbol_data["data"]
+            if not df_sample.empty:
+                date_range = f" | Periodo: {df_sample.index.min().strftime('%Y-%m-%d')} a {df_sample.index.max().strftime('%Y-%m-%d')}"
+            else:
+                date_range = ""
+        else:
+            date_range = ""
+        
+        st.success(f"✅ **Datos descargados exitosamente**: {len(data_map)} símbolo(s){date_range}")
         
     except SymbolNotFound as e:
-        # Error esperado: símbolo no existe - solo log simple sin traceback
-        logger.warning(f"❌ Símbolo no encontrado: {e.symbol} en {e.source}")
+        # Error esperado del usuario (símbolo no existe) - ya se muestra en UI
+        logger.info(f"Símbolo no encontrado: {e.symbol} en {e.source} (esperado, mostrado en UI)")
         _handle_extraction_error(e, params)
     except ExtractionError as e:
-        # Error esperado: problema de extracción - log simple
-        logger.warning(f"⚠️ Error de extracción: {str(e)}")
+        # Error esperado de extracción - ya se muestra en UI
+        logger.info(f"Error de extracción: {str(e)} (esperado, mostrado en UI)")
         _handle_extraction_error(e, params)
     except Exception as e:
-        # Error inesperado: log con traceback completo
-        logger.error(f"💥 Error inesperado obteniendo datos: {e}", exc_info=True)
+        # Error inesperado: este SÍ requiere atención
+        logger.error(f"Error inesperado obteniendo datos: {e}", exc_info=True)
         _handle_extraction_error(e, params)
 
 

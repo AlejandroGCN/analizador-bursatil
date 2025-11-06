@@ -135,13 +135,19 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
             st.session_state["intervalo_datos"] = "1d"
             intervalo_actual = "1d"
         
-        # Mostrar información sobre intervalos disponibles
+        # Detectar si es intervalo intradiario
+        is_intraday = intervalo_actual in ["1m", "5m", "15m", "30m", "1h", "2h", "4h", "60m", "90m"]
+        
         if fuente_actual == "Tiingo" and "Tiingo" in available_sources:
             st.info("ℹ️ Tiingo: Datos diarios de calidad institucional (70+ exchanges)")
         elif fuente_actual == "Binance":
             st.info("ℹ️ Binance: Datos intradía desde 1 minuto")
         elif fuente_actual == "Yahoo":
-            st.info("ℹ️ Yahoo: Datos diarios, semanales, mensuales e intradía")
+            if is_intraday:
+                st.warning("⚠️ **Intradía (Yahoo)**: Limita las fechas a **máximo 7 días** para obtener datos.")
+                st.info("💡 Ejemplo: Desde hoy menos 7 días hasta hoy")
+            else:
+                st.info("ℹ️ Yahoo: Datos diarios, semanales y mensuales sin límite de fechas")
         
         # Mostrar solo intervalos realmente disponibles para esta fuente
         index_default = 0
@@ -153,9 +159,14 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
             intervalos_disponibles, 
             key="intervalo_datos",
             index=index_default,
-            help=f"{len(intervalos_disponibles)} intervalos disponibles para {fuente_actual}"
+            help=f"{len(intervalos_disponibles)} intervalos disponibles para {fuente_actual}. 1d=diario, 1h=horario, 1m=minuto."
         )
-        st.selectbox("Tipo", ["Precios Históricos", "Retornos"], key="tipo_datos")
+        st.selectbox(
+            "Tipo", 
+            ["Precios Históricos", "Retornos"], 
+            key="tipo_datos",
+            help="Precios: valores OHLCV | Retornos: cambios porcentuales diarios"
+        )
         
         submitted = st.form_submit_button(
             "📥 Obtener datos",

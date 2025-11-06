@@ -216,7 +216,7 @@ def _validate_weights_sum(symbols_list: list[str]) -> Tuple[list[float], bool]:
     
     if abs(total_weight - 1.0) > 0.01:
         total_pct = total_weight * 100
-        logger.warning(f"Pesos no suman 100%: suma actual = {total_pct:.1f}%")
+        logger.info(f"Pesos no suman 100%: {total_pct:.1f}% (normalización automática, mostrado en UI)")
         
         # Mostrar error claro al usuario
         st.error(
@@ -275,7 +275,8 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
             100_000_000.0,  # Límite: 100 millones (cubre individual + institucional)
             DEFAULT_INITIAL_VALUE,
             step=1000.0,
-            key="cartera_valor_inicial"
+            key="cartera_valor_inicial",
+            help="Capital inicial a invertir. Puede ir desde $100 hasta $100M."
         )
         
         if current_symbols_list:

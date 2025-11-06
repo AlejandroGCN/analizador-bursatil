@@ -11,12 +11,21 @@ logger = logging.getLogger(__name__)
 
 def _check_prerequisites() -> bool:
     """Verifica que existan los prerrequisitos para generar el reporte."""
+    missing_steps = []
+    
     if "portfolio_symbols" not in st.session_state or "portfolio_weights" not in st.session_state:
-        st.info("💡 Primero configura una cartera en la pestaña '💼 Cartera'.")
-        return False
+        missing_steps.append("💼 Configura una cartera en la pestaña 'Cartera'")
+    
     if "last_data_map" not in st.session_state:
-        st.info("💡 Primero descarga datos en la pestaña '📊 Datos'.")
+        missing_steps.append("📊 Descarga datos en la pestaña 'Datos'")
+    
+    if missing_steps:
+        st.warning("⚠️ **Faltan pasos previos para generar el reporte:**")
+        for step in missing_steps:
+            st.markdown(f"- {step}")
+        st.info("💡 Completa los pasos anteriores y regresa aquí para ver el reporte completo.")
         return False
+    
     return True
 
 
@@ -129,7 +138,7 @@ def _create_portfolio_from_data_cached(
     )
     
     if symbols is None or weights is None:
-        logger.warning("No se pudo ajustar cartera - símbolos no coinciden")
+        logger.info("No se pudo ajustar cartera - símbolos no coinciden (mostrado en UI)")
         return None, None, None
     
     logger.debug(f"  Símbolos ajustados: {symbols}")
@@ -181,10 +190,12 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
     
     if submit and params is not None:
         try:
-            portfolio = _create_portfolio_from_data()
+            with st.spinner("📊 Generando reporte completo de la cartera..."):
+                portfolio = _create_portfolio_from_data()
             if portfolio:
                 st.session_state["reporte_portfolio"] = portfolio
-                st.success("✅ Reporte generado exitosamente!")
+                num_symbols = len(portfolio.symbols)
+                st.success(f"✅ **Reporte generado exitosamente** para cartera con {num_symbols} activo(s)")
         except Exception as e:
             st.error(f"❌ Error generando reporte: {e}")
             import traceback

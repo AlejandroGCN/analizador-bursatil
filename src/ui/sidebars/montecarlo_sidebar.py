@@ -110,9 +110,27 @@ def sidebar_montecarlo() -> Tuple[bool, MonteCarloParams]:
     
     # Resto de parámetros dentro del form
     with st.sidebar.form("form_montecarlo"):
-        nsims = st.number_input("Nº de simulaciones", 100, 10_000, 1000, key="mc_nsims")
-        horizonte = st.number_input("Horizonte (días)", 1, 365, 252, key="mc_horizonte")
-        vol_dyn = st.checkbox("¿Volatilidad dinámica?", key="mc_vol_dyn")
+        nsims = st.number_input(
+            "Nº de simulaciones", 
+            100, 
+            10_000, 
+            1000, 
+            key="mc_nsims",
+            help="Número de trayectorias aleatorias a simular. Más simulaciones = mayor precisión pero más tiempo."
+        )
+        horizonte = st.number_input(
+            "Horizonte (días)", 
+            1, 
+            1260,  # Máximo: 5 años (252 días × 5 = 1260)
+            252, 
+            key="mc_horizonte",
+            help="Días de trading a proyectar. 252 días = 1 año | 504 = 2 años | 1260 = 5 años"
+        )
+        vol_dyn = st.checkbox(
+            "¿Volatilidad dinámica?", 
+            key="mc_vol_dyn",
+            help="Simula variaciones en la volatilidad (más realista pero menos predecible)."
+        )
         
         submitted = st.form_submit_button(
             "💼 Lanzar simulación (Cartera)" if tipo_simulacion == "cartera" 

@@ -49,7 +49,7 @@ def _normalize_weights_if_needed(weights: list[float]) -> tuple[list[float], lis
     logger.debug(f"Normalizando pesos: {weights}, suma: {total_weight}")
     
     if not (1.0 - WEIGHT_TOLERANCE <= total_weight <= 1.0 + WEIGHT_TOLERANCE):
-        logger.warning(f"Pesos no suman 1.0 (suman {total_weight}), normalizando...")
+        logger.info(f"Pesos no suman 1.0 (suman {total_weight}), normalizando automáticamente")
         st.warning(f"⚠️ Los pesos suman {total_weight:.1%}. Normalizando para cálculos internos.")
         weights = [w / total_weight for w in weights]
         logger.debug(f"Pesos normalizados: {weights}, nueva suma: {sum(weights)}")
