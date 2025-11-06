@@ -461,6 +461,35 @@ def simulate_portfolio(self):
     return trajectories
 ```
 
+#### Paso 3b: Volatilidad Dinámica (Opcional - Feature Avanzada)
+
+**Qué es:**
+- En el modelo básico, la volatilidad σ es **constante** durante toda la simulación
+- Con volatilidad dinámica, σ **varía aleatoriamente** cada día entre 80% y 120% del valor base
+
+**Código:**
+```python
+if dynamic_volatility:
+    # Volatilidad cambia cada día: σ × [0.8, 1.2]
+    vol_multipliers = np.random.uniform(0.8, 1.2, size=(n_simulations, time_horizon))
+    vols_daily = vol_daily * vol_multipliers
+    # Ejemplo: si σ_base = 20%, entonces σ_día puede ser 16%-24%
+```
+
+**¿Por qué es más realista?**
+- En la realidad, la volatilidad **NO es constante**
+- Aumenta en crisis, disminuye en períodos tranquilos
+- Añade más variabilidad a las simulaciones
+
+**¿Cuándo usarla?**
+- ✅ Para análisis de sensibilidad
+- ✅ Para simular escenarios de incertidumbre
+- ❌ NO usar para comparaciones estándar (usa constante)
+
+**En tu proyecto:**
+- Por defecto: `False` (volatilidad constante - estándar)
+- El usuario puede activarla desde la interfaz con un checkbox
+
 #### Paso 4: Cálculo de Estadísticas
 
 ```python

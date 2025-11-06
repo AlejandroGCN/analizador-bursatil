@@ -1,4 +1,5 @@
-﻿"""
+﻿# -*- coding: utf-8 -*-
+"""
 Módulo de limpieza y validación de datos financieros.
 """
 import pandas as pd

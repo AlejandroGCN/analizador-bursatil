@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Módulo de simulación Monte Carlo para carteras de inversión.
 """

@@ -68,5 +68,4 @@ Issues = "https://github.com/AlejandroGCN/analizador-bursatil/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["data_extractor*"]
 

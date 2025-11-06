@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Clase Portfolio para gestionar carteras de activos.
 """

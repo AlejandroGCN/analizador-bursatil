@@ -73,7 +73,7 @@ El instalador automático configura **todo lo necesario desde cero**, incluyendo
 
 ---
 
-#### 🪟 Opción A: Windows con `install.bat` (Plug & Play - Totalmente Automático)
+#### 🪟 Opción A: Windows con `install.bat`
 
 ```bash
 # 1. Clonar el repositorio
@@ -86,16 +86,6 @@ cd analizador-bursatil
 # 3. Ejecutar el instalador
 install.bat
 ```
-
-**🎯 El instalador hace TODO automáticamente:**
-- ✅ Detecta si Python está instalado (o ofrece instalarlo automáticamente con winget)
-- ✅ Detecta la versión de Python y advierte si es incompatible (3.13+)
-- ✅ Busca versiones compatibles de Python en tu sistema (3.10, 3.11, 3.12)
-- ✅ Te permite elegir qué versión de Python usar si tienes varias instaladas
-- ✅ Crea un entorno virtual automáticamente para aislar dependencias
-- ✅ Instala todas las dependencias necesarias
-- ✅ Configura archivos de configuración
-- ✅ Opcionalmente ejecuta tests de verificación
 
 > ⚠️ **MUY IMPORTANTE para Windows**: 
 > - Ejecuta `install.bat` **SOLO desde CMD de Windows nativo**
