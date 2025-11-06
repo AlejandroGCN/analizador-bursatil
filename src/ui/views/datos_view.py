@@ -37,6 +37,42 @@ def _clear_old_cache() -> None:
         del st.session_state["reporte_portfolio"]
 
 
+def _auto_sync_to_portfolio(data_map: dict) -> None:
+    """
+    Auto-sincroniza símbolos descargados a la cartera con pesos iguales.
+    
+    Esta función se ejecuta automáticamente después de una descarga exitosa
+    para facilitar el flujo: descargar datos → crear cartera.
+    
+    Args:
+        data_map: Diccionario con datos descargados por símbolo
+    """
+    if not data_map:
+        return
+    
+    # Extraer símbolos descargados
+    symbols = list(data_map.keys())
+    n_symbols = len(symbols)
+    
+    # Calcular pesos iguales
+    equal_weight = 1.0 / n_symbols
+    weights = [equal_weight] * n_symbols
+    
+    # Guardar en session_state para cartera
+    st.session_state["cartera_symbols"] = ", ".join(symbols)
+    st.session_state["cartera_weights"] = ", ".join([f"{w:.4f}" for w in weights])
+    
+    # Actualizar también los símbolos en formato lista (usado internamente)
+    st.session_state["portfolio_symbols"] = symbols
+    st.session_state["portfolio_weights"] = weights
+    
+    logger.info(f"💼 Auto-sincronizado a cartera: {symbols} con pesos iguales ({equal_weight:.2%} cada uno)")
+    
+    # Mostrar notificación al usuario
+    peso_porcentaje = equal_weight * 100
+    st.info(f"💼 **Símbolos copiados a Cartera** con pesos iguales ({peso_porcentaje:.1f}% cada uno). Puedes ajustarlos en la pestaña '💼 Cartera'.")
+
+
 def _parse_and_validate_symbols(symbols_text: str) -> list[str]:
     """Parsea y valida los símbolos ingresados."""
     symbols_list = [s.strip() for s in symbols_text.replace(" ", ",").split(",") if s.strip()]
@@ -325,6 +361,9 @@ def _handle_form_submit(params: DatosParams) -> None:
         
         st.success(f"✅ **Datos descargados exitosamente**: {len(data_map)} símbolo(s){date_range}")
         
+        # Auto-sincronizar símbolos a cartera con pesos iguales
+        _auto_sync_to_portfolio(data_map)
+        
     except SymbolNotFound as e:
         # Error esperado del usuario (símbolo no existe) - ya se muestra en UI
         logger.info(f"Símbolo no encontrado: {e.symbol} en {e.source} (esperado, mostrado en UI)")
@@ -352,17 +391,49 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """Contenido central de la pestaña 📊 Datos."""
     st.subheader("📊 Vista de datos")
     
-    # Input de símbolos en el panel central (más espacio para ver todos)
-    render_symbol_input("datos_simbolos")
+    # CSS para ocultar elementos del formulario (botón, bordes, texto)
+    st.markdown("""
+        <style>
+        /* Ocultar botón submit completamente */
+        div[data-testid="stFormSubmitButton"] {
+            display: none !important;
+        }
+        /* Ocultar bordes del formulario */
+        div[data-testid="stForm"] {
+            border: none !important;
+            padding: 0 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     
-    # Validar que haya símbolos si se está pulsando el botón
+    # Formulario para capturar Enter en el input de símbolos
+    with st.form("form_simbolos_central", clear_on_submit=False):
+        st.text_input(
+            "Símbolos (separados por comas)",
+            key="datos_simbolos",
+            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). **Pulsa Enter para descargar automáticamente** los datos y calcular pesos en la cartera.",
+            placeholder="AAPL, MSFT, GOOGL"
+        )
+        # Botón oculto con CSS (necesario para que Enter funcione)
+        enter_submitted = st.form_submit_button("Submit")
+    
+    # Si se pulsa Enter → descargar automáticamente
+    if enter_submitted and params is not None:
+        simbolos_texto = st.session_state.get("datos_simbolos", "")
+        if simbolos_texto and simbolos_texto.strip():
+            submit = True
+        else:
+            st.error("❌ **Error:** Debes ingresar al menos un símbolo antes de descargar datos.")
+            submit = False
+    
+    # Validar que haya símbolos si se está pulsando el botón del sidebar
     simbolos_texto = st.session_state.get("datos_simbolos", "")
     if submit and params is not None and (not simbolos_texto or not simbolos_texto.strip()):
         st.error("❌ **Error:** Debes configurar al menos un símbolo antes de obtener datos.")
         st.divider()
     
     # Mostrar información de símbolos si corresponde
-    if _should_display_symbol_info(submit, params, simbolos_texto):
+    if _should_display_symbol_info(submit or enter_submitted, params, simbolos_texto):
         display_symbol_info(contexto="datos")
     
     st.divider()

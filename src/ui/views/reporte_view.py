@@ -138,13 +138,15 @@ def _create_portfolio_from_data_cached(
     logger.debug(f"  Pesos de cartera: {portfolio_weights}")
     logger.debug(f"  Símbolos disponibles en datos: {available_symbols}")
     
-    symbols, weights = _adjust_weights_for_available_symbols(
+    result = _adjust_weights_for_available_symbols(
         portfolio_symbols, portfolio_weights, available_symbols
     )
     
-    if symbols is None or weights is None:
+    if result is None:
         logger.info("No se pudo ajustar cartera - símbolos no coinciden (mostrado en UI)")
         return None, None, None
+    
+    symbols, weights = result
     
     logger.debug(f"  Símbolos ajustados: {symbols}")
     logger.debug(f"  Pesos ajustados: {weights}")

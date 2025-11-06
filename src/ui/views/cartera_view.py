@@ -199,7 +199,40 @@ def tab_cartera(submit: bool, params: CarteraParams | None) -> None:
     
     logger.info(f"View recibió: submit={submit}, params={params}")
     
-    render_symbol_input("cartera_symbols")
+    # CSS para ocultar elementos del formulario (botón, bordes)
+    st.markdown("""
+        <style>
+        /* Ocultar botón submit completamente */
+        div[data-testid="stFormSubmitButton"] {
+            display: none !important;
+        }
+        /* Ocultar bordes del formulario */
+        div[data-testid="stForm"] {
+            border: none !important;
+            padding: 0 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Formulario para capturar Enter en el input de símbolos
+    with st.form("form_simbolos_cartera", clear_on_submit=False):
+        st.text_input(
+            "Símbolos (separados por comas)",
+            key="cartera_symbols",
+            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). **Pulsa Enter para calcular pesos iguales automáticamente** en el panel lateral.",
+            placeholder="AAPL, MSFT, GOOGL"
+        )
+        # Botón oculto con CSS (necesario para que Enter funcione)
+        enter_submitted = st.form_submit_button("Submit")
+    
+    # Si se pulsa Enter → sincronizar pesos automáticamente
+    if enter_submitted:
+        simbolos_texto = st.session_state.get("cartera_symbols", "")
+        if simbolos_texto and simbolos_texto.strip():
+            st.success("✅ Símbolos actualizados. Los pesos se han calculado automáticamente en el panel lateral.")
+            st.info("💡 Ajusta los pesos en el panel lateral si lo deseas y pulsa '💼 Aplicar Pesos' para confirmar.")
+        else:
+            st.error("❌ **Error:** Debes ingresar al menos un símbolo.")
     
     has_portfolio = (
         "portfolio_symbols" in st.session_state 
@@ -207,7 +240,7 @@ def tab_cartera(submit: bool, params: CarteraParams | None) -> None:
     )
     symbols_text = st.session_state.get("cartera_symbols", "")
     
-    if not has_portfolio and (not symbols_text or not symbols_text.strip()):
+    if not has_portfolio and (not symbols_text or not symbols_text.strip()) and not enter_submitted:
         display_symbol_info(contexto="cartera")
     
     st.divider()

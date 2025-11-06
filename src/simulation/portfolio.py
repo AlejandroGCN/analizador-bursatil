@@ -725,7 +725,7 @@ La cartera está compuesta por **{len(self.symbols)} activos**:
         else:
             plt.style.use('default')
         fig = plt.figure(figsize=figsize)
-        gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
+        gs = fig.add_gridspec(3, 2, hspace=0.5, wspace=0.3)
         
         # Generar todos los subplots usando funciones auxiliares
         self._plot_prices_evolution(fig, gs)
