@@ -281,14 +281,22 @@ class TestTiingoAdapterUnit:
         # BaseAdapter._finalize_ohlcv() elimina timezone
         assert result.index.tz is None
     
-    def test_get_symbols_returns_empty(self, mock_api_key):
-        """Test que get_symbols retorna lista vacía (no disponible en free tier)."""
+    @patch('requests.get')
+    def test_get_symbols_with_mock(self, mock_get, mock_api_key, mock_tiingo_response):
+        """Test que get_symbols funciona correctamente con parámetros."""
         adapter = TiingoAdapter(api_key=mock_api_key)
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = mock_tiingo_response
         
-        symbols = adapter.get_symbols()
+        result = adapter.get_symbols(
+            symbols=['AAPL'],
+            start=pd.Timestamp('2024-01-01'),
+            end=pd.Timestamp('2024-01-10'),
+            interval='1d'
+        )
         
-        assert isinstance(symbols, list)
-        assert len(symbols) == 0
+        assert isinstance(result, dict)
+        assert 'AAPL' in result
     
     @patch('requests.get')
     def test_adapter_respects_timeout_parameter(self, mock_get, mock_api_key, mock_tiingo_response):
