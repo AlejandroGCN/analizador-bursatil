@@ -8,8 +8,6 @@ from data_extractor.core.normalizer import normalizer_tipology
 from data_extractor.series import (
     PriceSeries,
     PerformanceSeries,
-    VolumeActivitySeries,
-    VolatilitySeries,
 )
 
 # ---------------------------------------
@@ -62,9 +60,6 @@ def _make_ohlcv_partial(start, periods, freq="D", with_nans=False):
         ("ohlcv",          PriceSeries,          {},                        None),
         ("returns_pct",    PerformanceSeries,    {},                        "returns_pct"),
         ("returns_log",    PerformanceSeries,    {},                        "returns_log"),
-        # Nota: volume_activity y volatility eliminados de la UI pero siguen funcionando
-        ("volume_activity",VolumeActivitySeries, {"window": 5},             None),
-        ("volatility",     VolatilitySeries,     {"window": 5, "ann_factor": 252}, None),
     ],
 )
 def test_normalizer_all_tipologies(kind, expected_type, extra_kwargs, expect_kind_attr):

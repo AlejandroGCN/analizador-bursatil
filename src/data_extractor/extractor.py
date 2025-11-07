@@ -103,8 +103,6 @@ class DataExtractor:
                 - 'ohlcv': Precios OHLCV (Open, High, Low, Close, Volume)
                 - 'returns_pct': Retornos porcentuales
                 - 'returns_log': Retornos logarítmicos
-                - 'volatility': Volatilidad móvil
-                - 'volume_activity': Actividad de volumen
             **params: Parámetros adicionales específicos del provider:
                 - align: Estrategia de alineación ('intersect', 'union', None)
                 - ffill: Forward fill para valores faltantes (bool)

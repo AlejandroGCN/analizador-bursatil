@@ -18,7 +18,7 @@ graph TB
     TITLE["<b>JERARQUÍAS DE HERENCIA</b><br/>Patrón: Adapter + Provider + Series"]
     
     subgraph HIER1["🔌 Jerarquía de Adapters"]
-        BA["BaseAdapter<br/>«abstract»<br/><br/>+download_symbol&#40;&#41;<br/>+get_symbols&#40;&#41;"]
+        BA["BaseAdapter<br/>«abstract»"]
         
         YA[YahooAdapter]
         BIA[BinanceAdapter]
@@ -30,7 +30,7 @@ graph TB
     end
     
     subgraph HIER2["🏭 Jerarquía de Providers"]
-        BP["BaseProvider<br/>«abstract»<br/><br/>+get_symbols&#40;&#41;<br/>+get_data&#40;&#41;"]
+        BP["BaseProvider<br/>«abstract»"]
         
         YP[YahooProvider]
         BIP[BinanceProvider]
@@ -42,15 +42,14 @@ graph TB
     end
     
     subgraph HIER3["📊 Jerarquía de Series"]
-        BS["BaseSeries<br/>«abstract»<br/><br/>+symbol<br/>+data<br/>+to_dataframe&#40;&#41;"]
+        FMIX["FrameDataAccess<br/>«abstract base»"]
+        SMIX["SeriesDataAccess<br/>«abstract base»"]
         
         PS[PriceSeries]
         PERF[PerformanceSeries]
-        VOL[VolatilitySeries]
         
-        BS --> PS
-        BS --> PERF
-        BS --> VOL
+        FMIX --> PS
+        SMIX --> PERF
     end
     
     TITLE -.-> HIER1 & HIER2 & HIER3
@@ -61,7 +60,8 @@ graph TB
     %% Clases abstractas
     style BA fill:#ffe0b2,stroke:#e65100,stroke-width:3px,stroke-dasharray: 5 5
     style BP fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,stroke-dasharray: 5 5
-    style BS fill:#e0f2f1,stroke:#00695c,stroke-width:3px,stroke-dasharray: 5 5
+    style FMIX fill:#e0f2f1,stroke:#00695c,stroke-width:3px,stroke-dasharray: 5 5
+    style SMIX fill:#e0f2f1,stroke:#00695c,stroke-width:3px,stroke-dasharray: 5 5
     
     %% Adapters concretos
     style YA fill:#ffccbc,stroke:#e65100,stroke-width:2px
@@ -76,7 +76,6 @@ graph TB
     %% Series concretas
     style PS fill:#b2dfdb,stroke:#00695c,stroke-width:2px
     style PERF fill:#b2dfdb,stroke:#00695c,stroke-width:2px
-    style VOL fill:#b2dfdb,stroke:#00695c,stroke-width:2px
 ```
 
 
@@ -109,11 +108,15 @@ graph LR
     NORM[⚙️<br/>Normalizer<br/>OHLCV]
     
     SERIES[📊<br/>Series<br/>de Datos]
-    
+
+    CLEANER[🧽<br/>DataCleaner]
+
     PORTFOLIO[💼<br/>Portfolio<br/>Log-returns]
-    
+
     MC[🎲<br/>Monte Carlo<br/>GBM + Itô]
-    
+
+    REPORTS[📄<br/>Report Generator]
+
     RESULTS[📈<br/>Resultados]
     
     %% FLUJO PRINCIPAL
@@ -123,9 +126,11 @@ graph LR
     APIS -->|4. JSON| SOURCES
     SOURCES -->|5. Datos| NORM
     NORM -->|6. Crea| SERIES
-    SERIES -->|7. Alimenta| PORTFOLIO
-    PORTFOLIO -->|8. Simula| MC
-    MC -->|9. Output| RESULTS
+    SERIES -->|7. Limpia| CLEANER
+    CLEANER -->|8. Alimenta| PORTFOLIO
+    PORTFOLIO -->|9. Simula| MC
+    MC -->|10. Reporta| REPORTS
+    REPORTS -->|11. Output| RESULTS
     RESULTS --> UI
     
     %% ESTILOS
@@ -136,8 +141,10 @@ graph LR
     style APIS fill:#ffebee,stroke:#c62828,stroke-width:2px
     style NORM fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     style SERIES fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    style CLEANER fill:#fff8e1,stroke:#f57f17,stroke-width:2px
     style PORTFOLIO fill:#f1f8e9,stroke:#689f38,stroke-width:3px
     style MC fill:#c5e1a5,stroke:#689f38,stroke-width:3px
+    style REPORTS fill:#ede7f6,stroke:#4527a0,stroke-width:2px
     style RESULTS fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
 ```
 

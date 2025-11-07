@@ -551,7 +551,6 @@ def _render_series_chart(df: pd.DataFrame, kind: str = "series") -> None:
     title_map = {
         "returns": "📊 Retornos Diarios",
         "returns_pct": "📊 Retornos Diarios",
-        "volatility": "📉 Volatilidad",
         "performance": "📈 Performance",
         "volume": "📊 Volumen",
     }

@@ -449,6 +449,15 @@ analizador-bursatil/
 
 **Documentación detallada**: [ARCHITECTURE.md](ARCHITECTURE.md) | **Benchmarks**: [`benchmarks/`](./benchmarks/README.md)
 
+### Flujo end-to-end (visión rápida)
+
+1. `DataExtractor` funciona como fachada: recibe la petición de la UI, decide qué `Provider` usar y delega en el adapter correspondiente.
+2. Cada `Adapter` consulta su API, normaliza la respuesta y la entrega al `Normalizer` para obtener `PriceSeries` homogéneas.
+3. Antes de usarlas, `DataCleaner` detecta y corrige valores atípicos, índices incompletos o huecos en las series.
+4. Con esas series limpias se construye el `Portfolio`, que calcula covarianzas, métricas agregadas y guarda el estado.
+5. `MonteCarloSimulation` ejecuta las trayectorias estocásticas necesarias para analizar riesgo tanto de la cartera completa como de activos individuales.
+6. Finalmente, `MonteCarloReporter` (`ReportGenerator`) arma el informe en Markdown con métricas, tablas y conclusiones listas para presentar en la UI.
+
 ---
 
 ## Sistema de Logging

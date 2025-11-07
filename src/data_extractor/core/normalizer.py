@@ -7,8 +7,6 @@ from data_extractor.core.errors import NormalizationError
 from data_extractor.series import (
     PriceSeries,
     PerformanceSeries,
-    VolumeActivitySeries,
-    VolatilitySeries,
 )
 
 logger = logging.getLogger(__name__)
@@ -103,25 +101,11 @@ def _build_returns_log(symbol: str, source: str, df: pd.DataFrame, **_: Any) -> 
     log_returns = np.log(df["close"] / df["close"].shift(1)).dropna()
     return PerformanceSeries(symbol, source, log_returns, kind="returns_log")
 
-def _build_volume_activity(symbol: str, source: str, df: pd.DataFrame, *, window: int = 20, **_: Any) -> VolumeActivitySeries:
-    volume = df["volume"].astype(float)
-    mean = volume.rolling(window, min_periods=window).mean()
-    std = volume.rolling(window, min_periods=window).std(ddof=1).replace(0, np.nan)
-    zscore = (volume - mean) / std
-    return VolumeActivitySeries(symbol, source, zscore)
-
-def _build_volatility(symbol: str, source: str, df: pd.DataFrame, *, window: int = 20, ann_factor: int = 252, **_: Any) -> VolatilitySeries:
-    log_ret = np.log(df["close"] / df["close"].shift(1))
-    vol = log_ret.rolling(window, min_periods=window).std(ddof=1) * np.sqrt(ann_factor)
-    return VolatilitySeries(symbol, source, vol)
-
 # Mapeo de tipos de normalización a sus constructores
 NORMALIZERS: Dict[str, Callable[..., Any]] = {
     "ohlcv": _build_ohlcv,
     "returns_pct": _build_returns_pct,
     "returns_log": _build_returns_log,
-    "volume_activity": _build_volume_activity,
-    "volatility": _build_volatility,
 }
 
 # Pipeline principal de normalización

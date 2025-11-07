@@ -7,8 +7,8 @@ import numpy as np
 __all__ = [
     "validate_datetime_index",
     "mean_std_from_series",
-    "_SeriesLikeMixin",
-    "_FrameLikeMixin",
+    "SeriesDataAccess",
+    "FrameDataAccess",
 ]
 
 
@@ -45,9 +45,9 @@ def mean_std_from_series(s: pd.Series) -> Tuple[float, float]:
 # Mixins para evitar repetición en las dataclasses de series
 # ──────────────────────────────────────────────────────────────────────────────
 
-class _SeriesLikeMixin:
+class SeriesDataAccess:
     """
-    Mixin para clases con atributo `data: pd.Series`.
+    Base reutilizable para clases con atributo `data: pd.Series`.
     Proporciona: __len__, empty, index, to_series, tail.
     """
     data: pd.Series  # lo define la subclase
@@ -71,9 +71,9 @@ class _SeriesLikeMixin:
         return self.data.tail(n)
 
 
-class _FrameLikeMixin:
+class FrameDataAccess:
     """
-    Mixin para clases con atributo `data: pd.DataFrame`.
+    Base reutilizable para clases con atributo `data: pd.DataFrame`.
     Proporciona: __len__, empty, index, to_frame, tail.
     """
     data: pd.DataFrame  # lo define la subclase

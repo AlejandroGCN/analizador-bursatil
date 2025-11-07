@@ -19,24 +19,30 @@ graph LR
     
     NORM[⚙️<br/>Normalizer<br/>OHLCV]
     
-    SERIES[📊<br/>Series<br/>de Datos]
-    
+    SERIES[📊<br/>Series<br/>PriceSeries · PerformanceSeries]
+
+    CLEANER[🧽<br/>DataCleaner]
+
     PORTFOLIO[💼<br/>Portfolio<br/>Log-returns]
-    
+
     MC[🎲<br/>Monte Carlo<br/>GBM + Itô]
-    
+
+    REPORTS[📄<br/>Report Generator]
+
     RESULTS[📈<br/>Resultados]
     
     %% FLUJO PRINCIPAL
-    UI -->|1. Request| FACADE
-    FACADE -->|2. Delega| SOURCES
-    SOURCES -->|3. HTTP| APIS
-    APIS -->|4. JSON| SOURCES
-    SOURCES -->|5. Datos| NORM
-    NORM -->|6. Crea| SERIES
-    SERIES -->|7. Alimenta| PORTFOLIO
-    PORTFOLIO -->|8. Simula| MC
-    MC -->|9. Output| RESULTS
+    UI -->|Paso 1 · Request| FACADE
+    FACADE -->|Paso 2 · Delega| SOURCES
+    SOURCES -->|Paso 3 · HTTP| APIS
+    APIS -->|Paso 4 · JSON| SOURCES
+    SOURCES -->|Paso 5 · Datos| NORM
+    NORM -->|Paso 6 · Crea PriceSeries/PerformanceSeries| SERIES
+    SERIES -->|Paso 7 · Detecta NaN| CLEANER
+    CLEANER -->|Paso 8 · Limpia datos| PORTFOLIO
+    PORTFOLIO -->|Paso 9 · Simula| MC
+    MC -->|Paso 10 · Reporta| REPORTS
+    REPORTS -->|Paso 11 · Output| RESULTS
     RESULTS --> UI
     
     %% ESTILOS
@@ -47,7 +53,9 @@ graph LR
     style APIS fill:#ffebee,stroke:#c62828,stroke-width:2px
     style NORM fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     style SERIES fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    style CLEANER fill:#fff8e1,stroke:#f57f17,stroke-width:2px
     style PORTFOLIO fill:#f1f8e9,stroke:#689f38,stroke-width:3px
     style MC fill:#c5e1a5,stroke:#689f38,stroke-width:3px
+    style REPORTS fill:#ede7f6,stroke:#4527a0,stroke-width:2px
     style RESULTS fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
 

@@ -37,15 +37,17 @@ graph TB
     subgraph "📊 Capa de Series de Datos"
         PriceSeries[💰 PriceSeries<br/>OHLCV Data]
         PerfSeries[📈 PerformanceSeries<br/>Returns Data]
-        VolSeries[📊 VolatilitySeries<br/>Volatility Data]
-        VolActSeries[📈 VolumeActivitySeries<br/>Volume Data]
     end
     
     subgraph "🎯 Capa de Simulación"
         Portfolio[💼 Portfolio<br/>Asset Management]
         MonteCarlo[🎲 MonteCarloSimulation<br/>Risk Analysis]
     end
-    
+
+    subgraph "📝 Capa de Reportes"
+        Reporter[📄 MonteCarloReporter<br/>Report Generator]
+    end
+
     subgraph "🔧 Capa de Preprocesamiento"
         Cleaner[🧽 DataCleaner<br/>Data Preprocessing]
     end
@@ -84,17 +86,14 @@ graph TB
     %% Flujo de datos
     Extractor --> PriceSeries
     Extractor --> PerfSeries
-    Extractor --> VolSeries
-    Extractor --> VolActSeries
     
     PriceSeries --> Portfolio
     PerfSeries --> Portfolio
     Portfolio --> MonteCarlo
+    MonteCarlo --> Reporter
     
     PriceSeries --> Cleaner
     PerfSeries --> Cleaner
-    VolSeries --> Cleaner
-    VolActSeries --> Cleaner
     
     %% Estilos
     classDef uiLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -104,6 +103,7 @@ graph TB
     classDef adapterLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
     classDef seriesLayer fill:#e0f2f1,stroke:#004d40,stroke-width:2px
     classDef simulationLayer fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef reportingLayer fill:#ede7f6,stroke:#4527a0,stroke-width:2px
     classDef preprocessingLayer fill:#fff8e1,stroke:#f57f17,stroke-width:2px
     classDef externalLayer fill:#ffebee,stroke:#c62828,stroke-width:2px
     
@@ -112,8 +112,9 @@ graph TB
     class Extractor,ConfigExt dataLayer
     class Registry,YahooP,BinanceP,TiingoP providerLayer
     class BaseAdapter,YahooA,BinanceA,TiingoA adapterLayer
-    class PriceSeries,PerfSeries,VolSeries,VolActSeries seriesLayer
+    class PriceSeries,PerfSeries seriesLayer
     class Portfolio,MonteCarlo simulationLayer
+    class Reporter reportingLayer
     class Cleaner preprocessingLayer
     class YahooAPI,BinanceAPI,TiingoAPI externalLayer
 ```

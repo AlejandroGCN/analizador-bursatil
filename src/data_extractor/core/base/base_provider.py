@@ -9,8 +9,6 @@ import pandas as pd
 from data_extractor.series import (
     PriceSeries,
     PerformanceSeries,
-    VolumeActivitySeries,
-    VolatilitySeries,
 )
 from data_extractor.core.errors import ExtractionError
 from data_extractor.core.normalizer import normalizer_tipology  # Orquestador de normalización
@@ -18,7 +16,7 @@ from data_extractor.core.normalizer import normalizer_tipology  # Orquestador de
 logger = logging.getLogger(__name__)
 
 # Alias de tipo: cualquier serie normalizada que pueda devolver el normalizador
-SeriesType = Union[PriceSeries, PerformanceSeries, VolumeActivitySeries, VolatilitySeries]
+SeriesType = Union[PriceSeries, PerformanceSeries]
 
 
 class BaseProvider:

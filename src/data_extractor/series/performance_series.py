@@ -3,11 +3,15 @@ from dataclasses import dataclass, field
 from typing import Literal
 import pandas as pd
 
-from data_extractor.core.base.base_series import validate_datetime_index, mean_std_from_series, _SeriesLikeMixin
+from data_extractor.core.base.base_series import (
+    validate_datetime_index,
+    mean_std_from_series,
+    SeriesDataAccess,
+)
 
 
 @dataclass
-class PerformanceSeries(_SeriesLikeMixin):
+class PerformanceSeries(SeriesDataAccess):
     """
     Serie 1D de rendimientos (pct o log) derivados del 'close'.
     """
