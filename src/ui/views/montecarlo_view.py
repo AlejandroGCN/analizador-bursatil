@@ -521,7 +521,7 @@ def tab_montecarlo(submit: bool, params: MonteCarloParams | None) -> None:
             st.session_state.get("montecarlo_portfolio")
         )
     else:
-        st.info("💡 Configura los parámetros de simulación en el panel lateral y **pulsa Enter o haz clic en el botón '🎲 Ejecutar simulación'** situado **al final del panel lateral** (haz scroll hacia abajo si es necesario).")
+        st.info("💡 Configura los parámetros de simulación en el panel lateral y pulsa el botón **'🎲 Ejecutar simulación'** situado al final del panel lateral (haz scroll si es necesario).")
 
 
 def _show_montecarlo_results(results: pd.DataFrame, portfolio: Any) -> None:

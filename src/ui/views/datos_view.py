@@ -389,76 +389,19 @@ def _display_cached_data() -> None:
 
 def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """Contenido central de la pestaña 📊 Datos."""
-    logger.debug("=" * 80)
-    logger.debug("INICIO tab_datos")
-    logger.debug(f"  submit={submit}")
-    logger.debug(f"  params={params}")
-    if params:
-        logger.debug(f"    params.simbolos='{params.simbolos}'")
-        logger.debug(f"    params.fuente='{params.fuente}'")
-        logger.debug(f"    params.intervalo='{params.intervalo}'")
-    
     st.subheader("📊 Vista de datos")
     
-    # Formulario invisible para capturar Enter + actualización en tiempo real
-    st.markdown("""
-        <style>
-        section[data-testid="stMain"] div[data-testid="stForm"] {
-            border: none !important;
-            padding: 0 !important;
-        }
-        section[data-testid="stMain"] div[data-testid="stFormSubmitButton"] {
-            display: none !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    st.text_input(
+        "Símbolos (separados por comas)",
+        key="datos_simbolos",
+        help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Pulsa el botón '📥 Obtener datos' del panel lateral.",
+        placeholder="AAPL, MSFT, GOOGL"
+    )
     
-    with st.form("form_datos_enter", clear_on_submit=False):
-        st.text_input(
-            "Símbolos (separados por comas)",
-            key="datos_simbolos",
-            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Pulsa **Enter** para descarga rápida o usa el botón del sidebar.",
-            placeholder="AAPL, MSFT, GOOGL"
-        )
-        enter_pressed = st.form_submit_button("Submit")
-    
-    # Si se pulsó Enter en el formulario
-    if enter_pressed:
-        simbolos_texto = st.session_state.get("datos_simbolos", "")
-        logger.debug(f"ENTER detectado en campo símbolos")
-        logger.debug(f"  simbolos_texto: '{simbolos_texto}'")
-        if simbolos_texto and simbolos_texto.strip():
-            from ui.sidebars import DatosParams
-            import pandas as pd
-            params_enter = DatosParams(
-                fuente=st.session_state.get("fuente_datos", "Yahoo"),
-                simbolos=simbolos_texto,
-                fecha_ini=st.session_state.get("fecha_ini_datos", pd.to_datetime("2020-01-01")),
-                fecha_fin=st.session_state.get("fecha_fin_datos", pd.to_datetime("2025-01-01")),
-                intervalo=st.session_state.get("intervalo_datos", "1d"),
-                tipo=st.session_state.get("tipo_datos", "Precios Históricos")
-            )
-            logger.debug(f"  Descargando con Enter...")
-            _handle_form_submit(params_enter)
-            return
-    
-    # Obtener símbolos del session_state actual (panel central)
     simbolos_texto = st.session_state.get("datos_simbolos", "")
     
-    logger.debug(f"PROCESAMIENTO BOTÓN SIDEBAR")
-    logger.debug(f"  submit={submit}")
-    logger.debug(f"  simbolos_texto del session_state: '{simbolos_texto}'")
-    logger.debug(f"  params is not None: {params is not None}")
-    
-    # Si se pulsa el botón del sidebar, usar símbolos actuales de session_state
     if submit and params is not None:
-        logger.debug(f"BOTÓN SIDEBAR PRESIONADO")
-        logger.debug(f"  Símbolos encontrados en session_state: '{simbolos_texto}'")
-        logger.debug(f"  Símbolos en params originales: '{params.simbolos}'")
-        
         if simbolos_texto and simbolos_texto.strip():
-            logger.debug(f"  ✓ Símbolos válidos, construyendo params...")
-            # Actualizar params con símbolos actuales del panel central
             from ui.sidebars import DatosParams
             params = DatosParams(
                 fuente=params.fuente,
@@ -468,16 +411,12 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
                 intervalo=params.intervalo,
                 tipo=params.tipo
             )
-            logger.debug(f"  Params actualizados: simbolos='{params.simbolos}'")
-            logger.debug(f"  Llamando a _handle_form_submit...")
             _handle_form_submit(params)
         else:
-            logger.debug(f"  ✗ No hay símbolos válidos")
             st.error("❌ **Error:** Debes introducir al menos un símbolo antes de obtener datos.")
             st.divider()
             display_symbol_info(contexto="datos")
     else:
-        # Mostrar ayuda si no hay submit o no hay símbolos
         if _should_display_symbol_info(submit, params, simbolos_texto):
             display_symbol_info(contexto="datos")
         

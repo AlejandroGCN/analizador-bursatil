@@ -42,17 +42,19 @@ El vídeo debe explicar **QUÉ has hecho, CÓMO lo has hecho, y POR QUÉ**, cent
 
 ### Qué Decir:
 
-> "He desarrollado un **Analizador Bursátil** con **Streamlit** que permite realizar simulaciones de Monte Carlo para análisis de riesgo financiero. La aplicación descarga datos de múltiples fuentes (Yahoo Finance, Binance y Tiingo), construye carteras personalizadas y genera reportes completos con proyecciones de riesgo."
+> "He desarrollado un **Analizador Bursátil** completamente en **Python 3.12**, utilizando programación orientada a objetos con herencia, abstracción y patrones de diseño profesionales. La interfaz de usuario está construida con **Streamlit** para hacerla accesible y visual, pero el núcleo del proyecto es Python puro: descarga concurrente de datos desde múltiples APIs (Yahoo Finance, Binance y Tiingo), procesamiento con Pandas y NumPy, simulaciones Monte Carlo con movimiento browniano geométrico, y generación de reportes automatizados."
 
 ### Qué Mostrar:
 - Pantalla principal de la aplicación funcionando
 - Cambio rápido entre las 4 pestañas: Datos, Cartera, Monte Carlo, Reporte
+- **Importante**: Mencionar que Streamlit es solo la capa visual, el núcleo es Python
 
 ### Puntos Clave:
-- ✅ Multi-fuente (3 APIs)
-- ✅ Simulación Monte Carlo
-- ✅ Reportes automáticos
-- ✅ Interfaz intuitiva
+- ✅ **Python 3.12** como lenguaje principal (POO, herencia, abstracciones)
+- ✅ Multi-fuente (3 APIs) con descarga paralela
+- ✅ Simulación Monte Carlo (matemáticas financieras)
+- ✅ Reportes automáticos (Markdown + PDF)
+- ✅ Streamlit como framework de UI
 
 ---
 
@@ -60,21 +62,21 @@ El vídeo debe explicar **QUÉ has hecho, CÓMO lo has hecho, y POR QUÉ**, cent
 
 ### Qué Explicar:
 
-> "El proyecto sigue una **arquitectura modular** con **tres jerarquías de herencia principales** y un flujo de datos claro."
+> "El proyecto sigue una **arquitectura modular** basada en **tres jerarquías de herencia principales**, donde las clases base definen la estructura y comportamiento común que heredan y especializan las clases hijas."
 
 ### A. PRIMERO: Mostrar Diagrama de Jerarquías (20s)
 
 **Mostrar:** `docs/diagrams/1_jerarquias_herencia.mmd` (o PNG exportado)
 
-**Decir mientras lo muestras:**
+**Decir mientras lo muestras (PROFUNDIZAR EN FUNCIONES DE CLASES BASE):**
 
 > "Como ven en este diagrama, tengo **tres jerarquías de herencia**:
 > 
-> 1. **BaseAdapter** del que heredan YahooAdapter, BinanceAdapter y TiingoAdapter - son las clases que se conectan directamente a cada API.
+> 1. **BaseAdapter** - Es la clase base que define el contrato para todas las fuentes de datos. Tiene métodos abstractos como `fetch_ohlcv()`, `fetch_symbols()` y `validate_params()` que TODAS las clases hijas (YahooAdapter, BinanceAdapter, TiingoAdapter) deben implementar. También define métodos comunes como `_build_request_url()` y `_handle_api_errors()` que las hijas heredan y reutilizan. Esto asegura que cualquier fuente nueva que agregue seguirá el mismo patrón.
 > 
-> 2. **BaseProvider** del que heredan los tres providers - orquestan la descarga y normalización.
+> 2. **BaseProvider** - Orquesta la lógica de negocio. Proporciona métodos como `extract_data()` y `_normalize_response()` que las clases hijas (YahooProvider, BinanceProvider, TiingoProvider) heredan. La clave aquí es que el Provider usa su Adapter específico pero todos siguen el mismo flujo: validar → descargar → normalizar → devolver Series.
 > 
-> 3. **BaseSeries** del que heredan PriceSeries, PerformanceSeries y VolatilitySeries - representan diferentes tipos de datos financieros."
+> 3. **BaseSeries** - Es una dataclass que define la estructura de cualquier serie temporal. Tiene métodos estadísticos base como `mean()`, `std()`, `rolling_window()` que se calculan automáticamente al crear la serie. Las clases hijas (PriceSeries, PerformanceSeries, VolatilitySeries) heredan estos métodos y añaden otros específicos, como `calculate_returns()` en PriceSeries o `sharpe_ratio()` en PerformanceSeries."
 
 ### B. SEGUNDO: Mostrar Flujo de Arquitectura (20s)
 
@@ -83,6 +85,26 @@ El vídeo debe explicar **QUÉ has hecho, CÓMO lo has hecho, y POR QUÉ**, cent
 **Decir mientras lo muestras:**
 
 > "El flujo de datos es directo: la UI solicita datos al DataExtractor que actúa como **Facade Pattern**, este delega a los Providers que usan sus Adapters para consultar las APIs. Los datos se normalizan en el Normalizer, se crean las Series, se construye el Portfolio y se ejecuta Monte Carlo."
+
+### C. Clases de Objetos del Sistema:
+
+**Mencionar las diferentes clases de objetos:**
+
+```
+📦 OBJETOS DE DATOS:
+  - PriceSeries: Precios OHLCV históricos
+  - PerformanceSeries: Retornos y performance
+  - VolatilitySeries: Volatilidad histórica
+  
+💼 OBJETOS DE NEGOCIO:
+  - Portfolio: Colección de símbolos con pesos
+  - MonteCarloSimulation: Resultados de simulación
+  
+🔧 OBJETOS DE INFRAESTRUCTURA:
+  - Adapters: Conectores a APIs
+  - Providers: Orquestadores
+  - Normalizer: Unificador de formatos
+```
 
 ### Patrones de Diseño Aplicados:
 
@@ -152,7 +174,47 @@ El vídeo debe explicar **QUÉ has hecho, CÓMO lo has hecho, y POR QUÉ**, cent
 
 ## 4️⃣ UNIFICACIÓN DE FORMATOS (30 segundos)
 
-### El Problema:
+### Por Qué Estas Tres Fuentes:
+
+**He elegido Yahoo Finance, Binance y Tiingo estratégicamente:**
+
+1. **Yahoo Finance** - Datos de mercados tradicionales (NYSE, NASDAQ) gratuitos y confiables. Es la fuente principal para acciones.
+
+2. **Binance** - El mayor exchange de criptomonedas del mundo. Datos en tiempo real de cripto con alta frecuencia (hasta 1 minuto). API pública sin autenticación.
+
+3. **Tiingo** - Datos profesionales ajustados por dividendos y splits. Cubre tanto acciones como criptomonedas. Requiere API key pero tier gratuito es generoso.
+
+**Cobertura completa:** Acciones (NYSE/NASDAQ) + Criptomonedas + Datos ajustados profesionales
+
+### Descarga Paralela de Datos:
+
+**Implementación de concurrencia con ThreadPoolExecutor:**
+
+```python
+# data_extractor/extractor.py
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def fetch_multi_symbols(self, symbols: List[str], **kwargs):
+    results = {}
+    
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        # Lanzar descarga de todos los símbolos en paralelo
+        future_to_symbol = {
+            executor.submit(self._fetch_single, symbol, **kwargs): symbol
+            for symbol in symbols
+        }
+        
+        # Recolectar resultados conforme terminan
+        for future in as_completed(future_to_symbol):
+            symbol = future_to_symbol[future]
+            results[symbol] = future.result()
+    
+    return results
+```
+
+**Beneficio:** Descargar 10 símbolos tarda lo mismo que descargar 1 (limitado solo por el API rate limit)
+
+### El Problema de Formatos Diferentes:
 
 Cada API devuelve datos en formatos diferentes:
 
@@ -780,18 +842,49 @@ def generate_report(self):
 
 ## 8️⃣ CONCLUSIÓN (30 segundos)
 
-### Tecnologías y Herramientas:
+### Qué Decir (CON TUS PROPIAS PALABRAS):
+
+> "Este proyecto demuestra la importancia de las **estructuras y buenas prácticas** en Python. Decisiones como usar herencia, abstracciones y patrones de diseño pueden parecer engorrosas a pequeña escala, pero son las que permiten que el proyecto crezca y escale.
+>
+> He creado un sistema **modular y extensible** donde:
+> - Las **abstracciones** (BaseAdapter, BaseProvider, BaseSeries) definen contratos claros
+> - La **herencia** permite reutilizar código y mantener consistencia
+> - Los **patrones de diseño** (Facade, Adapter, Template Method) hacen el código profesional
+> - La **normalización** asegura que independientemente de la API, el formato de salida sea el mismo
+> - La **concurrencia** optimiza el rendimiento descargando datos en paralelo
+>
+> El resultado: un programa que es **plug-n-play**, extensible y mantenible."
+
+### Tecnologías Core:
 
 ```
-🐍 Python 3.12
-📊 Pandas, NumPy, SciPy
-📈 Streamlit (UI)
-🔌 yfinance, pandas_datareader (APIs)
-🧪 Pytest (Testing)
-🐳 Docker (Deployment)
-📝 Markdown (Reportes)
-🔐 python-dotenv (Seguridad)
+🐍 Python 3.12 (Lenguaje principal)
+   ├─ POO: Herencia, Abstracción, Encapsulación
+   ├─ Dataclasses para objetos de negocio
+   └─ ThreadPoolExecutor para paralelismo
+
+📊 Procesamiento de Datos
+   ├─ Pandas (series temporales)
+   ├─ NumPy (cálculos vectorizados)
+   └─ SciPy (estadísticas)
+
+🔌 Integración de APIs
+   ├─ Yahoo Finance, Binance, Tiingo
+   ├─ Normalización de formatos
+   └─ Descarga concurrente
+
+📈 Interfaz de Usuario
+   └─ Streamlit (capa visual)
+
+🧪 Calidad
+   ├─ Pytest (tests unitarios e integración)
+   ├─ Type hints (Python 3.12+)
+   └─ Documentación completa
 ```
+
+### Valor del Proyecto:
+
+> "No es solo una calculadora de Monte Carlo - es un **framework extensible** que puede crecer. Si mañana necesito agregar otra fuente de datos (Alpha Vantage, por ejemplo), solo creo `AlphaVantageAdapter` heredando de `BaseAdapter` e implemento sus métodos. El resto del sistema funciona sin cambios."
 
 ### 🚀 Rendimiento (Opcional - si te queda tiempo):
 

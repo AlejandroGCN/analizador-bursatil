@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Optional
 import streamlit as st
 import pandas as pd
 import logging
@@ -163,15 +163,24 @@ def _create_portfolio_from_data_cached(
     logger.debug(f"  Suma de pesos: {sum(weights):.6f}")
     
     # Filtrar prices_df para que solo contenga los símbolos del portfolio
+    logger.debug(f"  ANTES del filtrado:")
+    logger.debug(f"    prices_df.columns: {list(prices_df.columns)}")
+    logger.debug(f"    symbols del portfolio: {symbols}")
+    logger.debug(f"    weights del portfolio: {weights}")
+    
     available_columns = [col for col in symbols if col in prices_df.columns]
     if available_columns:
         prices_df_filtered = prices_df[available_columns]
-        logger.debug(f"  DataFrame filtrado: {list(prices_df_filtered.columns)}")
+        logger.debug(f"  DESPUÉS del filtrado:")
+        logger.debug(f"    prices_df_filtered.columns: {list(prices_df_filtered.columns)}")
+        logger.debug(f"    prices_df_filtered.shape: {prices_df_filtered.shape}")
     else:
         prices_df_filtered = prices_df
-        logger.warning(f"  No se pudieron filtrar columnas, usando DataFrame completo")
+        logger.debug(f"  ⚠️ No se pudieron filtrar columnas, usando DataFrame completo")
     
     portfolio = Portfolio(name="Mi Cartera", symbols=symbols, weights=weights)
+    logger.debug(f"  Portfolio creado con {len(symbols)} símbolos: {symbols}")
+    logger.debug(f"  A punto de llamar set_prices con DataFrame shape: {prices_df_filtered.shape}")
     portfolio.set_prices(prices_df_filtered)
     
     logger.info(f"✅ Portfolio creado exitosamente con {len(symbols)} activos")
@@ -198,8 +207,14 @@ def _create_portfolio_from_data():
     
     data_map = st.session_state.get("last_data_map", {})
     
-    # Crear hash simple para invalidar cache cuando cambian los datos
-    data_map_hash = str(hash(str(sorted(data_map.keys()))))
+    # Crear hash único que incluya los símbolos del portfolio para invalidar cache
+    data_map_hash = str(hash(str(sorted(data_map.keys())) + str(portfolio_symbols)))
+    
+    logger.debug(f"📋 _create_portfolio_from_data:")
+    logger.debug(f"  portfolio_symbols: {portfolio_symbols}")
+    logger.debug(f"  portfolio_weights: {portfolio_weights}")
+    logger.debug(f"  data_map keys: {list(data_map.keys())}")
+    logger.debug(f"  cache hash: {data_map_hash}")
     
     symbols_tuple, weights_tuple, prices_dict = _create_portfolio_from_data_cached(
         tuple(portfolio_symbols),
@@ -214,8 +229,32 @@ def _create_portfolio_from_data():
     # Recrear portfolio desde datos cacheados (ya filtrados en la función cacheada)
     from simulation import Portfolio
     name = f"Activo: {individual_symbol}" if sim_type == "individual" else "Mi Cartera"
+    
+    logger.debug(f"📋 Recreando portfolio desde caché:")
+    logger.debug(f"  symbols_tuple: {symbols_tuple}")
+    logger.debug(f"  weights_tuple: {weights_tuple}")
+    logger.debug(f"  prices_dict keys: {list(prices_dict.keys()) if isinstance(prices_dict, dict) else 'N/A'}")
+    
     portfolio = Portfolio(name=name, symbols=list(symbols_tuple), weights=list(weights_tuple))
-    portfolio.set_prices(pd.DataFrame(prices_dict))
+    
+    # Asegurar que prices_dict solo tenga las columnas del portfolio
+    prices_df_from_cache = pd.DataFrame(prices_dict)
+    logger.debug(f"  prices_df_from_cache.columns: {list(prices_df_from_cache.columns)}")
+    logger.debug(f"  prices_df_from_cache.shape: {prices_df_from_cache.shape}")
+    
+    # Filtrar solo las columnas que corresponden a los símbolos del portfolio
+    portfolio_symbols_list = list(symbols_tuple)
+    if set(portfolio_symbols_list) != set(prices_df_from_cache.columns):
+        logger.debug(f"  ⚠️ Mismatch entre símbolos del portfolio y columnas del DataFrame")
+        logger.debug(f"     Portfolio symbols: {portfolio_symbols_list}")
+        logger.debug(f"     DataFrame columns: {list(prices_df_from_cache.columns)}")
+        prices_df_final = prices_df_from_cache[portfolio_symbols_list]
+        logger.debug(f"  Filtrado aplicado, shape final: {prices_df_final.shape}")
+    else:
+        prices_df_final = prices_df_from_cache
+        logger.debug(f"  No es necesario filtrar, símbolos coinciden")
+    
+    portfolio.set_prices(prices_df_final)
     
     return portfolio
 
@@ -229,6 +268,11 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
     
     if submit and params is not None:
         try:
+            # Limpiar reporte anterior antes de generar uno nuevo
+            if "reporte_portfolio" in st.session_state:
+                logger.debug("Limpiando reporte anterior antes de generar nuevo")
+                del st.session_state["reporte_portfolio"]
+            
             # Verificar si es simulación individual
             sim_type = st.session_state.get("montecarlo_sim_type")
             individual_symbol = st.session_state.get("montecarlo_symbol")
@@ -256,7 +300,7 @@ def tab_reporte(submit: bool, params: ReporteParams | None) -> None:
     if "reporte_portfolio" in st.session_state:
         _show_portfolio_report(st.session_state["reporte_portfolio"])
     else:
-        st.info("💡 Configura los parámetros del reporte en el panel lateral y **haz clic en el botón '📄 Generar reporte'** situado **al final del panel lateral** (haz scroll hacia abajo si es necesario).")
+        st.info("💡 Configura los parámetros del reporte en el panel lateral y pulsa el botón **'📄 Generar reporte'** situado al final del panel lateral (haz scroll si es necesario).")
 
 
 def _show_portfolio_report(portfolio: Any) -> None:

@@ -199,47 +199,12 @@ def tab_cartera(submit: bool, params: CarteraParams | None) -> None:
     
     logger.info(f"View recibió: submit={submit}, params={params}")
     
-    # Formulario invisible para capturar Enter + actualización en tiempo real
-    st.markdown("""
-        <style>
-        section[data-testid="stMain"] div[data-testid="stForm"] {
-            border: none !important;
-            padding: 0 !important;
-        }
-        section[data-testid="stMain"] div[data-testid="stFormSubmitButton"] {
-            display: none !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    with st.form("form_cartera_enter", clear_on_submit=False):
-        st.text_input(
-            "Símbolos (separados por comas)",
-            key="cartera_symbols",
-            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Pulsa **Enter** para aplicar pesos iguales o usa el botón del sidebar.",
-            placeholder="AAPL, MSFT, GOOGL"
-        )
-        enter_pressed = st.form_submit_button("Submit")
-    
-    # Si se pulsó Enter, aplicar pesos iguales automáticamente
-    if enter_pressed:
-        symbols_text = st.session_state.get("cartera_symbols", "")
-        if symbols_text and symbols_text.strip():
-            logger.info("Enter presionado en cartera, aplicando pesos iguales automáticamente")
-            symbols = [s.strip() for s in symbols_text.split(",") if s.strip()]
-            if symbols:
-                equal_weight = 1.0 / len(symbols)
-                weights = [equal_weight] * len(symbols)
-                weights_str = ", ".join(f"{w:.4f}" for w in weights)
-                st.session_state["cartera_weights"] = weights_str
-                from ui.sidebars import CarteraParams
-                initial_value = st.session_state.get("portfolio_valor_inicial", DEFAULT_INITIAL_VALUE)
-                params_auto = CarteraParams(
-                    symbols=symbols_text,
-                    weights=weights_str,
-                    valor_inicial=initial_value
-                )
-                _process_portfolio_submission(params_auto)
+    st.text_input(
+        "Símbolos (separados por comas)",
+        key="cartera_symbols",
+        help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Ajusta pesos en el panel lateral y pulsa '💼 Aplicar Pesos'.",
+        placeholder="AAPL, MSFT, GOOGL"
+    )
     
     has_portfolio = (
         "portfolio_symbols" in st.session_state 

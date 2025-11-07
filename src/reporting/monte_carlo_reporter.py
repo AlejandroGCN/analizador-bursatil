@@ -129,6 +129,13 @@ class MonteCarloReporter:
         
         # Convertir DataFrame a dict serializable para cache
         prices_df = pd.DataFrame(prices_dict)
+        
+        # IMPORTANTE: Filtrar solo las columnas de los símbolos del portfolio
+        portfolio_symbols = portfolio.symbols
+        available_cols = [col for col in portfolio_symbols if col in prices_df.columns]
+        if available_cols:
+            prices_df = prices_df[available_cols]
+        
         prices_dict_serializable = prices_df.to_dict()
         
         symbols_tuple = tuple(portfolio.symbols)

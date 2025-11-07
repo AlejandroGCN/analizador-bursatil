@@ -256,11 +256,10 @@ def display_symbol_info(contexto: str = "datos") -> None:
         - **Manual**: Escribe en el campo de texto arriba, separados por comas (ej: `AAPL, MSFT, GOOGL`)
         - **Desde archivo**: Usa el botón "📂 Cargar desde archivo" en el panel lateral (TXT, CSV, JSON)
         
-        **📥 Para obtener los datos (dos opciones):**
-        
-        **Opción A - Descarga rápida:** Escribe símbolos → Pulsa **Enter**
-        
-        **Opción B - Con parámetros:** Ajusta fechas/intervalo en el sidebar → Pulsa **'📥 Obtener datos'**
+        **📥 Para obtener los datos:**
+        1. Introduce los símbolos en el campo de texto arriba
+        2. Ajusta fechas, intervalo y fuente en el **panel lateral** si es necesario
+        3. Pulsa el botón **'📥 Obtener datos'** del panel lateral
         
         **Ejemplos válidos:**
         - Yahoo Finance: `AAPL, MSFT, GOOGL, TSLA`
@@ -281,15 +280,11 @@ def display_symbol_info(contexto: str = "datos") -> None:
         - **Importar**: Usa el botón **"📥 Importar desde Datos"** en el panel lateral
         - **Desde archivo**: Usa el botón "📂 Cargar desde archivo" en el panel lateral (TXT, CSV, JSON)
         
-        **📝 Para construir tu cartera (dos opciones):**
-        
-        **Opción A - Pesos iguales rápidos:** Escribe símbolos → Pulsa **Enter**
-        
-        **Opción B - Pesos personalizados:**
-        1. Escribe símbolos en el campo de texto
-        2. Ajusta pesos en el **panel lateral** (deben sumar 100%)
-        3. Define valor inicial (ej: $10,000)
-        4. Pulsa **'💼 Aplicar Pesos'**
+        **📝 Pasos para construir tu cartera:**
+        1. Introduce los símbolos en el campo de texto arriba
+        2. En el **panel lateral**, ajusta los pesos de cada activo (deben sumar **100%**)
+        3. Define el valor inicial de tu cartera en el panel lateral (ej: $10,000)
+        4. Pulsa el botón **'💼 Aplicar Pesos'** del panel lateral
         
         **⚠️ Importante:**
         - Los símbolos deben existir en los datos descargados (pestaña **📊 Datos**)
