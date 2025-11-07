@@ -256,10 +256,11 @@ def display_symbol_info(contexto: str = "datos") -> None:
         - **Manual**: Escribe en el campo de texto arriba, separados por comas (ej: `AAPL, MSFT, GOOGL`)
         - **Desde archivo**: Usa el botón "📂 Cargar desde archivo" en el panel lateral (TXT, CSV, JSON)
         
-        **📥 Para obtener los datos:**
-        1. Introduce los símbolos en el campo de texto arriba
-        2. Opcionalmente, ajusta fechas e intervalo en el **panel lateral**
-        3. Tras escribir los símbolos, pulsa **Enter** para descargar
+        **📥 Para obtener los datos (dos opciones):**
+        
+        **Opción A - Descarga rápida:** Escribe símbolos → Pulsa **Enter**
+        
+        **Opción B - Con parámetros:** Ajusta fechas/intervalo en el sidebar → Pulsa **'📥 Obtener datos'**
         
         **Ejemplos válidos:**
         - Yahoo Finance: `AAPL, MSFT, GOOGL, TSLA`
@@ -280,12 +281,15 @@ def display_symbol_info(contexto: str = "datos") -> None:
         - **Importar**: Usa el botón **"📥 Importar desde Datos"** en el panel lateral
         - **Desde archivo**: Usa el botón "📂 Cargar desde archivo" en el panel lateral (TXT, CSV, JSON)
         
-        **📝 Pasos para construir tu cartera:**
-        1. Introduce los símbolos en el campo de texto arriba
-        2. Tras escribir los símbolos, pulsa **Enter** para aplicar pesos iguales automáticamente
-        3. Opcionalmente, personaliza los pesos en el **panel lateral** (deben sumar **100%**)
-        4. Define el valor inicial de tu cartera en el panel lateral (ej: $10,000)
-        5. Si ajustaste pesos manualmente, haz clic en **"Aplicar Pesos"** del panel lateral
+        **📝 Para construir tu cartera (dos opciones):**
+        
+        **Opción A - Pesos iguales rápidos:** Escribe símbolos → Pulsa **Enter**
+        
+        **Opción B - Pesos personalizados:**
+        1. Escribe símbolos en el campo de texto
+        2. Ajusta pesos en el **panel lateral** (deben sumar 100%)
+        3. Define valor inicial (ej: $10,000)
+        4. Pulsa **'💼 Aplicar Pesos'**
         
         **⚠️ Importante:**
         - Los símbolos deben existir en los datos descargados (pestaña **📊 Datos**)

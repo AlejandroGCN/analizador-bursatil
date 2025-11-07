@@ -144,49 +144,50 @@ def sidebar_datos() -> Tuple[bool, DatosParams]:
         else:
             st.sidebar.info("ℹ️ Yahoo: Datos históricos sin límite")
     
-    # Formulario principal (SIDEBAR - widgets dentro del form NO usan .sidebar)
-    with st.sidebar.form("form_datos"):
-        st.selectbox("Fuente de datos:", available_sources, key="fuente_datos")
-        
-        st.date_input("Fecha inicio", pd.to_datetime("2020-01-01"), key="fecha_ini_datos", format="DD/MM/YYYY")
-        st.date_input("Fecha fin", pd.to_datetime("2025-01-01"), key="fecha_fin_datos", format="DD/MM/YYYY")
-        
-        # Obtener intervalos disponibles dinámicamente según la fuente
-        intervalos_por_fuente = _get_available_intervals_by_source()
-        
-        # Leer fuente actual del session state
-        fuente_form = st.session_state.get("fuente_datos", available_sources[0])
-        intervalos_disponibles = intervalos_por_fuente.get(fuente_form, ["1d"])
-        
-        # Validar que el intervalo seleccionado sigue disponible después de cambiar de fuente
-        intervalo_form = st.session_state.get("intervalo_datos", "1d")
-        if intervalo_form not in intervalos_disponibles:
-            st.session_state["intervalo_datos"] = "1d"
-            intervalo_form = "1d"
-        
-        # Mostrar solo intervalos realmente disponibles para esta fuente
-        index_default = 0
-        if intervalo_form in intervalos_disponibles:
-            index_default = intervalos_disponibles.index(intervalo_form)
-        
-        st.selectbox(
-            "Intervalo", 
-            intervalos_disponibles, 
-            key="intervalo_datos",
-            index=index_default,
-            help=f"{len(intervalos_disponibles)} intervalos disponibles. 1d=diario, 1h=horario."
-        )
-        st.selectbox(
-            "Tipo", 
-            ["Precios Históricos", "Retornos"], 
-            key="tipo_datos",
-            help="Precios: valores OHLCV | Retornos: cambios porcentuales diarios"
-        )
-        
-        submitted = st.form_submit_button(
-            "📥 Obtener datos",
-            width='stretch'
-        )
+    # Inputs sin formulario para evitar conflictos con CSS
+    st.sidebar.selectbox("Fuente de datos:", available_sources, key="fuente_datos")
+    
+    st.sidebar.date_input("Fecha inicio", pd.to_datetime("2020-01-01"), key="fecha_ini_datos", format="DD/MM/YYYY")
+    st.sidebar.date_input("Fecha fin", pd.to_datetime("2025-01-01"), key="fecha_fin_datos", format="DD/MM/YYYY")
+    
+    # Obtener intervalos disponibles dinámicamente según la fuente
+    intervalos_por_fuente = _get_available_intervals_by_source()
+    
+    # Leer fuente actual del session state
+    fuente_form = st.session_state.get("fuente_datos", available_sources[0])
+    intervalos_disponibles = intervalos_por_fuente.get(fuente_form, ["1d"])
+    
+    # Validar que el intervalo seleccionado sigue disponible después de cambiar de fuente
+    intervalo_form = st.session_state.get("intervalo_datos", "1d")
+    if intervalo_form not in intervalos_disponibles:
+        st.session_state["intervalo_datos"] = "1d"
+        intervalo_form = "1d"
+    
+    # Mostrar solo intervalos realmente disponibles para esta fuente
+    index_default = 0
+    if intervalo_form in intervalos_disponibles:
+        index_default = intervalos_disponibles.index(intervalo_form)
+    
+    st.sidebar.selectbox(
+        "Intervalo", 
+        intervalos_disponibles, 
+        key="intervalo_datos",
+        index=index_default,
+        help=f"{len(intervalos_disponibles)} intervalos disponibles. 1d=diario, 1h=horario."
+    )
+    st.sidebar.selectbox(
+        "Tipo", 
+        ["Precios Históricos", "Retornos"], 
+        key="tipo_datos",
+        help="Precios: valores OHLCV | Retornos: cambios porcentuales diarios"
+    )
+    
+    # Botón fuera del formulario para que sea siempre visible
+    submitted = st.sidebar.button(
+        "📥 Obtener datos",
+        key="btn_obtener_datos",
+        use_container_width=True
+    )
     
     # Obtener valores para construir DatosParams
     simbolos = st.session_state.get("datos_simbolos", "")

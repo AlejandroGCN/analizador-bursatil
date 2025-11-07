@@ -244,7 +244,7 @@ pip install -r requirements.txt
 pip install -e .
 
 # 6. Crear directorios necesarios
-mkdir -p data var/logs var/config tmp/logs
+mkdir -p data var/logs var/config
 
 # 7. Copiar archivo de configuración
 cp .env.example .env  # Editar con tus API keys si es necesario

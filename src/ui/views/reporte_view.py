@@ -162,13 +162,22 @@ def _create_portfolio_from_data_cached(
     logger.debug(f"  Pesos ajustados: {weights}")
     logger.debug(f"  Suma de pesos: {sum(weights):.6f}")
     
+    # Filtrar prices_df para que solo contenga los símbolos del portfolio
+    available_columns = [col for col in symbols if col in prices_df.columns]
+    if available_columns:
+        prices_df_filtered = prices_df[available_columns]
+        logger.debug(f"  DataFrame filtrado: {list(prices_df_filtered.columns)}")
+    else:
+        prices_df_filtered = prices_df
+        logger.warning(f"  No se pudieron filtrar columnas, usando DataFrame completo")
+    
     portfolio = Portfolio(name="Mi Cartera", symbols=symbols, weights=weights)
-    portfolio.set_prices(prices_df)
+    portfolio.set_prices(prices_df_filtered)
     
     logger.info(f"✅ Portfolio creado exitosamente con {len(symbols)} activos")
     
     # Retornar datos serializables para recrear el portfolio
-    return tuple(symbols), tuple(weights), prices_df.to_dict()
+    return tuple(symbols), tuple(weights), prices_df_filtered.to_dict()
 
 
 def _create_portfolio_from_data():
@@ -202,7 +211,7 @@ def _create_portfolio_from_data():
         st.error("No se pudieron extraer precios de los datos.")
         return None
     
-    # Recrear portfolio desde datos cacheados
+    # Recrear portfolio desde datos cacheados (ya filtrados en la función cacheada)
     from simulation import Portfolio
     name = f"Activo: {individual_symbol}" if sim_type == "individual" else "Mi Cartera"
     portfolio = Portfolio(name=name, symbols=list(symbols_tuple), weights=list(weights_tuple))

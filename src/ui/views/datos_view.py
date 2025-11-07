@@ -389,42 +389,48 @@ def _display_cached_data() -> None:
 
 def tab_datos(submit: bool, params: DatosParams | None) -> None:
     """Contenido central de la pestaña 📊 Datos."""
+    logger.debug("=" * 80)
+    logger.debug("INICIO tab_datos")
+    logger.debug(f"  submit={submit}")
+    logger.debug(f"  params={params}")
+    if params:
+        logger.debug(f"    params.simbolos='{params.simbolos}'")
+        logger.debug(f"    params.fuente='{params.fuente}'")
+        logger.debug(f"    params.intervalo='{params.intervalo}'")
+    
     st.subheader("📊 Vista de datos")
     
-    # CSS para quitar bordes del formulario y ocultar botón Submit del panel central
+    # Formulario invisible para capturar Enter + actualización en tiempo real
     st.markdown("""
         <style>
-        /* Quitar bordes de todos los formularios */
-        div[data-testid="stForm"] {
+        section[data-testid="stMain"] div[data-testid="stForm"] {
             border: none !important;
             padding: 0 !important;
         }
-        /* Ocultar solo el botón del formulario central (no los del sidebar) */
         section[data-testid="stMain"] div[data-testid="stFormSubmitButton"] {
             display: none !important;
         }
         </style>
     """, unsafe_allow_html=True)
     
-    # Formulario para capturar Enter en el input de símbolos
-    with st.form("form_simbolos_datos", clear_on_submit=False):
+    with st.form("form_datos_enter", clear_on_submit=False):
         st.text_input(
             "Símbolos (separados por comas)",
             key="datos_simbolos",
-            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Tras escribir, pulsa **Enter** para descargar los datos automáticamente.",
+            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Pulsa **Enter** para descarga rápida o usa el botón del sidebar.",
             placeholder="AAPL, MSFT, GOOGL"
         )
-        # Botón oculto con CSS (necesario para que Enter funcione)
-        form_submitted = st.form_submit_button("Submit")
+        enter_pressed = st.form_submit_button("Submit")
     
-    # Si se pulsa Enter, construir params y activar descarga
-    if form_submitted:
+    # Si se pulsó Enter en el formulario
+    if enter_pressed:
         simbolos_texto = st.session_state.get("datos_simbolos", "")
+        logger.debug(f"ENTER detectado en campo símbolos")
+        logger.debug(f"  simbolos_texto: '{simbolos_texto}'")
         if simbolos_texto and simbolos_texto.strip():
-            # Construir params desde session_state (lee parámetros actuales del sidebar)
             from ui.sidebars import DatosParams
             import pandas as pd
-            params = DatosParams(
+            params_enter = DatosParams(
                 fuente=st.session_state.get("fuente_datos", "Yahoo"),
                 simbolos=simbolos_texto,
                 fecha_ini=st.session_state.get("fecha_ini_datos", pd.to_datetime("2020-01-01")),
@@ -432,28 +438,50 @@ def tab_datos(submit: bool, params: DatosParams | None) -> None:
                 intervalo=st.session_state.get("intervalo_datos", "1d"),
                 tipo=st.session_state.get("tipo_datos", "Precios Históricos")
             )
-            # Activar descarga directamente
-            _handle_form_submit(params)
-            return  # Salir para evitar procesamiento adicional
-        else:
-            st.error("❌ **Error:** Debes ingresar al menos un símbolo antes de descargar datos.")
+            logger.debug(f"  Descargando con Enter...")
+            _handle_form_submit(params_enter)
+            return
     
-    # Validar que haya símbolos si se está pulsando el botón del sidebar
+    # Obtener símbolos del session_state actual (panel central)
     simbolos_texto = st.session_state.get("datos_simbolos", "")
-    if submit and params is not None and (not simbolos_texto or not simbolos_texto.strip()):
-        st.error("❌ **Error:** Debes configurar al menos un símbolo antes de obtener datos.")
-        st.divider()
     
-    # Mostrar información de símbolos si corresponde
-    if _should_display_symbol_info(submit, params, simbolos_texto):
-        display_symbol_info(contexto="datos")
+    logger.debug(f"PROCESAMIENTO BOTÓN SIDEBAR")
+    logger.debug(f"  submit={submit}")
+    logger.debug(f"  simbolos_texto del session_state: '{simbolos_texto}'")
+    logger.debug(f"  params is not None: {params is not None}")
     
-    st.divider()
-    
-    # Manejar envío del formulario o mostrar datos cacheados
+    # Si se pulsa el botón del sidebar, usar símbolos actuales de session_state
     if submit and params is not None:
-        _handle_form_submit(params)
+        logger.debug(f"BOTÓN SIDEBAR PRESIONADO")
+        logger.debug(f"  Símbolos encontrados en session_state: '{simbolos_texto}'")
+        logger.debug(f"  Símbolos en params originales: '{params.simbolos}'")
+        
+        if simbolos_texto and simbolos_texto.strip():
+            logger.debug(f"  ✓ Símbolos válidos, construyendo params...")
+            # Actualizar params con símbolos actuales del panel central
+            from ui.sidebars import DatosParams
+            params = DatosParams(
+                fuente=params.fuente,
+                simbolos=simbolos_texto,
+                fecha_ini=params.fecha_ini,
+                fecha_fin=params.fecha_fin,
+                intervalo=params.intervalo,
+                tipo=params.tipo
+            )
+            logger.debug(f"  Params actualizados: simbolos='{params.simbolos}'")
+            logger.debug(f"  Llamando a _handle_form_submit...")
+            _handle_form_submit(params)
+        else:
+            logger.debug(f"  ✗ No hay símbolos válidos")
+            st.error("❌ **Error:** Debes introducir al menos un símbolo antes de obtener datos.")
+            st.divider()
+            display_symbol_info(contexto="datos")
     else:
+        # Mostrar ayuda si no hay submit o no hay símbolos
+        if _should_display_symbol_info(submit, params, simbolos_texto):
+            display_symbol_info(contexto="datos")
+        
+        st.divider()
         _display_cached_data()
 
 

@@ -261,32 +261,34 @@ def sidebar_cartera() -> Tuple[bool, CarteraParams]:
     
     _sync_weights_with_symbols()
     
-    with st.sidebar.form("form_cartera"):
-        current_symbols = st.session_state.get("cartera_symbols", "")
-        current_symbols_list = [
-            s.strip() for s in current_symbols.split(",") if s.strip()
-        ] if current_symbols else []
-        
-        st.markdown("💰 **Parámetros**")
-        
-        st.number_input(
-            "Valor inicial de la cartera ($)",
-            100.0,
-            100_000_000.0,  # Límite: 100 millones (cubre individual + institucional)
-            DEFAULT_INITIAL_VALUE,
-            step=1000.0,
-            key="cartera_valor_inicial",
-            help="Capital inicial a invertir. Puede ir desde $100 hasta $100M."
-        )
-        
-        if current_symbols_list:
-            _render_weight_inputs(current_symbols_list)
-        
-        submitted = st.form_submit_button(
-            "💼 Aplicar Pesos",
-            width='stretch',
-            disabled=not current_symbols_list
-        )
+    # Inputs sin formulario para evitar conflictos con CSS
+    current_symbols = st.session_state.get("cartera_symbols", "")
+    current_symbols_list = [
+        s.strip() for s in current_symbols.split(",") if s.strip()
+    ] if current_symbols else []
+    
+    st.sidebar.markdown("💰 **Parámetros**")
+    
+    st.sidebar.number_input(
+        "Valor inicial de la cartera ($)",
+        100.0,
+        100_000_000.0,  # Límite: 100 millones (cubre individual + institucional)
+        DEFAULT_INITIAL_VALUE,
+        step=1000.0,
+        key="cartera_valor_inicial",
+        help="Capital inicial a invertir. Puede ir desde $100 hasta $100M."
+    )
+    
+    if current_symbols_list:
+        _render_weight_inputs(current_symbols_list)
+    
+    # Botón fuera del formulario para que sea siempre visible
+    submitted = st.sidebar.button(
+        "💼 Aplicar Pesos",
+        key="btn_aplicar_pesos",
+        use_container_width=True,
+        disabled=not current_symbols_list
+    )
     
     if submitted:
         submitted_symbols = st.session_state.get("cartera_symbols", "")

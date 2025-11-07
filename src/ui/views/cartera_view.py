@@ -199,48 +199,39 @@ def tab_cartera(submit: bool, params: CarteraParams | None) -> None:
     
     logger.info(f"View recibió: submit={submit}, params={params}")
     
-    # CSS para quitar bordes del formulario y ocultar botón Submit del panel central
+    # Formulario invisible para capturar Enter + actualización en tiempo real
     st.markdown("""
         <style>
-        /* Quitar bordes de todos los formularios */
-        div[data-testid="stForm"] {
+        section[data-testid="stMain"] div[data-testid="stForm"] {
             border: none !important;
             padding: 0 !important;
         }
-        /* Ocultar solo el botón del formulario central (no los del sidebar) */
         section[data-testid="stMain"] div[data-testid="stFormSubmitButton"] {
             display: none !important;
         }
         </style>
     """, unsafe_allow_html=True)
     
-    # Formulario para capturar Enter en el input de símbolos
-    with st.form("form_simbolos_cartera", clear_on_submit=False):
+    with st.form("form_cartera_enter", clear_on_submit=False):
         st.text_input(
             "Símbolos (separados por comas)",
             key="cartera_symbols",
-            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Tras escribir, pulsa **Enter** para aplicar pesos iguales automáticamente.",
+            help="Introduce los símbolos separados por comas (ej: AAPL, MSFT, GOOGL). Pulsa **Enter** para aplicar pesos iguales o usa el botón del sidebar.",
             placeholder="AAPL, MSFT, GOOGL"
         )
-        # Botón oculto con CSS (necesario para que Enter funcione)
-        form_submitted = st.form_submit_button("Submit")
+        enter_pressed = st.form_submit_button("Submit")
     
-    # Si se pulsa Enter, aplicar pesos iguales automáticamente
-    if form_submitted:
+    # Si se pulsó Enter, aplicar pesos iguales automáticamente
+    if enter_pressed:
         symbols_text = st.session_state.get("cartera_symbols", "")
         if symbols_text and symbols_text.strip():
             logger.info("Enter presionado en cartera, aplicando pesos iguales automáticamente")
             symbols = [s.strip() for s in symbols_text.split(",") if s.strip()]
             if symbols:
-                # Crear pesos iguales
                 equal_weight = 1.0 / len(symbols)
                 weights = [equal_weight] * len(symbols)
                 weights_str = ", ".join(f"{w:.4f}" for w in weights)
-                
-                # Actualizar el campo de pesos en session_state
                 st.session_state["cartera_weights"] = weights_str
-                
-                # Crear params y procesar
                 from ui.sidebars import CarteraParams
                 initial_value = st.session_state.get("portfolio_valor_inicial", DEFAULT_INITIAL_VALUE)
                 params_auto = CarteraParams(

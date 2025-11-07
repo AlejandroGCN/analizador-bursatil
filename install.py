@@ -252,7 +252,6 @@ class Installer:
             "data",
             "var/logs",
             "var/config",
-            "tmp/logs",
         ]
         
         for directory in directories:

@@ -9,9 +9,9 @@ import pandas as pd
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 SRC_DIR = REPO_ROOT / "src"
-TMP_LOG_DIR = REPO_ROOT / "tmp" / "logs"
-TMP_LOG_DIR.mkdir(parents=True, exist_ok=True)
-LOG_FILE = TMP_LOG_DIR / "tests.log"
+VAR_LOG_DIR = REPO_ROOT / "var" / "logs"
+VAR_LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = VAR_LOG_DIR / "tests.log"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
