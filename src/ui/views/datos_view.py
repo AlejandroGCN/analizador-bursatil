@@ -346,7 +346,8 @@ def _handle_form_submit(params: DatosParams) -> None:
         
         logger.debug(f"  Tipo de datos guardado: {kind}")
         
-        _data_map(data_map, kind)
+        # Auto-sincronizar símbolos a cartera con pesos iguales (que el aviso salga primero)
+        _auto_sync_to_portfolio(data_map)
         
         # Calcular rango de fechas del primer símbolo para mostrar en mensaje
         first_symbol_data = next(iter(data_map.values()))
@@ -361,8 +362,7 @@ def _handle_form_submit(params: DatosParams) -> None:
         
         st.success(f"✅ **Datos descargados exitosamente**: {len(data_map)} símbolo(s){date_range}")
         
-        # Auto-sincronizar símbolos a cartera con pesos iguales
-        _auto_sync_to_portfolio(data_map)
+        _data_map(data_map, kind)
         
     except SymbolNotFound as e:
         # Error esperado del usuario (símbolo no existe) - ya se muestra en UI

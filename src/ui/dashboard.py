@@ -186,12 +186,17 @@ if "_symbols_initialized" not in st.session_state:
 # Restaurar los valores guardados SOLO cuando cambia la pestaña
 # (no en cada rerun para evitar sobrescribir lo que el usuario está escribiendo)
 if st.session_state.get("_tab_change_occurred", False):
-    if "saved_datos_simbolos" in st.session_state:
-        st.session_state["datos_simbolos"] = st.session_state["saved_datos_simbolos"]
-    if "saved_cartera_symbols" in st.session_state:
-        st.session_state["cartera_symbols"] = st.session_state["saved_cartera_symbols"]
-    if "saved_cartera_weights" in st.session_state:
-        st.session_state["cartera_weights"] = st.session_state["saved_cartera_weights"]
+    saved_datos = st.session_state.get("saved_datos_simbolos", "")
+    if saved_datos and saved_datos.strip():
+        st.session_state["datos_simbolos"] = saved_datos
+
+    saved_cartera_symbols = st.session_state.get("saved_cartera_symbols", "")
+    if saved_cartera_symbols and saved_cartera_symbols.strip():
+        st.session_state["cartera_symbols"] = saved_cartera_symbols
+
+    saved_cartera_weights = st.session_state.get("saved_cartera_weights", "")
+    if saved_cartera_weights and saved_cartera_weights.strip():
+        st.session_state["cartera_weights"] = saved_cartera_weights
     
     # Limpiar la bandera para que no se ejecute en siguientes renders
     st.session_state["_tab_change_occurred"] = False
