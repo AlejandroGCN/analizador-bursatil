@@ -7,6 +7,8 @@ echo   Analizador Bursatil - Iniciando...
 echo ============================================
 echo.
 
+set "PYTHON_CMD=py"
+
 REM Verificar que estamos en el directorio correcto
 if not exist "run_app.py" (
     echo [ERROR] No se encontro run_app.py
@@ -24,6 +26,7 @@ if exist "venv\Scripts\activate.bat" (
         echo           Continuando con Python global...
     ) else (
         echo [OK] Entorno virtual activado
+        set "PYTHON_CMD=python"
     )
 ) else (
     echo [*] No se encontro entorno virtual, usando Python global
@@ -32,22 +35,28 @@ if exist "venv\Scripts\activate.bat" (
 
 REM Verificar que Python esta instalado
 echo [*] Verificando Python...
-python --version >nul 2>&1
+%PYTHON_CMD% --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python no esta instalado o no esta en el PATH
-    echo         Instala Python desde: https://www.python.org/downloads/
-    echo         O ejecuta: install.bat
-    pause
-    exit /b 1
+    if /i not "%PYTHON_CMD%"=="py" (
+        set "PYTHON_CMD=py"
+        %PYTHON_CMD% --version >nul 2>&1
+    )
+    if errorlevel 1 (
+        echo [ERROR] Python no esta instalado o no esta en el PATH
+        echo         Instala Python desde: https://www.python.org/downloads/
+        echo         O ejecuta: install.bat
+        pause
+        exit /b 1
+    )
 )
 
 REM Mostrar version de Python
-for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
+for /f "tokens=2" %%i in ('%PYTHON_CMD% --version 2^>^&1') do set PYTHON_VERSION=%%i
 echo [OK] Python %PYTHON_VERSION%
 
 REM Verificar que las dependencias estan instaladas
 echo [*] Verificando dependencias...
-python -c "import streamlit" 2>nul
+%PYTHON_CMD% -c "import streamlit" 2>nul
 if errorlevel 1 (
     echo [ERROR] Las dependencias no estan instaladas
     echo         Ejecuta: install.bat
@@ -69,7 +78,7 @@ echo Presiona Ctrl+C para detener la aplicacion
 echo.
 
 REM Ejecutar la aplicacion
-python run_app.py
+%PYTHON_CMD% run_app.py
 
 REM Si la aplicacion termina con error, pausar para ver el mensaje
 if errorlevel 1 (

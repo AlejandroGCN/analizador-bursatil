@@ -7,7 +7,7 @@ from ui.app_config import build_cfg_and_kind
 
 
 @st.cache_resource(show_spinner=False)
-def get_extractor(cfg_dict: dict, _cache_version: str = "v2") -> DataExtractor:
+def get_extractor(cfg_dict: dict, _cache_version: str = "v3-binance-pagination") -> DataExtractor:
     """Crea y cachea el DataExtractor (todas las fuentes son públicas)."""
     cfg = ExtractorConfig(**cfg_dict)
     return DataExtractor(cfg)
@@ -48,7 +48,7 @@ def fetch_market_data(cfg_dict: dict,
                       end: pd.Timestamp | None,
                       interval: str,
                       kind: str,
-                      _cache_version: str = "v2"):
+                      _cache_version: str = "v3-binance-pagination"):
     """Descarga y normaliza datos según los parámetros seleccionados."""
     extractor = get_extractor(cfg_dict, _cache_version)
     data_map = extractor.get_market_data(

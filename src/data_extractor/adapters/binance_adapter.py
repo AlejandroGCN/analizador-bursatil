@@ -29,43 +29,79 @@ class BinanceAdapter(BaseAdapter):
         if interval not in self.allowed_intervals:
             raise ExtractionError(f"Intervalo no soportado: {interval}", source=self.name)
 
-        params: Dict[str, Any] = {"symbol": symbol, "interval": interval}
-        # respeta limit si viene en options (p. ej. para tests)
-        if "limit" in options and options["limit"] is not None:
-            params["limit"] = int(options["limit"])
+        manual_limit = options.get("limit")
+        limit = int(manual_limit) if manual_limit is not None else 1000
+        # Binance acepta máximo 1000 klines por request
+        limit = max(1, min(limit, 1000))
 
-        if start is not None:
-            params["startTime"] = int(pd.to_datetime(start).timestamp() * 1000)
-        if end is not None:
-            params["endTime"] = int(pd.to_datetime(end).timestamp() * 1000)
+        end_ms = int(pd.to_datetime(end).timestamp() * 1000) if end is not None else None
+        # Paginar únicamente cuando el usuario pide un rango histórico amplio
+        should_paginate = manual_limit is None and start is not None
 
-        resp = self._session.get(_BINANCE_URL, params=params, timeout=self.timeout)
-        # errores típicos de Binance: 400 con {"code": -1121, ...}
-        if resp.status_code >= 400:
-            try:
-                payload = resp.json()
-            except (ValueError, TypeError, requests.exceptions.JSONDecodeError):
-                payload = {}
-            if isinstance(payload, dict) and payload.get("code") == -1121:
-                raise SymbolNotFound(f"Símbolo inválido: {symbol}", source=self.name)
-            raise ExtractionError(f"HTTP {resp.status_code}: {getattr(resp, 'text', '')}", source=self.name)
+        next_start_ms: Optional[int] = (
+            int(pd.to_datetime(start).timestamp() * 1000) if start is not None else None
+        )
 
-        raw = resp.json()
-        # cada kline: [openTime, open, high, low, close, volume, closeTime, ...]
-        cols = ["openTime","open","high","low","close","volume","closeTime"]
-        rows = [[it[0], it[1], it[2], it[3], it[4], it[5], it[6]] for it in raw]
+        frames: List[pd.DataFrame] = []
 
-        df = pd.DataFrame(rows, columns=cols)
-        df["openTime"] = pd.to_datetime(df["openTime"], unit="ms")
-        df.set_index("openTime", inplace=True)
-        df.rename(columns={
-            "open": "Open", "high": "High", "low": "Low",
-            "close": "Close", "volume": "Volume"
-        }, inplace=True)
+        while True:
+            params: Dict[str, Any] = {
+                "symbol": symbol,
+                "interval": interval,
+                "limit": limit,
+            }
 
-        # Conversión numérica vectorizada
-        numeric_cols = ["Open","High","Low","Close","Volume"]
-        df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce")
+            if next_start_ms is not None:
+                params["startTime"] = next_start_ms
+            if end_ms is not None:
+                params["endTime"] = end_ms
+
+            resp = self._session.get(_BINANCE_URL, params=params, timeout=self.timeout)
+            if resp.status_code >= 400:
+                try:
+                    payload = resp.json()
+                except (ValueError, TypeError, requests.exceptions.JSONDecodeError):
+                    payload = {}
+                if isinstance(payload, dict) and payload.get("code") == -1121:
+                    raise SymbolNotFound(f"Símbolo inválido: {symbol}", source=self.name)
+                raise ExtractionError(f"HTTP {resp.status_code}: {getattr(resp, 'text', '')}", source=self.name)
+
+            raw = resp.json()
+            if not raw:
+                break
+
+            cols = ["openTime","open","high","low","close","volume","closeTime"]
+            rows = [[it[0], it[1], it[2], it[3], it[4], it[5], it[6]] for it in raw]
+            chunk = pd.DataFrame(rows, columns=cols)
+            chunk["openTime"] = pd.to_datetime(chunk["openTime"], unit="ms")
+            chunk.set_index("openTime", inplace=True)
+            chunk.rename(columns={
+                "open": "Open", "high": "High", "low": "Low",
+                "close": "Close", "volume": "Volume"
+            }, inplace=True)
+            numeric_cols = ["Open","High","Low","Close","Volume"]
+            chunk[numeric_cols] = chunk[numeric_cols].apply(pd.to_numeric, errors="coerce")
+            frames.append(chunk)
+
+            if not should_paginate:
+                break
+
+            if len(raw) < limit:
+                break
+
+            last_open_ms = raw[-1][0]
+            if end_ms is not None and last_open_ms >= end_ms:
+                break
+
+            new_start_ms = last_open_ms + 1
+            if next_start_ms is not None and new_start_ms <= next_start_ms:
+                break
+            next_start_ms = new_start_ms
+
+        if not frames:
+            raise ExtractionError("No se encontraron datos para el rango solicitado", source=self.name)
+
+        df = pd.concat(frames)
 
         df = self._finalize_ohlcv(df)
         df = self._clip_range(df, start, end)
