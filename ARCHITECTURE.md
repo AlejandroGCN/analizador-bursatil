@@ -92,8 +92,8 @@ graph TB
     Portfolio --> MonteCarlo
     MonteCarlo --> Reporter
     
-    PriceSeries --> Cleaner
-    PerfSeries --> Cleaner
+    PriceSeries -. "Solo si hay NaN" .-> Cleaner
+    PerfSeries -. "Solo si hay NaN" .-> Cleaner
     
     %% Estilos
     classDef uiLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -118,6 +118,8 @@ graph TB
     class Cleaner preprocessingLayer
     class YahooAPI,BinanceAPI,TiingoAPI externalLayer
 ```
+
+> ℹ️ **Limpieza opcional**: `DataCleaner` solo se activa cuando la vista de Monte Carlo detecta NaN en los datos descargados; no forma parte del pipeline estándar de extracción.
 
 ## Flujo de Datos Detallado
 
@@ -188,6 +190,8 @@ sequenceDiagram
 ### 5. **Patrón Template Method**
 - `BaseSeries` define el template para todas las series de datos
 - Cada serie implementa sus métodos específicos
+
+> ℹ️ **Mixins reutilizables**: `SeriesDataAccess` y `FrameDataAccess` no son clases abstractas; funcionan como mixins que aportan utilidades comunes (`len`, `index`, `tail`, etc.) a las series normalizadas.
 
 ## 🎨 Arquitectura de UI (Streamlit)
 

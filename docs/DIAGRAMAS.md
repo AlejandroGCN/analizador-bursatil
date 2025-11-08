@@ -42,8 +42,8 @@ graph TB
     end
     
     subgraph HIER3["📊 Jerarquía de Series"]
-        FMIX["FrameDataAccess<br/>«abstract base»"]
-        SMIX["SeriesDataAccess<br/>«abstract base»"]
+        FMIX["FrameDataAccess<br/>«mixin»"]
+        SMIX["SeriesDataAccess<br/>«mixin»"]
         
         PS[PriceSeries]
         PERF[PerformanceSeries]
@@ -60,8 +60,8 @@ graph TB
     %% Clases abstractas
     style BA fill:#ffe0b2,stroke:#e65100,stroke-width:3px,stroke-dasharray: 5 5
     style BP fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,stroke-dasharray: 5 5
-    style FMIX fill:#e0f2f1,stroke:#00695c,stroke-width:3px,stroke-dasharray: 5 5
-    style SMIX fill:#e0f2f1,stroke:#00695c,stroke-width:3px,stroke-dasharray: 5 5
+    style FMIX fill:#e0f2f1,stroke:#00695c,stroke-width:3px,stroke-dasharray: 3 6
+    style SMIX fill:#e0f2f1,stroke:#00695c,stroke-width:3px,stroke-dasharray: 3 6
     
     %% Adapters concretos
     style YA fill:#ffccbc,stroke:#e65100,stroke-width:2px
@@ -126,7 +126,7 @@ graph LR
     APIS -->|4. JSON| SOURCES
     SOURCES -->|5. Datos| NORM
     NORM -->|6. Crea| SERIES
-    SERIES -->|7. Limpia| CLEANER
+    SERIES -. "Solo si hay NaN" .-> CLEANER
     CLEANER -->|8. Alimenta| PORTFOLIO
     PORTFOLIO -->|9. Simula| MC
     MC -->|10. Reporta| REPORTS
